@@ -4,9 +4,9 @@ from ignite.metrics import Metric
 from torch import nn
 from torch.utils.data import DataLoader
 
-from metrics.gauges import AverageGauge
-from training.state import TrainerState
-from training.strategies import TrainingStrategy
+from kerosene.metrics.gauges import AverageGauge
+from kerosene.training.state import TrainerState
+from kerosene.training import TrainingStrategy
 
 
 class Trainer(object):

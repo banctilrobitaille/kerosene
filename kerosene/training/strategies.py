@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Union, List
 
-from training.trainers import ModelTrainer
+from kerosene.training import ModelTrainer
 
 
 class TrainingStrategy(ABC):
