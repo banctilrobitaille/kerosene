@@ -31,6 +31,11 @@ class ModelTrainer(nn.Module):
         self._scheduler = scheduler
         self._metric_computer = metric_computer
 
+        self._step_train_loss = 0
+        self._step_valid_loss = 0
+        self._step_train_metric = 0
+        self._step_valid_metric = 0
+
         self._train_loss = AverageGauge()
         self._valid_loss = AverageGauge()
         self._train_metric = AverageGauge()
@@ -77,47 +82,39 @@ class ModelTrainer(nn.Module):
         self._optimizer.zero_grad()
 
     def compute_train_loss(self, pred, target):
-        loss = self._criterion(pred, target)
-        self._train_loss.update(loss)
+        self._step_train_loss = self._criterion(pred, target)
+        self._train_loss.update(self._step_train_loss)
 
-        return amp.scale_loss(loss, self._optimizer) if APEX_AVAILABLE else loss
+        return amp.scale_loss(self._step_train_loss, self._optimizer) if APEX_AVAILABLE else self._step_train_loss
 
     def compute_valid_loss(self, pred, target):
-        loss = self._criterion(pred, target)
-        self._valid_loss.update(loss)
+        self._step_valid_loss = self._criterion(pred, target)
+        self._valid_loss.update(self._step_valid_loss)
 
-        return amp.scale_loss(loss, self._optimizer) if APEX_AVAILABLE else loss
+        return amp.scale_loss(self._step_valid_loss, self._optimizer) if APEX_AVAILABLE else self._step_valid_loss
 
     def compute_train_metric(self, pred, target):
         self._metric_computer.update((pred, target))
-        metric = self._metric_computer.compute()
-        self._train_metric.update(metric)
+        self._step_train_metric = self._metric_computer.compute()
+        self._train_metric.update(self._step_train_metric)
+        self._metric_computer.reset()
 
-        return metric
+        return self._step_train_metric
 
     def compute_valid_metric(self, pred, target):
         self._metric_computer.update((pred, target))
-        metric = self._metric_computer.compute()
-        self._valid_metric.update(metric)
+        self._step_valid_metric = self._metric_computer.compute()
+        self._valid_metric.update(self._step_valid_metric)
+        self._metric_computer.reset()
 
-        return metric
+        return self._step_valid_metric
 
-    def _on_train_epoch_begin(self, state: TrainerState):
+    def reset(self):
         self._metric_computer.reset()
         self._train_loss.reset()
-
-    def _on_valid_epoch_begin(self, state: TrainerState):
-        self._metric_computer.reset()
         self._valid_loss.reset()
-
-    def on_epoch_end(self, state: TrainerState):
-        self._train_metric = self._metric_computer.compute()
-
-    def on_train_batch_end(self, state: TrainerState):
-        self._criterion.reset()
-
-    def on_valid_batch_end(self, state: TrainerState):
-        pass
+        self._train_metric.reset()
+        self._valid_metric.reset()
 
 
 class Trainer(EventGenerator):
@@ -171,11 +168,16 @@ class Trainer(EventGenerator):
     def validate_step(self, inputs, target):
         raise NotImplementedError()
 
+    def _reset_model_trainers(self):
+        for model_trainer in self._model_trainers:
+            model_trainer.reset()
+
     def train(self):
         self.fire(Event.ON_TRAINING_BEGIN)
 
         for self._current_epoch in range(0, self._nb_epochs):
             self.fire(Event.ON_EPOCH_BEGIN)
+            self._reset_model_trainers()
             self.fire(Event.ON_TRAIN_EPOCH_BEGIN)
             self._train_epoch()
             self.fire(Event.ON_TRAIN_EPOCH_END)
