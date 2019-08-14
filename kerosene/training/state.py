@@ -39,12 +39,15 @@ class TrainerState(object):
 
 
 class ModelTrainerState(object):
-    def __init__(self, name, train_loss=0, valid_loss=0, train_metric=0, valid_metric=0):
+    def __init__(self, name, train_loss=0, valid_loss=0, train_metric=0, valid_metric=0, model_state=None,
+                 optimizer_state=None):
         self._name = name
         self._train_loss = train_loss
         self._valid_loss = valid_loss
         self._train_metric = train_metric
         self._valid_metric = valid_metric
+        self._model_state = model_state
+        self._optimizer_state = optimizer_state
 
     @property
     def name(self):
@@ -65,6 +68,14 @@ class ModelTrainerState(object):
     @property
     def valid_metric(self):
         return self._valid_metric
+
+    @property
+    def model_state(self):
+        return self._model_state
+
+    @property
+    def optimizer_state(self):
+        return self._optimizer_state
 
     def __str__(self):
         return "{} -- Training loss: {} | Validation loss: {} | Training metric: {} | Validation metric: {}".format(

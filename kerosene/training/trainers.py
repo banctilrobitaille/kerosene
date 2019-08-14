@@ -10,7 +10,7 @@ from kerosene.events import Event
 from kerosene.events.generators import EventGenerator
 from kerosene.events.handlers import HandlerPreprocessor
 from kerosene.metrics.gauges import AverageGauge
-from kerosene.training.state import TrainerState
+from kerosene.training.state import TrainerState, ModelTrainerState
 
 try:
     from apex import amp
@@ -51,6 +51,15 @@ class ModelTrainer(nn.Module):
     @property
     def scheduler(self):
         return self._scheduler
+
+    @property
+    def state(self):
+        return ModelTrainerState(self._train_loss.compute(),
+                                 self._valid_loss.compute(),
+                                 self._train_metric.compute(),
+                                 self._valid_metric.compute(),
+                                 self.model_state,
+                                 self.optimizer_state)
 
     def forward(self, *input):
         return self._model.forward(*input)
@@ -120,16 +129,10 @@ class Trainer(EventGenerator):
         self._valid_data_loader = valid_data_loader
         self._model_trainers = model_trainers if isinstance(model_trainers, list) else [model_trainers]
 
-        self._state = TrainerState()
-
         self._nb_epochs = configuration.nb_epochs
         self._current_train_batch = 0
         self._current_valid_batch = 0
         self._current_epoch = 0
-
-    @property
-    def state(self):
-        return self._state
 
     @property
     def nb_epochs(self):
@@ -144,12 +147,21 @@ class Trainer(EventGenerator):
         return len(self._valid_data_loader)
 
     @property
-    def global_train_step(self):
+    def current_train_step(self):
         return self._current_epoch * len(self._train_data_loader) + self._current_train_batch
 
     @property
-    def global_valid_step(self):
+    def current_valid_step(self):
         return self._current_epoch * len(self._valid_data_loader) + self._current_valid_batch
+
+    @property
+    def state(self):
+        return TrainerState(self._current_epoch,
+                            self.current_train_step,
+                            self.current_valid_step,
+                            self._train_data_loader,
+                            self._valid_data_loader,
+                            [model_trainer.state for model_trainer in self._model_trainers])
 
     @abstractmethod
     def train_step(self, inputs, target):
