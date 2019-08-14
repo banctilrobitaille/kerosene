@@ -216,3 +216,24 @@ class Trainer(EventGenerator):
             self._event_handlers[event] = [HandlerPreprocessor(handler, preprocessor)]
 
         return self
+
+
+class SimpleTrainer(Trainer):
+
+    def train_step(self, inputs, target):
+        model = self._model_trainers[0]
+
+        pred = model.forward(inputs)
+        model.compute_train_metric(pred, target)
+        loss = model.compute_train_loss(pred, target)
+
+        model.zero_grad()
+        loss.backward()
+        model.step()
+
+    def validate_step(self, inputs, target):
+        model = self._model_trainers[0]
+
+        pred = model.forward(inputs)
+        model.compute_train_metric(pred, target)
+        model.compute_train_loss(pred, target)
