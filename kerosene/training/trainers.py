@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Union, List, Callable
 
 import torch
@@ -6,7 +6,9 @@ from ignite.metrics import Metric
 from torch import nn
 from torch.utils.data import DataLoader
 
-from kerosene.events import *
+from kerosene.events import Event
+from kerosene.events.generators import EventGenerator
+from kerosene.events.handlers import HandlerPreprocessor
 from kerosene.metrics.gauges import AverageGauge
 from kerosene.training.state import TrainerState
 
@@ -109,17 +111,14 @@ class ModelTrainer(nn.Module):
         pass
 
 
-class Trainer(ABC):
+class Trainer(EventGenerator):
 
-    def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
+    def __init__(self, train_data_loader: DataLoader, valid_data_loader: DataLoader,
                  model_trainers: Union[List[ModelTrainer], ModelTrainer], configuration):
-
-        super().__init__(name)
+        super().__init__()
         self._train_data_loader = train_data_loader
         self._valid_data_loader = valid_data_loader
         self._model_trainers = model_trainers if isinstance(model_trainers, list) else [model_trainers]
-
-        self._event_handler = {}
 
         self._state = TrainerState()
 
@@ -152,21 +151,6 @@ class Trainer(ABC):
     def global_valid_step(self):
         return self._current_epoch * len(self._valid_data_loader) + self._current_valid_batch
 
-    def train(self):
-        ON_TRAINING_BEGIN.send(self)
-
-        for self._current_epoch in range(0, self._nb_epochs):
-            ON_EPOCH_BEGIN.send()
-            ON_TRAIN_EPOCH_BEGIN.send()
-            self._train_epoch()
-            ON_TRAIN_EPOCH_END.send()
-            ON_VALID_EPOCH_BEGIN.send()
-            self._validate_epoch()
-            ON_VALID_EPOCH_END.send()
-            ON_EPOCH_END.send()
-
-        ON_TRAINING_END.send(self)
-
     @abstractmethod
     def train_step(self, inputs, target):
         raise NotImplementedError()
@@ -175,15 +159,30 @@ class Trainer(ABC):
     def validate_step(self, inputs, target):
         raise NotImplementedError()
 
+    def train(self):
+        self.fire(Event.ON_TRAINING_BEGIN)
+
+        for self._current_epoch in range(0, self._nb_epochs):
+            self.fire(Event.ON_EPOCH_BEGIN)
+            self.fire(Event.ON_TRAIN_EPOCH_BEGIN)
+            self._train_epoch()
+            self.fire(Event.ON_TRAIN_EPOCH_END)
+            self.fire(Event.ON_VALID_EPOCH_BEGIN)
+            self._validate_epoch()
+            self.fire(Event.ON_VALID_EPOCH_END)
+            self.fire(Event.ON_EPOCH_END)
+
+        self.fire(Event.ON_TRAINING_END)
+
     def _train_epoch(self):
 
         self._model_trainers = [model_trainer.train() for model_trainer in self._model_trainers]
 
         for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
-            ON_TRAIN_BATCH_BEGIN.send(self)
+            self.fire(Event.ON_TRAIN_BATCH_BEGIN)
             target = target.cuda(non_blocking=True)
             self.train_step(inputs, target)
-            ON_TRAIN_BATCH_END.send(self)
+            self.fire(Event.ON_TRAIN_BATCH_END)
 
     def _validate_epoch(self):
 
@@ -191,10 +190,15 @@ class Trainer(ABC):
 
         with torch.no_grad():
             for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
-                ON_VALID_BATCH_BEGIN.send(self)
+                self.fire(Event.ON_VALID_BATCH_BEGIN)
                 target = target.cuda(non_blocking=True)
                 self.validate_step(inputs, target)
-                ON_VALID_BATCH_END.send(self)
+                self.fire(Event.ON_VALID_BATCH_END)
 
-    def with_event_handler(self, handler, event, preprocess_fn: Callable = (lambda x: x)):
-        self._event_handler[event] = handler
+    def with_event_handler(self, handler, event: Event, preprocessor: Callable):
+        if event in self._event_handlers.keys():
+            self._event_handlers[event].append(HandlerPreprocessor(handler, preprocessor))
+        else:
+            self._event_handlers[event] = [HandlerPreprocessor(handler, preprocessor)]
+
+        return self
