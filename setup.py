@@ -6,8 +6,8 @@ from setuptools import find_packages, setup
 README_CONTENT = (pathlib.Path(__file__).parent / "README.md").read_text()
 
 setup(
-    name='kerosene',
-    version='0.0.1',
+    name='torch-kerosene',
+    version='0.0.2',
     description='Pytorch Framework For Medical Image Analysis',
     long_description=README_CONTENT,
     long_description_content_type='text/markdown',
@@ -32,9 +32,7 @@ setup(
                       'pytest==4.3.0',
                       'scikit-learn>=0.20.2',
                       'scipy==1.2.1',
-                      'torch>=1.1',
                       'torchfile==0.1.0',
-                      'torchvision>=0.2.1',
                       'visdom==0.1.8.8',
                       'imbalanced-learn',
                       'blinker>=1.4',

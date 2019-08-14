@@ -1,97 +1,21 @@
+from abc import ABC, abstractmethod
+from typing import Union, List, Callable
+
 import torch
-from blinker import signal
 from ignite.metrics import Metric
 from torch import nn
 from torch.utils.data import DataLoader
 
+from kerosene.events import *
 from kerosene.metrics.gauges import AverageGauge
 from kerosene.training.state import TrainerState
-from kerosene.training import TrainingStrategy
 
+try:
+    from apex import amp
 
-class Trainer(object):
-    ON_TRAINING_BEGIN = signal("OnTrainingBegin")
-    ON_TRAINING_END = signal("OnTrainingEnd")
-    ON_EPOCH_BEGIN = signal("OnEpochBegin")
-    ON_TRAIN_EPOCH_BEGIN = signal("OnTrainEpochBegin")
-    ON_TRAIN_EPOCH_END = signal("OnTrainEpochEnd")
-    ON_VALID_EPOCH_BEGIN = signal("OnValidEpochBegin")
-    ON_VALID_EPOCH_END = signal("OnValidEpochEnd")
-    ON_EPOCH_END = signal("OnEpochEnd")
-    ON_TRAIN_BATCH_BEGIN = signal("OnTrainBatchBegin")
-    ON_TRAIN_BATCH_END = signal("OnTrainBatchEnd")
-    ON_VALID_BATCH_BEGIN = signal("OnValidBatchBegin")
-    ON_VALID_BATCH_END = signal("OnValidBatchEnd")
-
-    def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
-                 train_strategy: TrainingStrategy, configuration):
-
-        super().__init__(name)
-        self._train_data_loader = train_data_loader
-        self._valid_data_loader = valid_data_loader
-        self._train_strategy = train_strategy
-        self._state = TrainerState()
-
-        self._nb_epochs = configuration.nb_epochs
-        self._current_train_batch = 0
-        self._current_valid_batch = 0
-        self._current_epoch = 0
-
-    @property
-    def state(self):
-        return self._state
-
-    @property
-    def nb_epochs(self):
-        return self._nb_epochs
-
-    @property
-    def nb_of_train_batch(self):
-        return len(self._train_data_loader)
-
-    @property
-    def nb_of_valid_batch(self):
-        return len(self._valid_data_loader)
-
-    @property
-    def global_train_step(self):
-        return self._current_epoch * len(self._train_data_loader) + self._current_train_batch
-
-    @property
-    def global_valid_step(self):
-        return self._current_epoch * len(self._valid_data_loader) + self._current_valid_batch
-
-    def train(self):
-        self.ON_TRAINING_BEGIN.send(self)
-
-        for self._current_epoch in range(0, self._nb_epochs):
-            self.ON_EPOCH_BEGIN.send()
-            self.ON_TRAIN_EPOCH_BEGIN.send()
-            self._train_epoch()
-            self.ON_TRAIN_EPOCH_END.send()
-            self.ON_VALID_EPOCH_BEGIN.send()
-            self._validate_epoch()
-            self.ON_VALID_EPOCH_END.send()
-            self.ON_EPOCH_END.send()
-
-        self.ON_TRAINING_END.send(self)
-
-    def _train_epoch(self):
-
-        for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
-            self.ON_TRAIN_BATCH_BEGIN.send(self)
-            target = target.cuda(non_blocking=True)
-            self._train_strategy.train_step(inputs, target)
-            self.ON_TRAIN_BATCH_END.send(self)
-
-    def _validate_epoch(self):
-
-        with torch.no_grad():
-            for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
-                self.ON_VALID_BATCH_BEGIN.send(self)
-                target = target.cuda(non_blocking=True)
-                self._train_strategy.validate_step(inputs, target)
-                self.ON_VALID_BATCH_END.send(self)
+    APEX_AVAILABLE = True
+except ModuleNotFoundError:
+    APEX_AVAILABLE = False
 
 
 class ModelTrainer(nn.Module):
@@ -107,6 +31,8 @@ class ModelTrainer(nn.Module):
 
         self._train_loss = AverageGauge()
         self._valid_loss = AverageGauge()
+        self._train_metric = AverageGauge()
+        self._valid_metric = AverageGauge()
 
     @property
     def optimizer_state(self):
@@ -141,25 +67,37 @@ class ModelTrainer(nn.Module):
 
     def compute_train_loss(self, pred, target):
         loss = self._criterion(pred, target)
-
         self._train_loss.update(loss)
 
-        return loss
+        return amp.scale_loss(loss, self._optimizer) if APEX_AVAILABLE else loss
 
     def compute_valid_loss(self, pred, target):
         loss = self._criterion(pred, target)
         self._valid_loss.update(loss)
 
-    def update_metric(self, pred, target):
-        return self._metric_computer.update((pred, target))
+        return amp.scale_loss(loss, self._optimizer) if APEX_AVAILABLE else loss
+
+    def compute_train_metric(self, pred, target):
+        self._metric_computer.update((pred, target))
+        metric = self._metric_computer.compute()
+        self._train_metric.update(metric)
+
+        return metric
+
+    def compute_valid_metric(self, pred, target):
+        self._metric_computer.update((pred, target))
+        metric = self._metric_computer.compute()
+        self._valid_metric.update(metric)
+
+        return metric
 
     def _on_train_epoch_begin(self, state: TrainerState):
         self._metric_computer.reset()
-        self._train_loss_gauge.reset()
+        self._train_loss.reset()
 
     def _on_valid_epoch_begin(self, state: TrainerState):
         self._metric_computer.reset()
-        self._valid_loss_gauge.reset()
+        self._valid_loss.reset()
 
     def on_epoch_end(self, state: TrainerState):
         self._train_metric = self._metric_computer.compute()
@@ -169,3 +107,94 @@ class ModelTrainer(nn.Module):
 
     def on_valid_batch_end(self, state: TrainerState):
         pass
+
+
+class Trainer(ABC):
+
+    def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
+                 model_trainers: Union[List[ModelTrainer], ModelTrainer], configuration):
+
+        super().__init__(name)
+        self._train_data_loader = train_data_loader
+        self._valid_data_loader = valid_data_loader
+        self._model_trainers = model_trainers if isinstance(model_trainers, list) else [model_trainers]
+
+        self._event_handler = {}
+
+        self._state = TrainerState()
+
+        self._nb_epochs = configuration.nb_epochs
+        self._current_train_batch = 0
+        self._current_valid_batch = 0
+        self._current_epoch = 0
+
+    @property
+    def state(self):
+        return self._state
+
+    @property
+    def nb_epochs(self):
+        return self._nb_epochs
+
+    @property
+    def nb_of_train_batch(self):
+        return len(self._train_data_loader)
+
+    @property
+    def nb_of_valid_batch(self):
+        return len(self._valid_data_loader)
+
+    @property
+    def global_train_step(self):
+        return self._current_epoch * len(self._train_data_loader) + self._current_train_batch
+
+    @property
+    def global_valid_step(self):
+        return self._current_epoch * len(self._valid_data_loader) + self._current_valid_batch
+
+    def train(self):
+        ON_TRAINING_BEGIN.send(self)
+
+        for self._current_epoch in range(0, self._nb_epochs):
+            ON_EPOCH_BEGIN.send()
+            ON_TRAIN_EPOCH_BEGIN.send()
+            self._train_epoch()
+            ON_TRAIN_EPOCH_END.send()
+            ON_VALID_EPOCH_BEGIN.send()
+            self._validate_epoch()
+            ON_VALID_EPOCH_END.send()
+            ON_EPOCH_END.send()
+
+        ON_TRAINING_END.send(self)
+
+    @abstractmethod
+    def train_step(self, inputs, target):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def validate_step(self, inputs, target):
+        raise NotImplementedError()
+
+    def _train_epoch(self):
+
+        self._model_trainers = [model_trainer.train() for model_trainer in self._model_trainers]
+
+        for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
+            ON_TRAIN_BATCH_BEGIN.send(self)
+            target = target.cuda(non_blocking=True)
+            self.train_step(inputs, target)
+            ON_TRAIN_BATCH_END.send(self)
+
+    def _validate_epoch(self):
+
+        self._model_trainers = [model_trainer.eval() for model_trainer in self._model_trainers]
+
+        with torch.no_grad():
+            for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
+                ON_VALID_BATCH_BEGIN.send(self)
+                target = target.cuda(non_blocking=True)
+                self.validate_step(inputs, target)
+                ON_VALID_BATCH_END.send(self)
+
+    def with_event_handler(self, handler, event, preprocess_fn: Callable = (lambda x: x)):
+        self._event_handler[event] = handler
