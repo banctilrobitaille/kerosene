@@ -161,11 +161,11 @@ class Trainer(EventGenerator):
                             [model_trainer.state for model_trainer in self._model_trainers])
 
     @abstractmethod
-    def train_step(self, inputs, target):
+    def train_step(self, *inputs, target):
         raise NotImplementedError()
 
     @abstractmethod
-    def validate_step(self, inputs, target):
+    def validate_step(self, *inputs, target):
         raise NotImplementedError()
 
     def _reset_model_trainers(self):
@@ -195,7 +195,7 @@ class Trainer(EventGenerator):
         for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
             self.fire(Event.ON_TRAIN_BATCH_BEGIN)
             target = target.cuda(non_blocking=True)
-            self.train_step(inputs, target)
+            self.train_step(*inputs, target=target)
             self.fire(Event.ON_TRAIN_BATCH_END)
 
     def _validate_epoch(self):
@@ -206,7 +206,7 @@ class Trainer(EventGenerator):
             for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
                 self.fire(Event.ON_VALID_BATCH_BEGIN)
                 target = target.cuda(non_blocking=True)
-                self.validate_step(inputs, target)
+                self.validate_step(*inputs, target=target)
                 self.fire(Event.ON_VALID_BATCH_END)
 
     def with_event_handler(self, handler, event: Event, preprocessor: Callable):
