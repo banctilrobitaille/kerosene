@@ -7,8 +7,8 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 from kerosene.events import Event
-from kerosene.events.generators import EventGenerator
-from kerosene.events.handlers import HandlerPreprocessor
+from kerosene.events.generators.base_generator import EventGenerator
+from kerosene.events.handlers.base_handler import HandlerPreprocessor
 from kerosene.metrics.gauges import AverageGauge
 from kerosene.training.state import TrainerState, ModelTrainerState
 
