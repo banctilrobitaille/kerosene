@@ -28,9 +28,7 @@ class ModelTrainer(nn.Module):
 
         if APEX_AVAILABLE:
             self._model, self._optimizer = amp.initialize(
-                model, optimizer, opt_level="O2",
-                keep_batchnorm_fp32=True, loss_scale="dynamic"
-            )
+                model, optimizer, opt_level="O2")
         else:
             self._model = model
             self._optimizer = optimizer
@@ -128,20 +126,15 @@ class ModelTrainer(nn.Module):
 class Trainer(EventGenerator):
 
     def __init__(self, train_data_loader: DataLoader, valid_data_loader: DataLoader,
-                 model_trainers: Union[List[ModelTrainer], ModelTrainer], configuration):
+                 model_trainers: Union[List[ModelTrainer], ModelTrainer]):
         super().__init__()
         self._train_data_loader = train_data_loader
         self._valid_data_loader = valid_data_loader
         self._model_trainers = model_trainers if isinstance(model_trainers, list) else [model_trainers]
 
-        self._nb_epochs = configuration.nb_epochs
         self._current_train_batch = 0
         self._current_valid_batch = 0
         self._current_epoch = 0
-
-    @property
-    def nb_epochs(self):
-        return self._nb_epochs
 
     @property
     def nb_of_train_batch(self):
@@ -180,10 +173,10 @@ class Trainer(EventGenerator):
         for model_trainer in self._model_trainers:
             model_trainer.reset()
 
-    def train(self):
+    def train(self, nb_epoch):
         self.fire(Event.ON_TRAINING_BEGIN)
 
-        for self._current_epoch in range(0, self._nb_epochs):
+        for self._current_epoch in range(0, nb_epoch):
             self.fire(Event.ON_EPOCH_BEGIN)
             self._reset_model_trainers()
             self.fire(Event.ON_TRAIN_EPOCH_BEGIN)
