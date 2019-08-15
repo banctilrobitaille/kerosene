@@ -1,0 +1,24 @@
+training:
+  nb_epochs: 250
+  batch_size: 1
+
+models:
+  MyModel:
+    type: resnet
+    params:
+      group_size: 32
+    optimizer:
+      type: "SGD"
+      params:
+        learning_rate: 0.001
+        momentum: 0.9
+        weigth_decay: 0.1
+    scheduler:
+      type: "ReduceOnPlateu"
+      params:
+        mode: 'min'
+        factor: 0.1
+        patience: 3
+    criterion:
+      type: "BCELoss"
+      params:
