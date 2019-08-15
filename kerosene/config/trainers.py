@@ -29,7 +29,7 @@ class ModelTrainerConfiguration(object):
         return self._model_name
 
     @property
-    def type(self):
+    def model_type(self):
         return self._model_type
 
     @property
