@@ -70,7 +70,8 @@ class ModelTrainerConfiguration(object):
 
     @classmethod
     def from_dict(cls, model_name, config_dict):
-        cls(model_name, config_dict["type"], config_dict["params"], config_dict["optimizer"]["type"],
-            config_dict["optimizer"]["params"], config_dict["scheduler"]["type"], config_dict["scheduler"]["params"],
-            config_dict["criterion"]["type"], config_dict["criterion"]["params"], config_dict["metric"]["type"],
-            config_dict["metric"]["params"])
+        return cls(model_name, config_dict["type"], config_dict["params"], config_dict["optimizer"]["type"],
+                   config_dict["optimizer"]["params"], config_dict["scheduler"]["type"],
+                   config_dict["scheduler"]["params"], config_dict["criterion"]["type"],
+                   config_dict["criterion"]["params"], config_dict["metric"]["type"],
+                   config_dict["metric"]["params"])
