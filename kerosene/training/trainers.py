@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from kerosene.events import Event
 from kerosene.events.generators.base_generator import EventGenerator
-from kerosene.events.handlers.base_handler import HandlerPreprocessor
+from kerosene.events.preprocessors.base_preprocessor import HandlerPreprocessor
 from kerosene.metrics.gauges import AverageGauge
 from kerosene.training.state import TrainerState, ModelTrainerState
 
@@ -25,9 +25,17 @@ class ModelTrainer(nn.Module):
     def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric):
         super().__init__()
         self._model_name = model_name
-        self._model = model
+
+        if APEX_AVAILABLE:
+            self._model, self._optimizer = amp.initialize(
+                model, optimizer, opt_level="O2",
+                keep_batchnorm_fp32=True, loss_scale="dynamic"
+            )
+        else:
+            self._model = model
+            self._optimizer = optimizer
+
         self._criterion = criterion
-        self._optimizer = optimizer
         self._scheduler = scheduler
         self._metric_computer = metric_computer
 
