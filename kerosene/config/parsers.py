@@ -2,6 +2,8 @@ import logging
 
 import yaml
 
+from kerosene.config.trainers import ModelTrainerConfiguration, TrainingConfiguration
+
 
 class YamlConfigurationParser(object):
     LOGGER = logging.getLogger("YamlConfigurationParser")
@@ -12,9 +14,12 @@ class YamlConfigurationParser(object):
             try:
                 config = yaml.load(config_file, Loader=yaml.FullLoader)
 
-                return list(map(lambda model_name: ModelTrainingConfiguration(model_name, config["models"][model_name]),
-                                config["models"])), TrainingConfiguration(
-                    config['training']), VisdomConfiguration.from_dict(config['visdom'])
+                model_trainer_configs = list(
+                    map(lambda model_name: ModelTrainerConfiguration.from_dict(model_name,
+                                                                               config["models"][model_name]),
+                        config["models"]))
+                training_config = TrainingConfiguration(config['training'])
+                return model_trainer_configs, training_config
             except yaml.YAMLError as e:
-                logging.warning(
+                YamlConfigurationParser.LOGGER.warning(
                     "Unable to read the training config file: {} with error {}".format(config_file_path, e))

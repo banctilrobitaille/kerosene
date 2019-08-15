@@ -3,10 +3,6 @@ class TrainingConfiguration(object):
         for key in config_dict:
             setattr(self, key, config_dict[key])
 
-    @classmethod
-    def from_dict(cls, config_dict):
-        pass
-
 
 class ModelTrainerConfiguration(object):
 
