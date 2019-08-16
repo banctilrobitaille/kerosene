@@ -23,3 +23,14 @@ class YamlConfigurationParser(object):
             except yaml.YAMLError as e:
                 YamlConfigurationParser.LOGGER.warning(
                     "Unable to read the training config file: {} with error {}".format(config_file_path, e))
+
+    @staticmethod
+    def parse_section(config_file_path, yml_tag):
+        with open(config_file_path, 'r') as config_file:
+            try:
+                config = yaml.load(config_file, Loader=yaml.FullLoader)
+
+                return config[yml_tag]
+            except yaml.YAMLError as e:
+                YamlConfigurationParser.LOGGER.warning(
+                    "Unable to read the training config file: {} with error {}".format(config_file_path, e))

@@ -1,3 +1,6 @@
+from kerosene.config.parsers import YamlConfigurationParser
+
+
 class VisdomConfiguration(object):
     def __init__(self, port, server, env):
         self._port = port
@@ -19,3 +22,8 @@ class VisdomConfiguration(object):
     @classmethod
     def from_dict(cls, config_dict):
         return cls(config_dict['port'], config_dict['server'], config_dict['env'])
+
+    @classmethod
+    def from_yml(cls, yml_file, yml_tag):
+        config = YamlConfigurationParser.parse_section(yml_file, yml_tag)
+        return VisdomConfiguration.from_dict(config)
