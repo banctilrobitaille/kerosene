@@ -78,14 +78,6 @@ class TestDiceLoss(unittest.TestCase):
                     raises(AttributeError))
         assert_that(calling(dice_loss.forward).with_args(inputs=None, targets=self.y_true_tensor),
                     raises(AttributeError))
-        assert_that(calling(dice_loss.forward).with_args(inputs=self.y_logits, targets=self.y_true_tensor,
-                                                         ignore_index=self.INVALID_VALUE_1), raises(ValueError))
-        assert_that(calling(dice_loss.forward).with_args(inputs=self.y_logits, targets=self.y_true_tensor,
-                                                         ignore_index=self.INVALID_VALUE_2), raises(TypeError))
-        assert_that(calling(dice_loss.forward).with_args(inputs=self.y_logits, targets=self.y_true_tensor,
-                                                         ignore_index=self.INVALID_VALUE_3), raises(ValueError))
-        assert_that(calling(dice_loss.forward).with_args(inputs=self.y_logits, targets=self.y_true_tensor,
-                                                         ignore_index=self.INVALID_VALUE_4), raises(ValueError))
 
     def test_should_compute_dice(self):
         dice_loss = DiceLoss(reduction=None)
@@ -95,9 +87,8 @@ class TestDiceLoss(unittest.TestCase):
 
     def test_should_compute_dice_for_multiclass_with_ignored_index(self):
         for ignore_index in range(3):
-            dice_loss = DiceLoss(reduction=None)
-            res = dice_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3),
-                                    ignore_index=ignore_index)
+            dice_loss = DiceLoss(reduction=None, ignore_index=ignore_index)
+            res = dice_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3))
             true_res = np.subtract(1.0, self.dice[:ignore_index] + self.dice[ignore_index + 1:])
             np.testing.assert_almost_equal(res.numpy(), true_res), "{}: {} vs {}".format(ignore_index, res, true_res)
 
@@ -109,9 +100,8 @@ class TestDiceLoss(unittest.TestCase):
 
     def test_should_compute_mean_dice_for_multiclass_with_ignored_index(self):
         for ignore_index in range(3):
-            dice_loss = DiceLoss()
-            res = dice_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3),
-                                    ignore_index=ignore_index)
+            dice_loss = DiceLoss(ignore_index=ignore_index)
+            res = dice_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3))
             true_res = np.subtract(1.0, self.dice[:ignore_index] + self.dice[ignore_index + 1:])
             np.testing.assert_almost_equal(res.numpy(), true_res), "{}: {} vs {}".format(ignore_index, res, true_res)
 
@@ -140,18 +130,6 @@ class TestGeneralizedDiceLoss(unittest.TestCase):
                     raises(AttributeError))
         assert_that(calling(generalized_dice_loss.forward).with_args(inputs=None, targets=self.y_true_tensor),
                     raises(AttributeError))
-        assert_that(calling(generalized_dice_loss.forward).with_args(inputs=self.y_logits, targets=self.y_true_tensor,
-                                                                     ignore_index=self.INVALID_VALUE_1),
-                    raises(ValueError))
-        assert_that(calling(generalized_dice_loss.forward).with_args(inputs=self.y_logits, targets=self.y_true_tensor,
-                                                                     ignore_index=self.INVALID_VALUE_2),
-                    raises(TypeError))
-        assert_that(calling(generalized_dice_loss.forward).with_args(inputs=self.y_logits, targets=self.y_true_tensor,
-                                                                     ignore_index=self.INVALID_VALUE_3),
-                    raises(ValueError))
-        assert_that(calling(generalized_dice_loss.forward).with_args(inputs=self.y_logits, targets=self.y_true_tensor,
-                                                                     ignore_index=self.INVALID_VALUE_4),
-                    raises(ValueError))
 
     def test_should_compute_generalized_dice(self):
         generalized_dice_loss = GeneralizedDiceLoss()
@@ -160,9 +138,8 @@ class TestGeneralizedDiceLoss(unittest.TestCase):
 
     def test_should_compute_generalized_dice_for_multiclass_with_ignored_index(self):
         for ignore_index in range(3):
-            generalized_dice_loss = GeneralizedDiceLoss()
-            res = generalized_dice_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3),
-                                                ignore_index=ignore_index)
+            generalized_dice_loss = GeneralizedDiceLoss(ignore_index=ignore_index)
+            res = generalized_dice_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3))
             true_res = np.subtract(1.0, self.generalized_dice_loss[:ignore_index] + self.generalized_dice_loss[
                                                                                     ignore_index + 1:])
             np.testing.assert_almost_equal(res.numpy(), true_res), "{}: {} vs {}".format(ignore_index, res, true_res)
@@ -175,9 +152,8 @@ class TestGeneralizedDiceLoss(unittest.TestCase):
 
     def test_should_compute_mean_generalized_dice_for_multiclass_with_ignored_index(self):
         for ignore_index in range(3):
-            dice_loss = GeneralizedDiceLoss()
-            res = dice_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3),
-                                    ignore_index=ignore_index)
+            dice_loss = GeneralizedDiceLoss(ignore_index=ignore_index)
+            res = dice_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3))
             true_res = np.subtract(1.0, self.generalized_dice_loss[:ignore_index] + self.generalized_dice_loss[
                                                                                     ignore_index + 1:])
             np.testing.assert_almost_equal(res.numpy(), true_res), "{}: {} vs {}".format(ignore_index, res, true_res)
@@ -204,25 +180,9 @@ class TestWeightedCrossEntropy(unittest.TestCase):
         assert_that(calling(weighted_cross_entropy_loss.forward).with_args(inputs=None, targets=None),
                     raises(AttributeError))
         assert_that(calling(weighted_cross_entropy_loss.forward).with_args(inputs=self.y_logits, targets=None),
-                    raises(AttributeError))
+                    raises(ValueError))
         assert_that(calling(weighted_cross_entropy_loss.forward).with_args(inputs=None, targets=self.y_true_tensor),
                     raises(AttributeError))
-        assert_that(
-            calling(weighted_cross_entropy_loss.forward).with_args(inputs=self.y_logits, targets=self.y_true_tensor,
-                                                                   ignore_index=self.INVALID_VALUE_1),
-            raises(ValueError))
-        assert_that(
-            calling(weighted_cross_entropy_loss.forward).with_args(inputs=self.y_logits, targets=self.y_true_tensor,
-                                                                   ignore_index=self.INVALID_VALUE_2),
-            raises(TypeError))
-        assert_that(
-            calling(weighted_cross_entropy_loss.forward).with_args(inputs=self.y_logits, targets=self.y_true_tensor,
-                                                                   ignore_index=self.INVALID_VALUE_3),
-            raises(ValueError))
-        assert_that(
-            calling(weighted_cross_entropy_loss.forward).with_args(inputs=self.y_logits, targets=self.y_true_tensor,
-                                                                   ignore_index=self.INVALID_VALUE_4),
-            raises(ValueError))
 
     def test_should_compute_weights(self):
         weights = WeightedCrossEntropyLoss.compute_class_weights(self.y_logits)
