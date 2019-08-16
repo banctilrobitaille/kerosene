@@ -1,4 +1,4 @@
-#  <img src="/icons/oil.png" width="60" vertical-align="bottom">Kerosene
+#  <img src="/icons/oil.png" width="90" vertical-align="bottom">Kerosene
 > Deep Learning framework for fast and clean research development with Pytorch
 
 ## Contributing
