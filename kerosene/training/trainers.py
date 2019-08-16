@@ -258,13 +258,13 @@ class ModelTrainerFactory(object):
 
     def create(self, model_trainer_config: ModelTrainerConfiguration):
         model = self._model_factory.create(model_trainer_config.model_type,
-                                           model_trainer_config.model_params)
+                                           model_trainer_config.model_params).cuda()
         optimizer = self._optimizer_factory.create(model_trainer_config.optimizer_type,
                                                    model_trainer_config.optimizer_params)
         scheduler = self._scheduler_factory.create(model_trainer_config.scheduler_type, optimizer,
                                                    model_trainer_config.scheduler_params)
         criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
-                                                   model_trainer_config.criterion_params)
+                                                   model_trainer_config.criterion_params).cuda()
         metric = self._metric_factory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
 
         return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric)
