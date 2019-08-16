@@ -136,7 +136,7 @@ class DiceLoss(_Loss):
 
         if self.reduction == "mean":
             dice = dice.mean()
-            
+
         return dice
 
 
