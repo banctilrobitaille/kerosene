@@ -23,9 +23,8 @@ class MetricType(Enum):
         return self.value
 
 
-class MetricsFactory(object):
+class MetricFactory(object):
     def __init__(self):
-        super(MetricsFactory, self).__init__()
         self._metrics = {
             "Accuracy": Accuracy,
             "Precision": Precision,
@@ -39,7 +38,7 @@ class MetricsFactory(object):
             "mIoU": mIoU,
         }
 
-    def create_metric(self, metric_type: Union[str, MetricType], params):
+    def create(self, metric_type: Union[str, MetricType], **params):
         return self._metrics[str(metric_type)](**params)
 
     def register(self, metric: str, creator: Metric):

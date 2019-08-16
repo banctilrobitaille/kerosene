@@ -6,10 +6,15 @@ from ignite.metrics import Metric
 from torch import nn
 from torch.utils.data import DataLoader
 
+from kerosene.config.trainers import ModelTrainerConfiguration
 from kerosene.events import Event
 from kerosene.events.generators.base_generator import EventGenerator
 from kerosene.events.preprocessors.base_preprocessor import HandlerPreprocessor
 from kerosene.metrics.gauges import AverageGauge
+from kerosene.metrics.metrics import MetricFactory
+from kerosene.nn.criterions import CriterionFactory
+from kerosene.optim.optimizers import OptimizerFactory
+from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training.state import TrainerState, ModelTrainerState
 
 try:
@@ -238,3 +243,21 @@ class SimpleTrainer(Trainer):
         pred = model.forward(inputs)
         model.compute_train_metric(pred, target)
         model.compute_train_loss(pred, target)
+
+
+class ModelTrainerFactory(object):
+    def __init__(self, model_factory):
+        self._model_factory = model_factory
+
+    def create(self, model_trainer_config: ModelTrainerConfiguration):
+        model = self._model_factory.create(model_trainer_config.model_type,
+                                           model_trainer_config.model_params)
+        optimizer = OptimizerFactory.create(model_trainer_config.optimizer_type,
+                                            model_trainer_config.optimizer_params)
+        scheduler = SchedulerFactory.create(model_trainer_config.scheduler_type, optimizer,
+                                            model_trainer_config.scheduler_params)
+        criterion = CriterionFactory.create(model_trainer_config.criterion_type,
+                                            model_trainer_config.criterion_params)
+        metric = MetricFactory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
+
+        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric)

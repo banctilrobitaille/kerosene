@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Union
 
 from torch import optim
+from torch.optim import Optimizer
 
 
 class OptimizerType(Enum):
@@ -22,24 +23,15 @@ class OptimizerType(Enum):
 class OptimizerFactory(object):
 
     def __init__(self):
-        super(OptimizerFactory, self).__init__()
-
         self._optimizers = {
             "Adam": optim.Adam,
-            "Adagrad": optim.Adagrad,
             "SGD": optim.SGD,
-            "Adadelta": optim.Adadelta,
-            "SparseAdam": optim.SparseAdam,
-            "Adamax": optim.Adamax,
-            "Rprop": optim.Rprop,
-            "RMSprop": optim.RMSprop,
-            "ASGD": optim.ASGD
         }
 
-    def create(self, optimizer_type: Union[str, OptimizerType], params):
+    def create(self, optimizer_type: Union[str, OptimizerType], **params):
         return self._optimizers[str(optimizer_type)](**params)
 
-    def register(self, function: str, creator: torch.optim.Optimizer):
+    def register(self, function: str, creator: Optimizer):
         """
         Add a new activation layer.
         Args:
