@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from kerosene.config.trainers import ModelTrainerConfiguration
 from kerosene.events import Event
 from kerosene.events.generators.base_generator import EventGenerator
-from kerosene.events.preprocessors.base_preprocessor import HandlerPreprocessor
+from kerosene.events.preprocessors.base_preprocessor import HandlerPreprocessor, Identity
 from kerosene.metrics.gauges import AverageGauge
 from kerosene.metrics.metrics import MetricFactory
 from kerosene.models.models import ModelFactory
@@ -216,7 +216,7 @@ class Trainer(EventGenerator):
                 self.validate_step(inputs, target)
                 self.fire(Event.ON_VALID_BATCH_END)
 
-    def with_event_handler(self, handler, event: Event, preprocessor: Callable):
+    def with_event_handler(self, handler, event: Event, preprocessor: Callable = Identity()):
         if event in self._event_handlers.keys():
             self._event_handlers[event].append(HandlerPreprocessor(handler, preprocessor))
         else:
