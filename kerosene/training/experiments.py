@@ -1,13 +1,9 @@
-from abc import ABC, abstractmethod
-from typing import Tuple
-
-from torch.utils.data import Dataset
+from kerosene.events.handlers.base_handler import EventHandler
 
 
-class Experiment(ABC):
+class Experiment(EventHandler):
     def __init__(self, name):
         self._name = name
 
-    @abstractmethod
-    def prepare_data(self, *args, **kwargs) -> Tuple[Dataset]:
-        raise NotImplementedError()
+    def __call__(self, *inputs):
+        pass
