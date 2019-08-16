@@ -59,7 +59,7 @@ class Dice(Metric):
     The Dice Metric.
     """
 
-    def __init__(self, num_classes: int, reduction: str = None, average: str = None, ignore_index: int = None,
+    def __init__(self, num_classes: int, reduction: str = None, average: str = None, ignore_index: int = -100,
                  output_transform: callable = lambda x: x) -> None:
         """
         Metric initializer.
@@ -88,6 +88,10 @@ class Dice(Metric):
 
         if self._reduction == "mean":
             self._metric = self.compute_mean_dice_coefficient(self._cm, self._ignore_index)
+        elif None:
+            pass
+        else:
+            raise NotImplementedError("Reduction method not implemented.")
 
         super(Dice, self).__init__(output_transform=output_transform)
 
@@ -116,7 +120,7 @@ class Dice(Metric):
         self._cm.update(output)
 
     @staticmethod
-    def compute_dice_coefficient(cm: ConfusionMatrix, ignore_index: int = None):
+    def compute_dice_coefficient(cm: ConfusionMatrix, ignore_index: int = -100):
         """
         Computes the Sørensen–Dice Coefficient (https://en.wikipedia.org/wiki/Sørensen–Dice_coefficient)
 
@@ -127,20 +131,19 @@ class Dice(Metric):
         Returns:
             array: The Sørensen–Dice Coefficient for each class.
         """
-        if ignore_index is not None:
-            validate_ignore_index(ignore_index)
-            validate_num_classes(ignore_index, cm.num_classes)
-
         # Increase floating point precision
         cm = cm.type(torch.float64)
         dice = 2 * cm.diag() / (cm.sum(dim=1) + cm.sum(dim=0) + EPSILON)
 
         if ignore_index is not None:
             def remove_index(dice_vector):
-                assert ignore_index <= len(dice_vector), "ignore_index {} is larger than the length " \
-                                                         "of dice vector {}".format(ignore_index, len(dice_vector))
-                indices = [x for x in range(len(dice_vector)) if x != ignore_index]
-                return dice_vector[indices]
+                try:
+                    indices = [x for x in range(len(dice_vector)) if x != ignore_index]
+                    return dice_vector[indices]
+                except ValueError as e:
+                    raise IndexError(
+                        "'ignore_index' must be non-negative, and lower than the number of classes in confusion matrix, but {} was given. ".format(
+                            ignore_index))
 
             return MetricsLambda(remove_index, dice)
         else:
@@ -167,7 +170,7 @@ class GeneralizedDice(Metric):
     """
 
     def __init__(self, num_classes: int, reduction: str = None, average: str = None,
-                 ignore_index: int = None, output_transform: callable = lambda x: x) -> None:
+                 ignore_index: int = -100, output_transform: callable = lambda x: x) -> None:
         """
         Metric initializer.
 
@@ -209,67 +212,69 @@ class GeneralizedDice(Metric):
         """
         return self._metric.compute()
 
-    def update(self, output: Tuple[torch.Tensor, torch.Tensor], weights: torch.Tensor = None) -> None:
+    def update(self, output: Tuple[torch.Tensor, torch.Tensor], weight: torch.Tensor = None) -> None:
         """
         Update the confusion matrix with output values.
 
         Args:
             output (tuple of :obj:`torch.Tensor`): A tuple containing predictions and ground truth.
-            weights (:obj:`torch.Tensor`, optional): A weight vector which length equals to the number of classes.
+            weight (:obj:`torch.Tensor`, optional): A weight vector which length equals to the number of classes.
         """
 
-        self._metric = compute_generalized_dice_coefficient(self._cm, weights, self._ignore_index)
+        self._metric = self.compute_generalized_dice_coefficient(self._cm, weight, self._ignore_index)
 
         if self._reduction == "mean":
             self._metric = self._metric.mean()
+        else:
+            raise NotImplementedError("Reduction method not implemented.")
 
         self._cm.update(output)
 
     @staticmethod
-    def compute_mean_generalized_dice_coefficient(cm: ConfusionMatrix, weights: torch.Tensor,
-                                                  ignore_index: int = None):
+    def compute_mean_generalized_dice_coefficient(cm: ConfusionMatrix, weight: torch.Tensor,
+                                                  ignore_index: int = -100):
         """
         Computes the mean Generalized Dice Coefficient.
 
         Args:
             cm (:obj:`ignite.metrics.ConfusionMatrix`): A confusion matrix representing the classification of data.
-            weights (:obj:`torch.Tensor`): A tensor representing weights for each classes.
+            weight (:obj:`torch.Tensor`): A tensor representing weights for each classes.
             ignore_index (int): An index of a class to ignore for computation.
 
         Returns:
             float: The mean Generalized Dice Coefficient.
         """
-        return compute_generalized_dice_coefficient(cm=cm, ignore_index=ignore_index, weights=weights).mean()
+        return GeneralizedDice.compute_generalized_dice_coefficient(cm=cm, ignore_index=ignore_index,
+                                                                    weight=weight).mean()
 
     @staticmethod
-    def compute_generalized_dice_coefficient(cm: ConfusionMatrix, weights: torch.Tensor,
-                                             ignore_index: int = None):
+    def compute_generalized_dice_coefficient(cm: ConfusionMatrix, weight: torch.Tensor,
+                                             ignore_index: int = -100):
         """
         Computes the Sørensen–Dice Coefficient (https://en.wikipedia.org/wiki/Sørensen–Dice_coefficient)
 
         Args:
             cm (:obj:`ignite.metrics.ConfusionMatrix`): A confusion matrix representing the classification of data.
             ignore_index (int): An index of a class to ignore for computation.
-            weights (:obj:`torch.Tensor`): A weight vector which length equals to the number of classes.
+            weight (:obj:`torch.Tensor`): A weight vector which length equals to the number of classes.
 
         Returns:
             array: The Generalized Dice Coefficient for each class.
         """
-        if ignore_index is not None:
-            validate_ignore_index(ignore_index)
-            validate_num_classes(ignore_index, cm.num_classes)
-            validate_weights_size(weights.size()[0], cm.num_classes)
 
         # Increase floating point precision
         cm = cm.type(torch.float64)
-        dice = 2 * (cm.diag() * weights) / (((cm.sum(dim=1) + cm.sum(dim=0)) * weights) + EPSILON)
+        dice = 2 * (cm.diag() * weight) / (((cm.sum(dim=1) + cm.sum(dim=0)) * weight) + EPSILON)
 
-        if ignore_index is not None:
+        if ignore_index != -100:
             def remove_index(dice_vector):
-                assert ignore_index <= len(dice_vector), "ignore_index {} is larger than the length " \
-                                                         "of dice vector {}".format(ignore_index, len(dice_vector))
-                indices = [x for x in range(len(dice_vector)) if x != ignore_index]
-                return dice_vector[indices]
+                try:
+                    indices = [x for x in range(len(dice_vector)) if x != ignore_index]
+                    return dice_vector[indices]
+                except ValueError as e:
+                    raise IndexError(
+                        "'ignore_index' must be non-negative, and lower than the number of classes in confusion matrix, but {} was given. ".format(
+                            ignore_index))
 
             return MetricsLambda(remove_index, dice)
         else:
