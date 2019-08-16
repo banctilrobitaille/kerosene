@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Union
 
+import abc
 import torch
 from torch import nn
 from torch.nn.modules.loss import _Loss
@@ -73,7 +74,32 @@ class CriterionFactory(object):
         self._criterion[function] = creator
 
 
-class DiceLoss(nn.Module):
+class AbstractCriterion(nn.Module):
+
+    @abc.abstractmethod
+    def forward(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    @staticmethod
+    def validate_ignore_index(ignore_index: int, input_shape: int):
+        """
+        Validate the `ignore_index` variable.
+
+        Args:
+            ignore_index (int): An index of a class to ignore for computation.
+            input_shape (int): Input tensor.
+        """
+        if ignore_index is not None:
+            if not ignore_index >= 0:
+                raise ValueError("'ignore_index' must be non-negative, but given {}".format(ignore_index))
+
+        if ignore_index > input_shape:
+            raise ValueError(
+                "'ignore index' must be lower than the number of classes in confusion matrix, but {} was given.".format(
+                    ignore_index))
+
+
+class DiceLoss(AbstractCriterion):
     """
     The Sørensen-Dice Loss.
     """
@@ -102,8 +128,7 @@ class DiceLoss(nn.Module):
             :obj:`torch.Tensor`: The Sørensen–Dice loss for each class or reduced according to reduction method.
         """
         if ignore_index is not None:
-            if not ignore_index >= 0:
-                raise ValueError("ignore_index must be non-negative, but given {}".format(ignore_index))
+            self.validate_ignore_index(ignore_index, inputs.shape[1])
 
         if not inputs.size() == targets.size():
             raise ValueError("'Inputs' and 'Targets' must have the same shape.")
@@ -144,7 +169,7 @@ class DiceLoss(nn.Module):
             return dice
 
 
-class GeneralizedDiceLoss(torch.nn.Module):
+class GeneralizedDiceLoss(AbstractCriterion):
     """
       The Generalized Sørensen-Dice Loss.
       """
@@ -171,8 +196,7 @@ class GeneralizedDiceLoss(torch.nn.Module):
             :obj:`torch.Tensor`: The Sørensen–Dice loss for each class or reduced according to reduction method.
         """
         if ignore_index is not None:
-            if not ignore_index >= 0:
-                raise ValueError("ignore_index must be non-negative, but given {}".format(ignore_index))
+            self.validate_ignore_index(ignore_index, inputs.shape[1])
 
         if not inputs.size() == targets.size():
             raise ValueError("'Inputs' and 'Targets' must have the same shape.")
@@ -210,7 +234,7 @@ class GeneralizedDiceLoss(torch.nn.Module):
             return dice
 
 
-class WeightedCrossEntropyLoss(torch.nn.Module):
+class WeightedCrossEntropyLoss(AbstractCriterion):
 
     def __init__(self, reduction="mean"):
         super(WeightedCrossEntropyLoss, self).__init__()
@@ -241,24 +265,6 @@ class WeightedCrossEntropyLoss(torch.nn.Module):
                                                  ignore_index=ignore_index)
 
     @staticmethod
-    def validate_ignore_index(ignore_index: int, input_shape: int):
-        """
-        Validate the `ignore_index` variable.
-
-        Args:
-            ignore_index (int): An index of a class to ignore for computation.
-            input_shape (int): Input tensor.
-        """
-        if ignore_index is not None:
-            if not ignore_index >= 0:
-                raise ValueError("ignore_index must be non-negative, but given {}".format(ignore_index))
-
-        if ignore_index > input_shape:
-            raise ValueError(
-                "ignore index must be lower than the number of classes in confusion matrix, but {} was given.".format(
-                    ignore_index))
-
-    @staticmethod
     def compute_class_weights(inputs: torch.Tensor):
         """
         Compute weights for each class as described in https://arxiv.org/pdf/1707.03237.pdf
@@ -272,4 +278,3 @@ class WeightedCrossEntropyLoss(torch.nn.Module):
         flattened_inputs = flatten(inputs)
         class_weights = (flattened_inputs.shape[1] - flattened_inputs.sum(-1)) / flattened_inputs.sum(-1)
         return class_weights
-
