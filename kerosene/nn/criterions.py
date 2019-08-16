@@ -50,7 +50,7 @@ class CriterionFactory(object):
             "TripletMarginLoss": nn.TripletMarginLoss,
         }
 
-    def create(self, criterion_type: Union[CriterionType, str], **params):
+    def create(self, criterion_type: Union[CriterionType, str], params):
         return self._criterion[str(criterion_type)](**params)
 
     def register(self, function: str, creator: _Loss):

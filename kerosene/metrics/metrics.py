@@ -38,7 +38,7 @@ class MetricFactory(object):
             "mIoU": mIoU,
         }
 
-    def create(self, metric_type: Union[str, MetricType], **params):
+    def create(self, metric_type: Union[str, MetricType], params):
         return self._metrics[str(metric_type)](**params)
 
     def register(self, metric: str, creator: Metric):

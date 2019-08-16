@@ -27,7 +27,7 @@ class SchedulerFactory(object):
             "CosineAnnealingLR": CosineAnnealingLR,
         }
 
-    def create(self, scheduler_type: Union[str, SchedulerType], optimizer: Optimizer, **params):
+    def create(self, scheduler_type: Union[str, SchedulerType], optimizer: Optimizer, params):
         return self._schedulers[str(scheduler_type)](optimizer=optimizer, **params)
 
     def register(self, function: str, creator: _LRScheduler):

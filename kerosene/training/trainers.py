@@ -12,6 +12,7 @@ from kerosene.events.generators.base_generator import EventGenerator
 from kerosene.events.preprocessors.base_preprocessor import HandlerPreprocessor
 from kerosene.metrics.gauges import AverageGauge
 from kerosene.metrics.metrics import MetricFactory
+from kerosene.models.models import ModelFactory
 from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
@@ -246,18 +247,24 @@ class SimpleTrainer(Trainer):
 
 
 class ModelTrainerFactory(object):
-    def __init__(self, model_factory):
+    def __init__(self, model_factory: ModelFactory, optimizer_factory=OptimizerFactory(),
+                 scheduler_factory=SchedulerFactory(), criterion_factory=CriterionFactory(),
+                 metric_factory=MetricFactory()):
         self._model_factory = model_factory
+        self._optimizer_factory = optimizer_factory
+        self._scheduler_factory = scheduler_factory
+        self._criterion_factory = criterion_factory
+        self._metric_factory = metric_factory
 
     def create(self, model_trainer_config: ModelTrainerConfiguration):
         model = self._model_factory.create(model_trainer_config.model_type,
                                            model_trainer_config.model_params)
-        optimizer = OptimizerFactory.create(model_trainer_config.optimizer_type,
-                                            model_trainer_config.optimizer_params)
-        scheduler = SchedulerFactory.create(model_trainer_config.scheduler_type, optimizer,
-                                            model_trainer_config.scheduler_params)
-        criterion = CriterionFactory.create(model_trainer_config.criterion_type,
-                                            model_trainer_config.criterion_params)
-        metric = MetricFactory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
+        optimizer = self._optimizer_factory.create(model_trainer_config.optimizer_type,
+                                                   model_trainer_config.optimizer_params)
+        scheduler = self._scheduler_factory.create(model_trainer_config.scheduler_type, optimizer,
+                                                   model_trainer_config.scheduler_params)
+        criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
+                                                   model_trainer_config.criterion_params)
+        metric = self._metric_factory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
 
         return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric)

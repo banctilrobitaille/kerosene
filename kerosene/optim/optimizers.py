@@ -28,7 +28,7 @@ class OptimizerFactory(object):
             "SGD": optim.SGD,
         }
 
-    def create(self, optimizer_type: Union[str, OptimizerType], **params):
+    def create(self, optimizer_type: Union[str, OptimizerType], params):
         return self._optimizers[str(optimizer_type)](**params)
 
     def register(self, function: str, creator: Optimizer):
