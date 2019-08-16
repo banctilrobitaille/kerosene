@@ -124,6 +124,14 @@ class TestGeneralizedDiceLoss(unittest.TestCase):
         assert_that(calling(generalized_dice_loss.forward).with_args(inputs=None, targets=self.y_true_tensor),
                     raises(AttributeError))
 
+    def test_should_raise_exception_with_bad_ignore_index_values(self):
+        generalized_dice_loss = GeneralizedDiceLoss(ignore_index=self.INVALID_VALUE_3)
+
+        assert_that(calling(generalized_dice_loss.forward).with_args(inputs=self.y_logits,
+                                                                     targets=to_onehot(self.y_true_tensor,
+                                                                                       num_classes=3)),
+                    raises(IndexError))
+
     def test_should_compute_generalized_dice(self):
         generalized_dice_loss = GeneralizedDiceLoss()
         loss = generalized_dice_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3))
