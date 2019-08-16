@@ -59,7 +59,6 @@ class TestDiceLoss(unittest.TestCase):
     INVALID_VALUE_2 = "STEVE JOBS"
     INVALID_VALUE_3 = 10
     INVALID_VALUE_4 = 11
-    INVALID_REDUCTION = "sum"
 
     def setUp(self):
         self.y_true, self.y_pred = get_y_true_y_pred()
@@ -68,10 +67,7 @@ class TestDiceLoss(unittest.TestCase):
         self.mean_dice_loss = np.subtract(1.0, np.mean(self.dice))
 
     def test_should_raise_exception_with_bad_values(self):
-        assert_that(calling(DiceLoss).with_args(reduction=self.INVALID_REDUCTION), raises(AssertionError))
-
         dice_loss = DiceLoss()
-
         assert_that(calling(dice_loss.forward).with_args(inputs=None, targets=None),
                     raises(AttributeError))
         assert_that(calling(dice_loss.forward).with_args(inputs=self.y_logits, targets=None),
@@ -87,13 +83,13 @@ class TestDiceLoss(unittest.TestCase):
 
     def test_should_compute_dice_for_multiclass_with_ignored_index(self):
         for ignore_index in range(3):
-            dice_loss = DiceLoss(reduction=None, ignore_index=ignore_index)
+            dice_loss = DiceLoss(ignore_index=ignore_index)
             res = dice_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3))
             true_res = np.subtract(1.0, self.dice[:ignore_index] + self.dice[ignore_index + 1:])
             np.testing.assert_almost_equal(res.numpy(), true_res), "{}: {} vs {}".format(ignore_index, res, true_res)
 
     def test_should_compute_mean_dice(self):
-        dice_loss = DiceLoss()
+        dice_loss = DiceLoss(reduction="mean")
         loss = dice_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3))
 
         np.testing.assert_almost_equal(loss.numpy(), self.mean_dice_loss)
@@ -120,10 +116,7 @@ class TestGeneralizedDiceLoss(unittest.TestCase):
         self.mean_generalized_dice_loss = np.subtract(1.0, np.mean(self.generalized_dice_loss))
 
     def test_should_raise_exception_with_bad_values(self):
-        assert_that(calling(GeneralizedDiceLoss).with_args(reduction=self.INVALID_REDUCTION), raises(AssertionError))
-
         generalized_dice_loss = GeneralizedDiceLoss()
-
         assert_that(calling(generalized_dice_loss.forward).with_args(inputs=None, targets=None),
                     raises(AttributeError))
         assert_that(calling(generalized_dice_loss.forward).with_args(inputs=self.y_logits, targets=None),
@@ -164,7 +157,6 @@ class TestWeightedCrossEntropy(unittest.TestCase):
     INVALID_VALUE_2 = "STEVE JOBS"
     INVALID_VALUE_3 = 10
     INVALID_VALUE_4 = 11
-    INVALID_REDUCTION = "sum"
     WEIGHTED_CROSS_ENTROPY_LOSS_TRUTH = 1.0808
 
     def setUp(self):
@@ -172,15 +164,11 @@ class TestWeightedCrossEntropy(unittest.TestCase):
         self.y_true_tensor, self.y_logits = compute_tensor_y_true_y_logits(self.y_true, self.y_pred)
 
     def test_should_raise_exception_with_bad_values(self):
-        assert_that(calling(WeightedCrossEntropyLoss).with_args(reduction=self.INVALID_REDUCTION),
-                    raises(AssertionError))
-
         weighted_cross_entropy_loss = WeightedCrossEntropyLoss()
-
         assert_that(calling(weighted_cross_entropy_loss.forward).with_args(inputs=None, targets=None),
                     raises(AttributeError))
         assert_that(calling(weighted_cross_entropy_loss.forward).with_args(inputs=self.y_logits, targets=None),
-                    raises(ValueError))
+                    raises(AttributeError))
         assert_that(calling(weighted_cross_entropy_loss.forward).with_args(inputs=None, targets=self.y_true_tensor),
                     raises(AttributeError))
 

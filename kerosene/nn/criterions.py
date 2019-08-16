@@ -1,17 +1,13 @@
 from enum import Enum
 from typing import Union
 
-import abc
 import torch
 from torch import nn
 from torch.nn.modules.loss import _Loss
 
 from kerosene.utils import flatten
+from kerosene.utils.constants import EPSILON
 from ignite.metrics import MetricsLambda
-
-SUPPORTED_REDUCTIONS = [None, "mean"]
-EPSILON = 1e-15
-
 
 class CriterionType(Enum):
     BCELoss = "BCELoss"
@@ -74,43 +70,19 @@ class CriterionFactory(object):
         self._criterion[function] = creator
 
 
-class AbstractCriterion(_Loss):
-
-    @abc.abstractmethod
-    def forward(self, *args, **kwargs):
-        raise NotImplementedError()
-
-    @staticmethod
-    def validate_ignore_index(ignore_index: int, input_shape: int):
-        """
-        Validate the `ignore_index` variable.
-
-        Args:
-            ignore_index (int): An index of a class to ignore for computation.
-            input_shape (int): Input tensor.
-        """
-        if ignore_index is not None:
-            if not ignore_index >= 0:
-                raise ValueError("'ignore_index' must be non-negative, but given {}".format(ignore_index))
-
-        if ignore_index > input_shape:
-            raise ValueError(
-                "'ignore index' must be lower than the number of classes in confusion matrix, but {} was given.".format(
-                    ignore_index))
-
-
-class DiceLoss(AbstractCriterion):
+class DiceLoss(_Loss):
     """
     The Sørensen-Dice Loss.
     """
+    SUPPORTED_REDUCTIONS = [None, "mean"]
 
-    def __init__(self, reduction: Union[None, str] = "mean", ignore_index: int = None):
-        super(DiceLoss, self).__init__()
-        assert reduction in SUPPORTED_REDUCTIONS, "Reduction type not supported."
-        self._reduction = reduction
+    def __init__(self, reduction: Union[None, str] = "mean", ignore_index: int = -100, weight: torch.Tensor = None):
+        assert reduction in self.SUPPORTED_REDUCTIONS, "Reduction type not supported."
+        super(DiceLoss, self).__init__(reduction=reduction)
         self._ignore_index = ignore_index
+        self._weight = weight
 
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor, weights: torch.Tensor = None):
+    def forward(self, inputs: torch.Tensor, targets: torch.Tensor):
         """
         Computes the Sørensen–Dice loss.
 
@@ -121,8 +93,6 @@ class DiceLoss(AbstractCriterion):
             inputs (:obj:`torch.Tensor`) : A tensor of shape (B, C, ..). The model prediction on which the loss has to
              be computed.
             targets (:obj:`torch.Tensor`) : A tensor of shape (B, C, ..). The ground truth.
-            ignore_index (int): An index to ignore for computation.
-            weights (:obj:`torch.Tensor`): A class weight vector of shape (C, ), one per class.
 
         Returns:
             :obj:`torch.Tensor`: The Sørensen–Dice loss for each class or reduced according to reduction method.
@@ -141,16 +111,16 @@ class DiceLoss(AbstractCriterion):
         # Compute per channel Dice Coefficient
         intersect = (inputs * targets).sum(-1)
 
-        if weights is not None:
-            if weights.requires_grad is not False:
-                weights.requires_grad = False
-            intersect = weights * intersect
+        if self._weight is not None:
+            if self._weight.requires_grad is not False:
+                self._weight.requires_grad = False
+            intersect = self._weight * intersect
 
         denominator = (inputs + targets).sum(-1)
 
         dice = 1.0 - (2.0 * intersect / denominator.clamp(min=EPSILON))
 
-        if self._ignore_index is not None:
+        if self._ignore_index != -100:
             def ignore_index_fn(dice_vector):
                 indices = list(range(len(dice_vector)))
                 indices.remove(self._ignore_index)
@@ -159,24 +129,42 @@ class DiceLoss(AbstractCriterion):
             return MetricsLambda(ignore_index_fn, dice).compute()
 
         else:
-            if self._reduction == "mean":
+            if self.reduction == "mean":
                 dice = 1.0 - (2.0 * intersect / denominator.clamp(min=EPSILON)).mean()
-            elif self._reduction is None:
+            elif self.reduction is None:
                 pass
             else:
                 raise NotImplementedError("Reduction method not implemented.")
             return dice
 
+    @staticmethod
+    def validate_ignore_index(ignore_index: int, input_shape: int):
+        """
+        Validate the `ignore_index` variable.
 
-class GeneralizedDiceLoss(AbstractCriterion):
+        Args:
+            ignore_index (int): An index of a class to ignore for computation.
+            input_shape (int): Input tensor.
+        """
+        if ignore_index != -100:
+            if not ignore_index >= 0:
+                raise ValueError("'ignore_index' must be non-negative, but given {}".format(ignore_index))
+
+        if ignore_index > input_shape:
+            raise ValueError(
+                "'ignore index' must be lower than the number of classes in confusion matrix, but {} was given.".format(
+                    ignore_index))
+
+
+class GeneralizedDiceLoss(_Loss):
     """
       The Generalized Sørensen-Dice Loss.
       """
+    SUPPORTED_REDUCTIONS = [None, "mean"]
 
-    def __init__(self, reduction: Union[None, str] = "mean", ignore_index: int = None):
-        super(GeneralizedDiceLoss, self).__init__()
-        assert reduction in SUPPORTED_REDUCTIONS, "Reduction type not supported."
-        self._reduction = reduction
+    def __init__(self, reduction: Union[None, str] = "mean", ignore_index: int = -100):
+        assert reduction in self.SUPPORTED_REDUCTIONS, "Reduction type not supported."
+        super(GeneralizedDiceLoss, self).__init__(reduction=reduction)
         self._ignore_index = ignore_index
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor):
@@ -190,7 +178,6 @@ class GeneralizedDiceLoss(AbstractCriterion):
             inputs (:obj:`torch.Tensor`) : A tensor of shape (B, C, ..). The model prediction on which the loss has to
              be computed.
             targets (:obj:`torch.Tensor`) : A tensor of shape (B, C, ..). The ground truth.
-            ignore_index (int): An index to ignore for computation.
 
         Returns:
             :obj:`torch.Tensor`: The Sørensen–Dice loss for each class or reduced according to reduction method.
@@ -215,7 +202,7 @@ class GeneralizedDiceLoss(AbstractCriterion):
 
         dice = 1.0 - (2.0 * intersect / denominator.clamp(min=EPSILON))
 
-        if self._ignore_index is not None:
+        if self._ignore_index != -100:
             def ignore_index_fn(dice_vector):
                 indices = list(range(len(dice_vector)))
                 indices.remove(self._ignore_index)
@@ -224,21 +211,37 @@ class GeneralizedDiceLoss(AbstractCriterion):
             return MetricsLambda(ignore_index_fn, dice).compute()
 
         else:
-            if self._reduction == "mean":
+            if self.reduction == "mean":
                 dice = 1.0 - (2.0 * intersect / denominator.clamp(min=EPSILON)).mean()
-            elif self._reduction is None:
+            elif self.reduction is None:
                 pass
             else:
                 raise NotImplementedError("Reduction method not implemented.")
             return dice
 
+    @staticmethod
+    def validate_ignore_index(ignore_index: int, input_shape: int):
+        """
+        Validate the `ignore_index` variable.
 
-class WeightedCrossEntropyLoss(AbstractCriterion):
+        Args:
+            ignore_index (int): An index of a class to ignore for computation.
+            input_shape (int): Input tensor.
+        """
+        if ignore_index != -100:
+            if not ignore_index >= 0:
+                raise ValueError("'ignore_index' must be non-negative, but given {}".format(ignore_index))
 
-    def __init__(self, reduction="mean", ignore_index: int = None):
+        if ignore_index > input_shape:
+            raise ValueError(
+                "'ignore index' must be lower than the number of classes in confusion matrix, but {} was given.".format(
+                    ignore_index))
+
+
+class WeightedCrossEntropyLoss(_Loss):
+
+    def __init__(self, ignore_index: int = -100):
         super(WeightedCrossEntropyLoss, self).__init__()
-        assert reduction in SUPPORTED_REDUCTIONS, "Reduction is not supported."
-        self._reduction = reduction
         self._ignore_index = ignore_index
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> float:
@@ -248,16 +251,13 @@ class WeightedCrossEntropyLoss(AbstractCriterion):
         Args:
             inputs (:obj:`torch.Tensor`): A tensor of shape (B, C, ..). The model's prediction on which the loss has to be computed.
             targets (:obj:`torch.Tensor`): A tensor of shape (B, ..). The ground truth.
-            ignore_index (int): An index to ignore for computation.
 
        Returns:
            float: the weighted Cross-Entropy loss value.
 
         """
-        if self._ignore_index is not None:
+        if self._ignore_index != -100:
             self.validate_ignore_index(self._ignore_index, inputs.shape[1])
-        else:
-            self._ignore_index = -100
 
         class_weights = self.compute_class_weights(inputs)
 
