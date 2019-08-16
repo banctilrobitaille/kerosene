@@ -78,7 +78,8 @@ class DiceLoss(_Loss):
     SUPPORTED_REDUCTIONS = [None, "mean"]
 
     def __init__(self, reduction: Union[None, str] = "mean", ignore_index: int = -100, weight: torch.Tensor = None):
-        assert reduction in self.SUPPORTED_REDUCTIONS, "Reduction type not supported."
+        if reduction not in self.SUPPORTED_REDUCTIONS:
+            raise NotImplementedError("Reduction type not supported.")
         super(DiceLoss, self).__init__(reduction=reduction)
         self._ignore_index = ignore_index
         self._weight = weight
@@ -131,14 +132,12 @@ class DiceLoss(_Loss):
                         "'ignore_index' must be non-negative, and lower than the number of classes in confusion matrix, but {} was given. ".format(
                             self._ignore_index))
 
-            return MetricsLambda(ignore_index_fn, dice).compute()
+            dice = MetricsLambda(ignore_index_fn, dice).compute()
 
-        else:
-            if self.reduction == "mean":
-                dice = 1.0 - (2.0 * intersect / denominator.clamp(min=EPSILON)).mean()
-            else:
-                raise NotImplementedError("Reduction method not implemented.")
-            return dice
+        if self.reduction == "mean":
+            dice = dice.mean()
+            
+        return dice
 
 
 class GeneralizedDiceLoss(_Loss):
@@ -148,7 +147,8 @@ class GeneralizedDiceLoss(_Loss):
     SUPPORTED_REDUCTIONS = [None, "mean"]
 
     def __init__(self, reduction: Union[None, str] = "mean", ignore_index: int = -100):
-        assert reduction in self.SUPPORTED_REDUCTIONS, "Reduction type not supported."
+        if reduction not in self.SUPPORTED_REDUCTIONS:
+            raise NotImplementedError("Reduction type not supported.")
         super(GeneralizedDiceLoss, self).__init__(reduction=reduction)
         self._ignore_index = ignore_index
 
@@ -195,14 +195,12 @@ class GeneralizedDiceLoss(_Loss):
                         "'ignore_index' must be non-negative, and lower than the number of classes in confusion matrix, but {} was given. ".format(
                             self._ignore_index))
 
-            return MetricsLambda(ignore_index_fn, dice).compute()
+            dice = MetricsLambda(ignore_index_fn, dice).compute()
 
-        else:
-            if self.reduction == "mean":
-                dice = 1.0 - (2.0 * intersect / denominator.clamp(min=EPSILON)).mean()
-            else:
-                raise NotImplementedError("Reduction method not implemented.")
-            return dice
+        if self.reduction == "mean":
+            dice = dice.mean()
+
+        return dice
 
 
 class WeightedCrossEntropyLoss(_Loss):
