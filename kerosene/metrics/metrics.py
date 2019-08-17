@@ -5,7 +5,7 @@ import torch
 from ignite.metrics import Accuracy, Precision, MeanAbsoluteError, MeanPairwiseDistance, MeanSquaredError, Recall, \
     RootMeanSquaredError, TopKCategoricalAccuracy, IoU, mIoU, Metric, ConfusionMatrix, MetricsLambda
 
-from kerosene.utils.utils import flatten
+from kerosene.utils.utils import flatten, to_onehot
 from kerosene.utils.constants import EPSILON
 
 
@@ -205,15 +205,9 @@ class GeneralizedDice(Metric):
         Args:
             output (tuple of :obj:`torch.Tensor`): A tuple containing predictions and ground truth of the form `(y_pred, y)`.
         """
-        flattened_targets = targets = flatten(output[1]).double()
-
-
-        # weights = torch.Tensor().new_zeros((output[0].size(1), ), dtype=torch.double)
-        # one = torch.Tensor().new_ones((output[0].size(1), ), dtype=torch.double)
-        # for index in range(output[0].shape[1]):
-        #     bin_y_true = output[1] == index
-        #     bin_y_true = bin_y_true.squeeze(0)
-        #     weights[index] = one[index] / (torch.sum(bin_y_true) * torch.sum(bin_y_true)).clamp(min=EPSILON)
+        flattened_targets = flatten(to_onehot(output[1], output[0].size(1))).double()
+        ones = torch.Tensor().new_ones((output[0].size(1),), dtype=torch.double, device=flattened_targets.device)
+        weights = ones / torch.pow(flattened_targets.sum(-1), 2).clamp(min=EPSILON)
 
         self._metric = self.create_generalized_dice_metric(self._cm, weights)
 
