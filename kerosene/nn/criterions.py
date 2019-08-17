@@ -107,10 +107,8 @@ class DiceLoss(_Loss):
             raise ValueError("'Inputs' and 'Targets' must have the same shape.")
 
         inputs = flatten(inputs)
-        targets = flatten(targets)
-
-        targets = targets.float()
-
+        targets = flatten(targets).float()
+        
         # Compute per channel Dice Coefficient
         intersect = (inputs * targets).sum(-1)
 
@@ -171,9 +169,7 @@ class GeneralizedDiceLoss(_Loss):
             raise ValueError("'Inputs' and 'Targets' must have the same shape.")
 
         inputs = flatten(inputs)
-        targets = flatten(targets)
-
-        targets = targets.float()
+        targets = flatten(targets).float()
 
         class_weights = 1.0 / torch.pow(targets.sum(-1), 2).clamp(min=EPSILON)
 
