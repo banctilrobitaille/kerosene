@@ -1,11 +1,11 @@
 from enum import Enum
 from typing import Union, Tuple
 
-import abc
 import torch
-
 from ignite.metrics import Accuracy, Precision, MeanAbsoluteError, MeanPairwiseDistance, MeanSquaredError, Recall, \
     RootMeanSquaredError, TopKCategoricalAccuracy, IoU, mIoU, Metric, ConfusionMatrix, MetricsLambda
+
+from kerosene.utils.constants import EPSILON
 
 
 class MetricType(Enum):
@@ -58,8 +58,10 @@ class Dice(Metric):
     """
     The Dice Metric.
     """
+    SUPPORTED_REDUCTIONS = [None, "mean"]
 
-    def __init__(self, num_classes: int, reduction: str = None, average: str = None, ignore_index: int = -100,
+    def __init__(self, num_classes: int, reduction: Union[None, str] = "mean", average: str = None,
+                 ignore_index: int = -100,
                  output_transform: callable = lambda x: x) -> None:
         """
         Metric initializer.
@@ -78,21 +80,13 @@ class Dice(Metric):
                 form expected by the metric. This can be useful if, for example, you have a multi-output model and
                 you want to compute the metric with respect to one of the outputs.
         """
+        if reduction not in self.SUPPORTED_REDUCTIONS:
+            raise NotImplementedError("Reduction type not supported.")
         self._num_classes = num_classes
-        self._average = average
         self._ignore_index = ignore_index
         self._reduction = reduction
-        self._cm = ConfusionMatrix(num_classes=num_classes, average=average,
-                                   output_transform=output_transform)
-        self._metric = self.compute_dice_coefficient(self._cm, self._ignore_index)
-
-        if self._reduction == "mean":
-            self._metric = self.compute_mean_dice_coefficient(self._cm, self._ignore_index)
-        elif None:
-            pass
-        else:
-            raise NotImplementedError("Reduction method not implemented.")
-
+        self._cm = ConfusionMatrix(num_classes=num_classes, average=average, output_transform=output_transform)
+        self._metric = self.create_dice_metric(self._cm)
         super(Dice, self).__init__(output_transform=output_transform)
 
     def reset(self) -> None:
@@ -119,55 +113,44 @@ class Dice(Metric):
         """
         self._cm.update(output)
 
-    @staticmethod
-    def compute_dice_coefficient(cm: ConfusionMatrix, ignore_index: int = -100):
+    def create_dice_metric(self, cm: ConfusionMatrix):
         """
         Computes the Sørensen–Dice Coefficient (https://en.wikipedia.org/wiki/Sørensen–Dice_coefficient)
 
         Args:
             cm (:obj:`ignite.metrics.ConfusionMatrix`): A confusion matrix representing the classification of data.
-            ignore_index (int): An index of a class to ignore for computation.
 
         Returns:
-            array: The Sørensen–Dice Coefficient for each class.
+            array or float: The Sørensen–Dice Coefficient for each class or the mean Sørensen–Dice Coefficient.
         """
         # Increase floating point precision
         cm = cm.type(torch.float64)
         dice = 2 * cm.diag() / (cm.sum(dim=1) + cm.sum(dim=0) + EPSILON)
 
-        if ignore_index is not None:
+        if self._ignore_index != -100:
             def remove_index(dice_vector):
                 try:
-                    indices = [x for x in range(len(dice_vector)) if x != ignore_index]
+                    indices = list(range(len(dice_vector)))
+                    indices.remove(self._ignore_index)
                     return dice_vector[indices]
                 except ValueError as e:
                     raise IndexError(
                         "'ignore_index' must be non-negative, and lower than the number of classes in confusion matrix, but {} was given. ".format(
-                            ignore_index))
+                            self._ignore_index))
 
-            return MetricsLambda(remove_index, dice)
-        else:
-            return dice
+            dice = MetricsLambda(remove_index, dice)
 
-    @staticmethod
-    def compute_mean_dice_coefficient(cm: ConfusionMatrix, ignore_index: int = None):
-        """
-        Computes the mean Sørensen–Dice Coefficient.
+        if self._reduction == "mean":
+            dice = dice.mean()
 
-        Args:
-            cm (:obj:`ignite.metrics.ConfusionMatrix`): A confusion matrix representing the classification of data.
-            ignore_index (int): An index of a class to ignore for computation.
-
-        Returns:
-            float: The mean Sørensen–Dice Coefficient.
-        """
-        return Dice.compute_dice_coefficient(cm=cm, ignore_index=ignore_index).mean()
+        return dice
 
 
 class GeneralizedDice(Metric):
     """
     The Generalized Dice Metric.
     """
+    SUPPORTED_REDUCTIONS = [None, "mean"]
 
     def __init__(self, num_classes: int, reduction: str = None, average: str = None,
                  ignore_index: int = -100, output_transform: callable = lambda x: x) -> None:
@@ -188,6 +171,8 @@ class GeneralizedDice(Metric):
                 form expected by the metric. This can be useful if, for example, you have a multi-output model and
                 you want to compute the metric with respect to one of the outputs.
         """
+        if reduction not in self.SUPPORTED_REDUCTIONS:
+            raise NotImplementedError("Reduction type not supported.")
         self._num_classes = num_classes
         self._average = average
         self._ignore_index = ignore_index
@@ -212,69 +197,53 @@ class GeneralizedDice(Metric):
         """
         return self._metric.compute()
 
-    def update(self, output: Tuple[torch.Tensor, torch.Tensor], weight: torch.Tensor = None) -> None:
+    def update(self, output: Tuple[torch.Tensor, torch.Tensor]) -> None:
         """
         Update the confusion matrix with output values.
 
         Args:
             output (tuple of :obj:`torch.Tensor`): A tuple containing predictions and ground truth.
-            weight (:obj:`torch.Tensor`, optional): A weight vector which length equals to the number of classes.
         """
 
-        self._metric = self.compute_generalized_dice_coefficient(self._cm, weight, self._ignore_index)
+        weight = 1.0 / (output[1].sum(-1) * output[1].sum(-1).clamp(min=EPSILON))
+
+        self._metric = self.create_generalized_dice_metric(self._cm, weight)
 
         if self._reduction == "mean":
             self._metric = self._metric.mean()
+        elif self._reduction is None:
+            pass
         else:
             raise NotImplementedError("Reduction method not implemented.")
 
         self._cm.update(output)
 
-    @staticmethod
-    def compute_mean_generalized_dice_coefficient(cm: ConfusionMatrix, weight: torch.Tensor,
-                                                  ignore_index: int = -100):
-        """
-        Computes the mean Generalized Dice Coefficient.
-
-        Args:
-            cm (:obj:`ignite.metrics.ConfusionMatrix`): A confusion matrix representing the classification of data.
-            weight (:obj:`torch.Tensor`): A tensor representing weights for each classes.
-            ignore_index (int): An index of a class to ignore for computation.
-
-        Returns:
-            float: The mean Generalized Dice Coefficient.
-        """
-        return GeneralizedDice.compute_generalized_dice_coefficient(cm=cm, ignore_index=ignore_index,
-                                                                    weight=weight).mean()
-
-    @staticmethod
-    def compute_generalized_dice_coefficient(cm: ConfusionMatrix, weight: torch.Tensor,
-                                             ignore_index: int = -100):
+    def create_generalized_dice_metric(self, cm: ConfusionMatrix, weight: torch.Tensor):
         """
         Computes the Sørensen–Dice Coefficient (https://en.wikipedia.org/wiki/Sørensen–Dice_coefficient)
 
         Args:
             cm (:obj:`ignite.metrics.ConfusionMatrix`): A confusion matrix representing the classification of data.
-            ignore_index (int): An index of a class to ignore for computation.
             weight (:obj:`torch.Tensor`): A weight vector which length equals to the number of classes.
 
         Returns:
-            array: The Generalized Dice Coefficient for each class.
+            ignite.Metric: The Generalized Dice Coefficient Metric object.
         """
 
         # Increase floating point precision
         cm = cm.type(torch.float64)
         dice = 2 * (cm.diag() * weight) / (((cm.sum(dim=1) + cm.sum(dim=0)) * weight) + EPSILON)
 
-        if ignore_index != -100:
+        if self._ignore_index != -100:
             def remove_index(dice_vector):
                 try:
-                    indices = [x for x in range(len(dice_vector)) if x != ignore_index]
+                    indices = list(range(len(dice_vector)))
+                    indices.remove(self._ignore_index)
                     return dice_vector[indices]
                 except ValueError as e:
                     raise IndexError(
                         "'ignore_index' must be non-negative, and lower than the number of classes in confusion matrix, but {} was given. ".format(
-                            ignore_index))
+                            self._ignore_index))
 
             return MetricsLambda(remove_index, dice)
         else:
