@@ -109,7 +109,7 @@ class Dice(Metric):
         Update the confusion matrix with output values.
 
         Args:
-            output (tuple of :obj:`torch.Tensor`): A tuple containing predictions and ground truth.
+            output (tuple of :obj:`torch.Tensor`): A tuple containing predictions and ground truth of the form `(y_pred, y)`.
         """
         self._cm.update(output)
 
@@ -202,7 +202,7 @@ class GeneralizedDice(Metric):
         Update the confusion matrix with output values.
 
         Args:
-            output (tuple of :obj:`torch.Tensor`): A tuple containing predictions and ground truth.
+            output (tuple of :obj:`torch.Tensor`): A tuple containing predictions and ground truth of the form `(y_pred, y)`.
         """
         weights = torch.Tensor().new_zeros(output[0].shape[1], dtype=torch.double)
         one = torch.Tensor().new_ones((output[0].shape[1]), dtype=torch.double)
