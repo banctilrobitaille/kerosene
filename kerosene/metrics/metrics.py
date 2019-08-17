@@ -204,10 +204,14 @@ class GeneralizedDice(Metric):
         Args:
             output (tuple of :obj:`torch.Tensor`): A tuple containing predictions and ground truth.
         """
+        weights = torch.Tensor().new_zeros(output[0].shape[1], dtype=torch.double)
+        one = torch.Tensor().new_ones((output[0].shape[1]), dtype=torch.double)
+        for index in range(output[0].shape[1]):
+            bin_y_true = output[1] == index
+            bin_y_true = bin_y_true.squeeze(0)
+            weights[index] = one[index] / (torch.sum(bin_y_true) * torch.sum(bin_y_true)).clamp(min=EPSILON)
 
-        weight = 1.0 / (output[1].sum(-1) * output[1].sum(-1).clamp(min=EPSILON))
-
-        self._metric = self.create_generalized_dice_metric(self._cm, weight)
+        self._metric = self.create_generalized_dice_metric(self._cm, weights)
 
         if self._reduction == "mean":
             self._metric = self._metric.mean()
