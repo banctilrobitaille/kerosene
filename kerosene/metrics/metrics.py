@@ -204,8 +204,8 @@ class GeneralizedDice(Metric):
         Args:
             output (tuple of :obj:`torch.Tensor`): A tuple containing predictions and ground truth of the form `(y_pred, y)`.
         """
-        weights = torch.Tensor().new_zeros(output[0].shape[1], dtype=torch.double)
-        one = torch.Tensor().new_ones((output[0].shape[1]), dtype=torch.double)
+        weights = torch.Tensor().new_zeros((output[0].size(1), ), dtype=torch.double)
+        one = torch.Tensor().new_ones((output[0].size(1), ), dtype=torch.double)
         for index in range(output[0].shape[1]):
             bin_y_true = output[1] == index
             bin_y_true = bin_y_true.squeeze(0)
