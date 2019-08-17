@@ -2,7 +2,7 @@ import logging
 
 import yaml
 
-from kerosene.config.trainers import ModelTrainerConfiguration, TrainingConfiguration
+from kerosene.config.trainers import ModelTrainerConfiguration, TrainerConfiguration
 
 
 class YamlConfigurationParser(object):
@@ -18,7 +18,7 @@ class YamlConfigurationParser(object):
                     map(lambda model_name: ModelTrainerConfiguration.from_dict(model_name,
                                                                                config["models"][model_name]),
                         config["models"]))
-                training_config = TrainingConfiguration(config['training'])
+                training_config = TrainerConfiguration(config['training'])
                 return model_trainer_configs, training_config
             except yaml.YAMLError as e:
                 YamlConfigurationParser.LOGGER.warning(

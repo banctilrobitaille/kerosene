@@ -1,4 +1,41 @@
-class TrainingConfiguration(object):
+from typing import Union, Iterable
+
+import torch
+
+
+class RunConfiguration(object):
+    def __init__(self, use_amp=True, amp_opt_level="02",
+                 devices=(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))):
+        self._use_amp = use_amp
+        self._amp_opt_level = amp_opt_level
+        self._devices = devices
+
+    @property
+    def use_amp(self):
+        return self._use_amp
+
+    @property
+    def amp_opt_level(self):
+        return self._amp_opt_level
+
+    @property
+    def devices(self):
+        return self._devices
+
+    def with_amp_opt_level(self, amp_opt_level: str):
+        self._amp_opt_level = amp_opt_level
+        return self
+
+    def with_use_amp(self, use_amp):
+        self._use_amp = use_amp
+        return self
+
+    def with_devices(self, devices: Union[Iterable[int], Iterable[torch.device]]):
+        self._devices = devices
+        return self
+
+
+class TrainerConfiguration(object):
     def __init__(self, config_dict):
         for key in config_dict:
             setattr(self, key, config_dict[key])

@@ -6,7 +6,7 @@ from ignite.metrics import Metric
 from torch import nn
 from torch.utils.data import DataLoader
 
-from kerosene.config.trainers import ModelTrainerConfiguration
+from kerosene.config.trainers import ModelTrainerConfiguration, RunConfiguration
 from kerosene.events import Event
 from kerosene.events.generators.base_generator import EventGenerator
 from kerosene.events.preprocessors.base_preprocessor import HandlerPreprocessor, Identity
@@ -17,6 +17,7 @@ from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training.state import TrainerState, ModelTrainerState
+from kerosene.utils.distributed import on_single_device
 
 try:
     from apex import amp
@@ -28,17 +29,13 @@ except ModuleNotFoundError:
 
 class ModelTrainer(nn.Module):
 
-    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric):
+    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric,
+                 run_config: RunConfiguration):
         super().__init__()
         self._model_name = model_name
 
-        if APEX_AVAILABLE:
-            self._model, self._optimizer = amp.initialize(
-                model, optimizer, opt_level="O2")
-        else:
-            self._model = model
-            self._optimizer = optimizer
-
+        self._model = model
+        self._optimizer = optimizer
         self._criterion = criterion
         self._scheduler = scheduler
         self._metric_computer = metric_computer
@@ -52,6 +49,16 @@ class ModelTrainer(nn.Module):
         self._valid_loss = AverageGauge()
         self._train_metric = AverageGauge()
         self._valid_metric = AverageGauge()
+
+        self.run_config = run_config
+
+    @property
+    def model(self):
+        return self._model
+
+    @model.setter
+    def model(self, value):
+        self._model = value
 
     @property
     def optimizer_state(self):
@@ -75,8 +82,8 @@ class ModelTrainer(nn.Module):
                                  self._valid_loss.compute(),
                                  self._train_metric.compute(),
                                  self._valid_metric.compute(),
-                                 self.model_state,
-                                 self.optimizer_state)
+                                 self._model,
+                                 self._optimizer)
 
     def forward(self, *input):
         return self._model.forward(*input)
@@ -97,13 +104,20 @@ class ModelTrainer(nn.Module):
         self._step_train_loss = self._criterion(pred, target)
         self._train_loss.update(self._step_train_loss)
 
-        return amp.scale_loss(self._step_train_loss, self._optimizer) if APEX_AVAILABLE else self._step_train_loss
+        return self._step_train_loss
 
     def compute_valid_loss(self, pred, target):
         self._step_valid_loss = self._criterion(pred, target)
         self._valid_loss.update(self._step_valid_loss)
 
-        return amp.scale_loss(self._step_valid_loss, self._optimizer) if APEX_AVAILABLE else self._step_valid_loss
+        return self._step_valid_loss
+
+    def backward(self, loss):
+        if APEX_AVAILABLE:
+            with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                scaled_loss.bacward()
+        else:
+            loss.backward()
 
     def compute_train_metric(self, pred, target):
         self._metric_computer.update((pred, target))
@@ -128,11 +142,22 @@ class ModelTrainer(nn.Module):
         self._train_metric.reset()
         self._valid_metric.reset()
 
+    def configure(self, run_config: RunConfiguration):
+        if APEX_AVAILABLE and run_config.use_amp:
+            self._model, self._optimizer = amp.initialize(
+                self._model, self._optimizer, opt_level=run_config.amp_opt_level)
+
+        if on_single_device(run_config.devices):
+            self._model.cuda(device=run_config.devices[0])
+        else:
+            # TODO implement distributed training
+            raise NotImplementedError("Distributed training is not yet supported")
+
 
 class Trainer(EventGenerator):
 
     def __init__(self, train_data_loader: DataLoader, valid_data_loader: DataLoader,
-                 model_trainers: Union[List[ModelTrainer], ModelTrainer]):
+                 model_trainers: Union[List[ModelTrainer], ModelTrainer], run_config: RunConfiguration):
         super().__init__()
         self._train_data_loader = train_data_loader
         self._valid_data_loader = valid_data_loader
@@ -141,6 +166,11 @@ class Trainer(EventGenerator):
         self._current_train_batch = 0
         self._current_valid_batch = 0
         self._current_epoch = 0
+
+        self._run_config = run_config
+
+        for model_trainer in self._model_trainers:
+            model_trainer.configure(self._run_config)
 
     @property
     def nb_of_train_batch(self):
@@ -201,7 +231,12 @@ class Trainer(EventGenerator):
 
         for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
             self.fire(Event.ON_TRAIN_BATCH_BEGIN)
-            target = target.cuda(non_blocking=True)
+            if on_single_device(self._run_config.devices):
+                inputs.cuda(self._run_config.devices[0])
+                target = target.cuda(self._run_config.devices[0], non_blocking=True)
+            else:
+                # TODO Implement distributed training
+                raise NotImplementedError("Distributed training not implemented yet !")
             self.train_step(inputs, target)
             self.fire(Event.ON_TRAIN_BATCH_END)
 
