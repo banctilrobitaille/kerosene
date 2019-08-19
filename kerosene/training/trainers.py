@@ -235,7 +235,7 @@ class Trainer(EventGenerator):
                     inputs, list) else inputs.cuda(self._run_config.devices[0])
 
                 target = [single_target.cuda(self._run_config.devices[0]) for single_target in target] if isinstance(
-                    inputs, list) else target.cuda(self._run_config.devices[0])
+                    target, list) else target.cuda(self._run_config.devices[0])
             else:
                 # TODO Implement distributed training
                 raise NotImplementedError("Distributed training not implemented yet !")
@@ -256,7 +256,7 @@ class Trainer(EventGenerator):
                                   inputs] if isinstance(inputs, list) else inputs.cuda(self._run_config.devices[0])
 
                         target = [single_target.cuda(self._run_config.devices[0]) for single_target in
-                                  target] if isinstance(inputs, list) else target.cuda(self._run_config.devices[0])
+                                  target] if isinstance(target, list) else target.cuda(self._run_config.devices[0])
                 else:
                     # TODO Implement distributed training
                     raise NotImplementedError("Distributed training not implemented yet !")
