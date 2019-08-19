@@ -229,8 +229,11 @@ class Trainer(EventGenerator):
         for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
             self.fire(Event.ON_TRAIN_BATCH_BEGIN)
             if on_single_device(self._run_config.devices):
-                inputs = inputs.cuda(self._run_config.devices[0])
-                target = target.cuda(self._run_config.devices[0], non_blocking=True)
+                for single_input in inputs if isinstance(inputs, list) else [inputs]:
+                    single_input.cuda(self._run_config.devices[0])
+
+                for single_target in target if isinstance(target, list) else [target]:
+                    single_target.cuda(self._run_config.devices[0])
             else:
                 # TODO Implement distributed training
                 raise NotImplementedError("Distributed training not implemented yet !")
@@ -245,8 +248,11 @@ class Trainer(EventGenerator):
             for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
                 self.fire(Event.ON_VALID_BATCH_BEGIN)
                 if on_single_device(self._run_config.devices):
-                    inputs = inputs.cuda(self._run_config.devices[0])
-                    target = target.cuda(self._run_config.devices[0], non_blocking=True)
+                    for single_input in inputs if isinstance(inputs, list) else [inputs]:
+                        single_input.cuda(self._run_config.devices[0])
+
+                    for single_target in target if isinstance(target, list) else [target]:
+                        single_target.cuda(self._run_config.devices[0])
                 else:
                     # TODO Implement distributed training
                     raise NotImplementedError("Distributed training not implemented yet !")
