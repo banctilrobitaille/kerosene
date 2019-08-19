@@ -297,6 +297,7 @@ class ModelTrainerFactory(object):
         model = self._model_factory.create(model_trainer_config.model_type,
                                            model_trainer_config.model_params)
         optimizer = self._optimizer_factory.create(model_trainer_config.optimizer_type,
+                                                   model.parameters(),
                                                    model_trainer_config.optimizer_params)
         scheduler = self._scheduler_factory.create(model_trainer_config.scheduler_type, optimizer,
                                                    model_trainer_config.scheduler_params)
