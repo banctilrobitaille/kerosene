@@ -232,7 +232,7 @@ class Trainer(EventGenerator):
         for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
             self.fire(Event.ON_TRAIN_BATCH_BEGIN)
             if on_single_device(self._run_config.devices):
-                inputs.cuda(self._run_config.devices[0])
+                inputs = inputs.cuda(self._run_config.devices[0])
                 target = target.cuda(self._run_config.devices[0], non_blocking=True)
             else:
                 # TODO Implement distributed training
@@ -247,7 +247,12 @@ class Trainer(EventGenerator):
         with torch.no_grad():
             for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
                 self.fire(Event.ON_VALID_BATCH_BEGIN)
-                target = target.cuda(non_blocking=True)
+                if on_single_device(self._run_config.devices):
+                    inputs = inputs.cuda(self._run_config.devices[0])
+                    target = target.cuda(self._run_config.devices[0], non_blocking=True)
+                else:
+                    # TODO Implement distributed training
+                    raise NotImplementedError("Distributed training not implemented yet !")
                 self.validate_step(inputs, target)
                 self.fire(Event.ON_VALID_BATCH_END)
 
