@@ -5,7 +5,7 @@ import torch
 
 class RunConfiguration(object):
     def __init__(self, use_amp=True, amp_opt_level='O2',
-                 devices=(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))):
+                 devices=(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),)):
         self._use_amp = use_amp
         self._amp_opt_level = amp_opt_level
         self._devices = devices
