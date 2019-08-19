@@ -224,7 +224,8 @@ class Trainer(EventGenerator):
 
     def _train_epoch(self):
 
-        self._model_trainers = [model_trainer.train() for model_trainer in self._model_trainers]
+        for model_trainer in self._model_trainers:
+            model_trainer.train()
 
         for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
             self.fire(Event.ON_TRAIN_BATCH_BEGIN)
@@ -242,7 +243,8 @@ class Trainer(EventGenerator):
 
     def _validate_epoch(self):
 
-        self._model_trainers = [model_trainer.eval() for model_trainer in self._model_trainers]
+        for model_trainer in self._model_trainers:
+            model_trainer.eval()
 
         with torch.no_grad():
             for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
