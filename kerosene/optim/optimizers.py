@@ -29,7 +29,8 @@ class OptimizerFactory(object):
         }
 
     def create(self, optimizer_type: Union[str, OptimizerType], model_params, params):
-        return self._optimizers[str(optimizer_type)](model_params, **params)
+        return self._optimizers[str(optimizer_type)](model_params, **params) if params is not None else \
+            self._optimizers[str(optimizer_type)](model_params)
 
     def register(self, function: str, creator: Optimizer):
         """

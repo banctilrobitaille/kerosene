@@ -39,7 +39,7 @@ class MetricFactory(object):
         }
 
     def create(self, metric_type: Union[str, MetricType], params):
-        return self._metrics[str(metric_type)](**params)
+        return self._metrics[str(metric_type)](**params) if params is not None else self._metrics[str(metric_type)]()
 
     def register(self, metric: str, creator: Metric):
         """

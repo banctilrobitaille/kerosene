@@ -2,12 +2,11 @@ from enum import Enum
 from typing import Union
 
 import torch
+from ignite.metrics import MetricsLambda
 from torch import nn
 from torch.nn.modules.loss import _Loss
 
 from kerosene.utils.constants import EPSILON
-from ignite.metrics import MetricsLambda
-
 from kerosene.utils.tensors import flatten
 
 
@@ -60,7 +59,8 @@ class CriterionFactory(object):
         }
 
     def create(self, criterion_type: Union[CriterionType, str], params):
-        return self._criterion[str(criterion_type)](**params)
+        return self._criterion[str(criterion_type)](**params) if params is not None else self._criterion[
+            str(criterion_type)]()
 
     def register(self, function: str, creator: _Loss):
         """

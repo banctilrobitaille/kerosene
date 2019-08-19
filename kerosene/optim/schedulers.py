@@ -28,7 +28,8 @@ class SchedulerFactory(object):
         }
 
     def create(self, scheduler_type: Union[str, SchedulerType], optimizer: Optimizer, params):
-        return self._schedulers[str(scheduler_type)](optimizer=optimizer, **params)
+        return self._schedulers[str(scheduler_type)](optimizer=optimizer, **params) if params is not None else \
+            self._schedulers[str(scheduler_type)](optimizer=optimizer)
 
     def register(self, function: str, creator: _LRScheduler):
         """
