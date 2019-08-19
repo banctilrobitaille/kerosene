@@ -140,15 +140,15 @@ class ModelTrainer(nn.Module):
         self._valid_metric.reset()
 
     def configure(self, run_config: RunConfiguration):
-        if APEX_AVAILABLE and run_config.use_amp:
-            self._model, self._optimizer = amp.initialize(
-                self._model, self._optimizer, opt_level=run_config.amp_opt_level)
-
         if on_single_device(run_config.devices):
             self._model.cuda(device=run_config.devices[0])
         else:
             # TODO implement distributed training
             raise NotImplementedError("Distributed training is not yet supported")
+
+        if APEX_AVAILABLE and run_config.use_amp:
+            self._model, self._optimizer = amp.initialize(
+                self._model, self._optimizer, opt_level=run_config.amp_opt_level)
 
 
 class Trainer(EventGenerator):
