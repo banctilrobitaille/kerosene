@@ -5,9 +5,10 @@ import torch
 from torch import nn
 from torch.nn.modules.loss import _Loss
 
-from kerosene.utils import flatten
 from kerosene.utils.constants import EPSILON
 from ignite.metrics import MetricsLambda
+
+from kerosene.utils.tensors import flatten
 
 
 class CriterionType(Enum):
