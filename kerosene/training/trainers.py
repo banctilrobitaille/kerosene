@@ -102,7 +102,7 @@ class ModelTrainer(nn.Module):
         self._optimizer.step()
 
     def scheduler_step(self):
-        self._scheduler.step(self._valid_loss)
+        self._scheduler.step(self._valid_loss.compute())
 
     def zero_grad(self):
         self._optimizer.zero_grad()
