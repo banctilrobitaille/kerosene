@@ -57,4 +57,4 @@ class VisdomData(object):
         return self._y
 
     def __hash__(self):
-        return hash(self._source_name + self._variable_name)
+        return hash(self._source_name + self._variable_name + self._plot_frequency + self._plot_type)
