@@ -76,10 +76,10 @@ class ModelTrainer(nn.Module):
     @property
     def state(self):
         return ModelTrainerState(self._model_name,
-                                 self._train_loss.compute(),
-                                 self._valid_loss.compute(),
-                                 self._train_metric.compute(),
-                                 self._valid_metric.compute(),
+                                 torch.tensor([self._train_loss.compute()]).cpu(),
+                                 torch.tensor([self._valid_loss.compute()]).cpu(),
+                                 torch.tensor([self._train_metric.compute()]).cpu(),
+                                 torch.tensor([self._valid_metric.compute()]).cpu(),
                                  self._model,
                                  self._optimizer)
 
