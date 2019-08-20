@@ -66,6 +66,8 @@ class VisdomPlotFactory(object):
 
         if plot_type == PlotType.LINE_PLOT:
             plot = LinePlot(visdom)
+        elif plot_type == PlotType.IMAGE_PLOT:
+            plot = ImagePlot(visdom)
         else:
             raise NotImplementedError("Uuable to create a plot for {}".format(plot_type))
 
