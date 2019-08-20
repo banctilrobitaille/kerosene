@@ -49,6 +49,8 @@ class ModelTrainer(nn.Module):
         self._train_metric = AverageGauge()
         self._valid_metric = AverageGauge()
 
+        self._custom_variables = {}
+
     @property
     def model(self):
         return self._model
@@ -77,9 +79,13 @@ class ModelTrainer(nn.Module):
     def state(self):
         return ModelTrainerState(self._model_name,
                                  torch.tensor([self._train_loss.compute()]).cpu(),
+                                 torch.tensor([self._step_train_loss]).cpu(),
                                  torch.tensor([self._valid_loss.compute()]).cpu(),
+                                 torch.tensor([self._step_valid_loss]).cpu(),
                                  torch.tensor([self._train_metric.compute()]).cpu(),
+                                 torch.tensor([self._step_train_metric]).cpu(),
                                  torch.tensor([self._valid_metric.compute()]).cpu(),
+                                 torch.tensor([self._step_valid_metric]).cpu(),
                                  self._model,
                                  self._optimizer)
 
@@ -154,9 +160,10 @@ class ModelTrainer(nn.Module):
 
 class Trainer(EventGenerator):
 
-    def __init__(self, train_data_loader: DataLoader, valid_data_loader: DataLoader,
+    def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
                  model_trainers: Union[List[ModelTrainer], ModelTrainer], run_config: RunConfiguration):
         super().__init__()
+        self._name = name
         self._train_data_loader = train_data_loader
         self._valid_data_loader = valid_data_loader
         self._model_trainers = model_trainers if isinstance(model_trainers, list) else [model_trainers]
@@ -167,8 +174,14 @@ class Trainer(EventGenerator):
 
         self._run_config = run_config
 
+        self._custom_variables = {}
+
         for model_trainer in self._model_trainers:
             model_trainer.configure(self._run_config)
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def nb_of_train_batch(self):
@@ -187,12 +200,18 @@ class Trainer(EventGenerator):
         return self._current_epoch * len(self._valid_data_loader) + self._current_valid_batch
 
     @property
+    def custom_variables(self):
+        return self._custom_variables
+
+    @property
     def state(self):
-        return TrainerState(self._current_epoch,
+        return TrainerState(self._name,
+                            self._current_epoch,
                             self.current_train_step,
                             self.current_valid_step,
                             self._train_data_loader,
                             self._valid_data_loader,
+                            self._custom_variables,
                             [model_trainer.state for model_trainer in self._model_trainers])
 
     @abstractmethod
