@@ -29,7 +29,7 @@ class AverageGauge(Gauge):
         self._count += n
 
     def compute(self):
-        return self._sum / self._count
+        return self._sum / self._count if self._count != 0 else 0
 
     def reset(self):
         self._value = 0
