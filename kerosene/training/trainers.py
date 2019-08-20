@@ -112,7 +112,7 @@ class ModelTrainer(nn.Module):
     def backward(self, loss):
         if APEX_AVAILABLE:
             with amp.scale_loss(loss, self._optimizer) as scaled_loss:
-                scaled_loss.bacward()
+                scaled_loss.backward()
         else:
             loss.backward()
 
