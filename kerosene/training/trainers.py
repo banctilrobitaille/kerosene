@@ -75,7 +75,8 @@ class ModelTrainer(nn.Module):
 
     @property
     def state(self):
-        return ModelTrainerState(self._train_loss.compute(),
+        return ModelTrainerState(self._model_name,
+                                 self._train_loss.compute(),
                                  self._valid_loss.compute(),
                                  self._train_metric.compute(),
                                  self._valid_metric.compute(),
