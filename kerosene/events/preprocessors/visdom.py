@@ -29,27 +29,27 @@ class PlotAllModelStateVariables(EventPreprocessor):
     @staticmethod
     def create_epoch_visdom_data(epoch, state: ModelTrainerState):
         return [VisdomData(state.name, "Training Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           state.train_loss, epoch),
+                           epoch, state.train_loss),
                 VisdomData(state.name, "Validation Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           state.valid_loss, epoch),
+                           epoch, state.valid_loss),
                 VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           state.train_metric, epoch),
+                           epoch, state.train_metric),
                 VisdomData(state.name, "Validation Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           state.valid_metric, epoch)]
+                           epoch, state.valid_metric, )]
 
     @staticmethod
     def create_train_batch_visdom_data(step, state: ModelTrainerState):
         return [VisdomData(state.name, "Training Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           state.train_loss, step),
+                           step, state.train_loss),
                 VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           state.train_metric, step)]
+                           step, state.train_metric)]
 
     @staticmethod
     def create_valid_batch_visdom_data(step, state: ModelTrainerState):
         return [VisdomData(state.name, "Validation Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           state.valid_loss, step),
+                           step, state.valid_loss),
                 VisdomData(state.name, "Validation Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           state.valid_metric, step)]
+                           step, state.valid_metric)]
 
     def filter_by_name(self, model_trainer_state: ModelTrainerState):
         return True if self._model_name is None else model_trainer_state.name == self._model_name
