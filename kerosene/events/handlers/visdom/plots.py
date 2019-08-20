@@ -45,7 +45,7 @@ class LinePlot(VisdomPlot):
         if self._window is None:
             self._window = self._visdom.line(X=visdom_data.x,
                                              Y=[visdom_data.y],
-                                             opts=dict(xlabel=visdom_data.plot_frequency,
+                                             opts=dict(xlabel=str(visdom_data.plot_frequency),
                                                        ylabel=visdom_data.variable_name,
                                                        title="{} {} per {}".format(visdom_data.source_name,
                                                                                    visdom_data.variable_name,
