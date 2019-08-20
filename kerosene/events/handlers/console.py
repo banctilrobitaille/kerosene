@@ -7,4 +7,4 @@ class ConsoleLogger(EventHandler):
     LOGGER = logging.getLogger("ConsoleLogger")
 
     def __call__(self, msg):
-        self.LOGGER.info("{}".format(msg))
+        self.LOGGER.info("{}".format(str(msg)))

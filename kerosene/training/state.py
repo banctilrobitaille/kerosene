@@ -35,7 +35,8 @@ class TrainerState(object):
 
     def __str__(self):
         return "Training state: Epoch: {} | Training step: {} | Validation step: {} \n {}".format(
-            self._epoch, self._train_step, self._valid_step, "\n".join(self._model_trainer_states))
+            self._epoch, self._train_step, self._valid_step,
+            "\n".join(list(map(lambda state: str(state), self._model_trainer_states))))
 
 
 class ModelTrainerState(object):
