@@ -20,4 +20,4 @@ class EventGenerator(ABC):
     def fire(self, event: Event):
         if event in self._event_handlers.keys():
             for handler in self._event_handlers[event]:
-                handler(self.state)
+                handler(event, self.state)
