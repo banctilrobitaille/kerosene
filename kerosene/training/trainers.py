@@ -101,6 +101,9 @@ class ModelTrainer(nn.Module):
     def step(self):
         self._optimizer.step()
 
+    def scheduler_step(self):
+        self._scheduler.step(self._valid_loss)
+
     def zero_grad(self):
         self._optimizer.zero_grad()
 
@@ -282,6 +285,9 @@ class Trainer(EventGenerator):
                     raise NotImplementedError("Distributed training not implemented yet !")
                 self.validate_step(inputs, target)
                 self.fire(Event.ON_VALID_BATCH_END)
+
+            for model_trainer in self._model_trainers:
+                model_trainer.scheduler_step()
 
     def with_event_handler(self, handler, event: Event, preprocessor: Callable = Identity()):
         if event in self._event_handlers.keys():
