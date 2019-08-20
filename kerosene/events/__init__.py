@@ -14,3 +14,15 @@ class Event(Enum):
     ON_TRAIN_BATCH_END = "train_batch_end"
     ON_VALID_BATCH_BEGIN = "valid_batch_begin"
     ON_VALID_BATCH_END = "valid_batch_end"
+
+
+class Monitor(Enum):
+    TRAINING_LOSS = "TrainingLoss"
+    TRAINING_METRIC = "TrainingMetric"
+    VALIDATION_LOSS = "ValidationLoss"
+    VALIDATION_METRIC = "ValidationMetric"
+
+
+class MonitorMode(Enum):
+    MIN = "min"
+    MAX = "max"

@@ -7,7 +7,7 @@ README_CONTENT = (pathlib.Path(__file__).parent / "README.md").read_text()
 
 setup(
     name='torch-kerosene',
-    version='0.0.51',
+    version='0.0.52',
     description='Pytorch Framework For Medical Image Analysis',
     long_description=README_CONTENT,
     long_description_content_type='text/markdown',
