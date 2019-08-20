@@ -26,4 +26,4 @@ class HandlerPreprocessor(EventPreprocessor):
 
     def __call__(self, event: Event, state: TrainerState):
         processed_state = self._preprocessor(event, state)
-        self._handler(*processed_state if hasattr(processed_state, '__iter__') else [processed_state])
+        self._handler(processed_state)
