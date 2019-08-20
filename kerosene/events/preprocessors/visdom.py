@@ -19,10 +19,12 @@ class PlotAllModelStateVariables(EventPreprocessor):
                 list(map(lambda model_state: self.create_epoch_visdom_data(state.epoch, model_state), model_states)))
         elif event == Event.ON_TRAIN_BATCH_END:
             return self.flatten(
-                list(map(lambda model_state: self.create_epoch_visdom_data(state.epoch, model_state), model_states)))
+                list(map(lambda model_state: self.create_train_batch_visdom_data(state.train_step, model_state),
+                         model_states)))
         elif event == Event.ON_VALID_BATCH_END:
             return self.flatten(
-                list(map(lambda model_state: self.create_epoch_visdom_data(state.epoch, model_state), model_states)))
+                list(map(lambda model_state: self.create_valid_batch_visdom_data(state.valid_step, model_state),
+                         model_states)))
 
     @staticmethod
     def create_epoch_visdom_data(epoch, state: ModelTrainerState):
