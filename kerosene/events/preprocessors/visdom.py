@@ -18,6 +18,12 @@ class PlotAllModelStateVariables(EventPreprocessor):
         if event == Event.ON_EPOCH_END:
             return reduce(lambda x, y: self.create_epoch_visdom_data(state.epoch, x).extend(
                 self.create_epoch_visdom_data(state.epoch, y)), model_state)
+        elif event == Event.ON_TRAIN_BATCH_END:
+            return reduce(lambda x, y: self.create_train_batch_visdom_data(state.epoch, x).extend(
+                self.create_train_batch_visdom_data(state.train_step, y)), model_state)
+        elif event == Event.ON_VALID_BATCH_END:
+            return reduce(lambda x, y: self.create_valid_batch_visdom_data(state.epoch, x).extend(
+                self.create_valid_batch_visdom_data(state.valid_step, y)), model_state)
 
     @staticmethod
     def create_epoch_visdom_data(epoch, state: ModelTrainerState):
@@ -28,8 +34,21 @@ class PlotAllModelStateVariables(EventPreprocessor):
                 VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
                            state.train_metric, epoch),
                 VisdomData(state.name, "Validation Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           state.valid_metric, epoch)
-                ]
+                           state.valid_metric, epoch)]
+
+    @staticmethod
+    def create_train_batch_visdom_data(step, state: ModelTrainerState):
+        return [VisdomData(state.name, "Training Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
+                           state.train_loss, step),
+                VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
+                           state.train_metric, step)]
+
+    @staticmethod
+    def create_valid_batch_visdom_data(step, state: ModelTrainerState):
+        return [VisdomData(state.name, "Validation Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
+                           state.valid_loss, step),
+                VisdomData(state.name, "Validation Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
+                           state.valid_metric, step)]
 
     def filter_by_name(self, model_trainer_state: ModelTrainerState):
         return True if self._model_name is None else model_trainer_state.name == self._model_name
