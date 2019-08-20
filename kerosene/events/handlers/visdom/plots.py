@@ -54,7 +54,7 @@ class LinePlot(VisdomPlot):
         else:
             self._visdom.line(
                 X=visdom_data.x,
-                Y=visdom_data.y,
+                Y=[visdom_data.y],
                 win=self._window,
                 update='append')
 
