@@ -7,7 +7,7 @@ README_CONTENT = (pathlib.Path(__file__).parent / "README.md").read_text()
 
 setup(
     name='torch-kerosene',
-    version='0.0.58',
+    version='0.0.59',
     description='Pytorch Framework For Medical Image Analysis',
     long_description=README_CONTENT,
     long_description_content_type='text/markdown',
@@ -21,5 +21,6 @@ setup(
     packages=find_packages(exclude=("tests",)),
     install_requires=['numpy>=1.16.1',
                       'visdom>=0.1.8.8',
-                      'pytorch-ignite>= 0.2.0']
+                      'pytorch-ignite>= 0.2.0',
+                      'PyYAML']
 )

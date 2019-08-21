@@ -198,6 +198,10 @@ class Trainer(EventGenerator):
     def validate_step(self, inputs, target):
         raise NotImplementedError()
 
+    @abstractmethod
+    def scheduler_step(self):
+        raise NotImplementedError()
+
     def _reset_model_trainers(self):
         for model_trainer in self._model_trainers:
             model_trainer.reset()
@@ -262,9 +266,6 @@ class Trainer(EventGenerator):
                 self.validate_step(inputs, target)
                 self.fire(Event.ON_VALID_BATCH_END)
 
-            for model_trainer in self._model_trainers:
-                model_trainer.scheduler_step()
-
     def with_event_handler(self, handler, event: Event, preprocessor: Callable = Identity()):
         if event in self._event_handlers.keys():
             self._event_handlers[event].append(HandlerPreprocessor(handler, preprocessor))
@@ -281,6 +282,7 @@ class Trainer(EventGenerator):
 
     def _on_epoch_end(self):
         self.fire(Event.ON_EPOCH_END)
+        self.scheduler_step()
         self.on_epoch_end()
 
 
