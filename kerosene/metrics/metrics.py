@@ -5,8 +5,8 @@ import torch
 from ignite.metrics import Accuracy, Precision, MeanAbsoluteError, MeanPairwiseDistance, MeanSquaredError, Recall, \
     RootMeanSquaredError, TopKCategoricalAccuracy, IoU, mIoU, Metric, ConfusionMatrix, MetricsLambda
 
-from kerosene.utils.utils import flatten, to_onehot
 from kerosene.utils.constants import EPSILON
+from kerosene.utils.tensors import flatten, to_onehot
 
 
 class MetricType(Enum):
