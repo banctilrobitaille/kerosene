@@ -40,7 +40,7 @@ class ModelTrainer(ApexModule):
         self._train_metric = AverageGauge()
         self._valid_metric = AverageGauge()
 
-        self._custom_variables = {}
+        self._state = ModelTrainerState(self._model_name, optimizer=self._optimizer, model=self.model)
 
     @property
     def optimizer_state(self):
@@ -60,17 +60,11 @@ class ModelTrainer(ApexModule):
 
     @property
     def state(self):
-        return ModelTrainerState(self._model_name,
-                                 torch.tensor([self._train_loss.compute()]).cpu(),
-                                 torch.tensor([self._step_train_loss]).cpu(),
-                                 torch.tensor([self._valid_loss.compute()]).cpu(),
-                                 torch.tensor([self._step_valid_loss]).cpu(),
-                                 torch.tensor([self._train_metric.compute()]).cpu(),
-                                 torch.tensor([self._step_train_metric]).cpu(),
-                                 torch.tensor([self._valid_metric.compute()]).cpu(),
-                                 torch.tensor([self._step_valid_metric]).cpu(),
-                                 self._model,
-                                 self._optimizer)
+        return self._state \
+            .with_train_loss(torch.tensor([self._train_loss.compute()]).cpu()) \
+            .with_valid_loss(torch.tensor([self._valid_loss.compute()]).cpu()) \
+            .with_train_metric(torch.tensor([self._train_metric.compute()]).cpu()) \
+            .with_valid_metric(torch.tensor([self._valid_metric.compute()]).cpu())
 
     def forward(self, *input):
         return self._model.forward(*input)
@@ -86,7 +80,7 @@ class ModelTrainer(ApexModule):
 
     def scheduler_step(self):
         if self._scheduler is not None:
-            self._scheduler.step(self._valid_loss.compute())
+            self._scheduler.step(self._train_loss.compute())
 
     def zero_grad(self):
         self._optimizer.zero_grad()
@@ -95,11 +89,15 @@ class ModelTrainer(ApexModule):
         self._step_train_loss = self._criterion(pred, target)
         self._train_loss.update(self._step_train_loss)
 
+        self._state.with_step_train_loss(torch.tensor([self._step_train_loss]).cpu())
+
         return ApexLoss(self._amp_id, self._step_train_loss, self._optimizer) if self.use_amp else self._step_train_loss
 
     def compute_valid_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_valid_loss = self._criterion(pred, target)
         self._valid_loss.update(self._step_valid_loss)
+
+        self._state.with_step_valid_loss(torch.tensor([self._step_valid_loss]).cpu())
 
         return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
 
@@ -109,6 +107,8 @@ class ModelTrainer(ApexModule):
         self._train_metric.update(self._step_train_metric)
         self._metric_computer.reset()
 
+        self._state.with_step_train_metric(torch.tensor([self._step_train_metric]).cpu())
+
         return self._step_train_metric
 
     def compute_valid_metric(self, pred, target):
@@ -116,6 +116,8 @@ class ModelTrainer(ApexModule):
         self._step_valid_metric = self._metric_computer.compute()
         self._valid_metric.update(self._step_valid_metric)
         self._metric_computer.reset()
+
+        self._state.with_step_valid_metric(torch.tensor([self._step_valid_metric]).cpu())
 
         return self._step_valid_metric
 
@@ -144,6 +146,8 @@ class Trainer(EventGenerator):
         self._run_config = run_config
 
         self._custom_variables = {}
+
+        self._state = TrainerState(self._name, self._train_data_loader, self._valid_data_loader)
 
         for amp_id, model_trainer in enumerate(self._model_trainers):
             model_trainer.initialize(amp_id, len(self._model_trainers), self._run_config)
@@ -182,14 +186,9 @@ class Trainer(EventGenerator):
 
     @property
     def state(self):
-        return TrainerState(self._name,
-                            self._current_epoch,
-                            self.current_train_step,
-                            self.current_valid_step,
-                            self._train_data_loader,
-                            self._valid_data_loader,
-                            self._custom_variables,
-                            [model_trainer.state for model_trainer in self._model_trainers])
+        return self._state \
+            .with_custom_variables(self._custom_variables) \
+            .with_model_trainers_state([model_trainer.state for model_trainer in self._model_trainers])
 
     @abstractmethod
     def train_step(self, inputs, target):
@@ -225,6 +224,8 @@ class Trainer(EventGenerator):
 
         for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
             self.fire(Event.ON_TRAIN_BATCH_BEGIN)
+            self._state.with_train_step(self.current_train_step)
+
             if on_single_device(self._run_config.devices):
 
                 inputs = [single_input.cuda(self._run_config.devices[0]) for single_input in inputs] if isinstance(
@@ -246,6 +247,8 @@ class Trainer(EventGenerator):
         with torch.no_grad():
             for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
                 self.fire(Event.ON_VALID_BATCH_BEGIN)
+                self._state.with_valid_step(self.current_valid_step)
+
                 if on_single_device(self._run_config.devices):
                     if on_single_device(self._run_config.devices):
                         inputs = [single_input.cuda(self._run_config.devices[0]) for single_input in
@@ -272,6 +275,7 @@ class Trainer(EventGenerator):
 
     def _on_epoch_begin(self):
         self.fire(Event.ON_EPOCH_BEGIN)
+        self._state.with_epoch(self._current_epoch)
         self._reset_model_trainers()
         self.on_epoch_begin()
 

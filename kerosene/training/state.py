@@ -1,6 +1,9 @@
+import torch
+
+
 class TrainerState(object):
-    def __init__(self, name=None, epoch=0, train_step=0, valid_step=0, train_data_loader=None,
-                 valid_data_loader=None, custom_variables=None, model_trainer_states=()):
+    def __init__(self, name, train_data_loader, valid_data_loader, epoch=0, train_step=0, valid_step=0,
+                 custom_variables=None, model_trainer_states=()):
         self._name = name
         self._epoch = epoch
         self._train_step = train_step
@@ -42,14 +45,37 @@ class TrainerState(object):
     def model_trainer_states(self):
         return self._model_trainer_states
 
+    def with_epoch(self, epoch):
+        self._epoch = epoch
+        return self
+
+    def with_train_step(self, train_step):
+        self._train_step = train_step
+        return self
+
+    def with_valid_step(self, valid_step):
+        self._valid_step = valid_step
+        return self
+
+    def with_custom_variables(self, custom_variables):
+        self._custom_variables = custom_variables
+        return self
+
+    def with_model_trainers_state(self, model_trainers_state):
+        self._model_trainer_states = model_trainers_state
+        return self
+
     def __str__(self):
         return "Training state: Epoch: {} | Training step: {} | Validation step: {} \n".format(
             self._epoch, self._train_step, self._valid_step)
 
 
 class ModelTrainerState(object):
-    def __init__(self, name, train_loss, step_train_loss, valid_loss, step_valid_loss, train_metric,
-                 step_train_metric, valid_metric, step_valid_metric, model=None, optimizer=None):
+    def __init__(self, name, train_loss=torch.tensor([0.0]), step_train_loss=torch.tensor([0.0]),
+                 valid_loss=torch.tensor([0.0]), step_valid_loss=torch.tensor([0.0]),
+                 train_metric=torch.tensor([0.0]), step_train_metric=torch.tensor([0.0]),
+                 valid_metric=torch.tensor([0.0]), step_valid_metric=torch.tensor([0.0]),
+                 model=None, optimizer=None):
         self._name = name
         self._train_loss = train_loss
         self._step_train_loss = step_train_loss
@@ -110,7 +136,43 @@ class ModelTrainerState(object):
     def optimizer_state(self):
         return self._optimizer.state_dict()
 
-    def __str__(self):
-        return "{} -- Training loss: {} | Validation loss: {} | Training metric: {} | Validation metric: {}".format(
-            self._name, self._train_loss.items(), self._valid_loss.items(), self._train_metric.items(),
-            self._valid_metric.items())
+    @property
+    def optimizer_lr(self):
+        for param_group in self._optimizer.param_groups:
+            return param_group["lr"]
+
+    def with_name(self, name):
+        self._name = name
+        return self
+
+    def with_train_loss(self, train_loss):
+        self._train_loss = train_loss
+        return self
+
+    def with_step_train_loss(self, step_train_loss):
+        self._step_train_loss = step_train_loss
+        return self
+
+    def with_valid_loss(self, valid_loss):
+        self._valid_loss = valid_loss
+        return self
+
+    def with_step_valid_loss(self, step_valid_loss):
+        self._step_valid_loss = step_valid_loss
+        return self
+
+    def with_train_metric(self, train_metric):
+        self._train_metric = train_metric
+        return self
+
+    def with_step_train_metric(self, step_train_metric):
+        self._step_train_metric = step_train_metric
+        return self
+
+    def with_valid_metric(self, valid_metric):
+        self._valid_metric = valid_metric
+        return self
+
+    def with_step_valid_metric(self, step_valid_metric):
+        self._step_valid_metric = step_valid_metric
+        return self
