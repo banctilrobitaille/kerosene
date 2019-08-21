@@ -23,3 +23,19 @@ class EventGenerator(ABC):
 
             for handler in self._event_handlers[event]:
                 handler(event, state)
+
+    @abstractmethod
+    def _on_epoch_begin(self):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def _on_epoch_end(self):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def on_epoch_begin(self):
+        pass
+
+    @abstractmethod
+    def on_epoch_end(self):
+        pass

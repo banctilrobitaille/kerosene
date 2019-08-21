@@ -199,15 +199,14 @@ class Trainer(EventGenerator):
         self.fire(Event.ON_TRAINING_BEGIN)
 
         for self._current_epoch in range(0, nb_epoch):
-            self.fire(Event.ON_EPOCH_BEGIN)
-            self._reset_model_trainers()
+            self._on_epoch_begin()
             self.fire(Event.ON_TRAIN_EPOCH_BEGIN)
             self._train_epoch()
             self.fire(Event.ON_TRAIN_EPOCH_END)
             self.fire(Event.ON_VALID_EPOCH_BEGIN)
             self._validate_epoch()
             self.fire(Event.ON_VALID_EPOCH_END)
-            self.fire(Event.ON_EPOCH_END)
+            self._on_epoch_end()
 
         self.fire(Event.ON_TRAINING_END)
 
@@ -263,6 +262,15 @@ class Trainer(EventGenerator):
 
         return self
 
+    def _on_epoch_begin(self):
+        self.fire(Event.ON_EPOCH_BEGIN)
+        self._reset_model_trainers()
+        self.on_epoch_begin()
+
+    def _on_epoch_end(self):
+        self.fire(Event.ON_EPOCH_END)
+        self.on_epoch_end()
+
 
 class SimpleTrainer(Trainer):
 
@@ -283,6 +291,12 @@ class SimpleTrainer(Trainer):
         pred = model.forward(inputs)
         model.compute_train_metric(pred, target)
         model.compute_train_loss(pred, target)
+
+    def on_epoch_begin(self):
+        pass
+
+    def on_epoch_end(self):
+        pass
 
 
 class ModelTrainerFactory(object):
