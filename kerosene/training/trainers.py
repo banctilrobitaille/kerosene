@@ -19,13 +19,6 @@ from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training.state import TrainerState, ModelTrainerState
 from kerosene.utils.distributed import on_single_device
 
-try:
-    from apex import amp
-
-    APEX_AVAILABLE = True
-except ModuleNotFoundError:
-    APEX_AVAILABLE = False
-
 
 class ModelTrainer(ApexModule):
 
