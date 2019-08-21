@@ -139,7 +139,7 @@ class ModelTrainerState(object):
     @property
     def optimizer_lr(self):
         for param_group in self._optimizer.param_groups:
-            return param_group["lr"]
+            return torch.tensor([param_group["lr"]])
 
     def with_name(self, name):
         self._name = name

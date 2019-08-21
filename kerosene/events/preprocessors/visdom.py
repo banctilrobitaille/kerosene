@@ -198,3 +198,16 @@ class Plot2DImagesVariable(EventPreprocessor):
     def create_valid_batch_visdom_data(self, state: TrainerState):
         return [VisdomData(state.name, self._custom_variable_name, PlotType.IMAGES_PLOT, PlotFrequency.EVERY_STEP,
                            state.valid_step, state.custom_variables[self._custom_variable_name])]
+
+
+class PlotLR(EventPreprocessor):
+
+    def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
+        if event == Event.ON_EPOCH_END:
+            return list(map(lambda model_state: self.create_epoch_visdom_data(state.epoch, model_state),
+                            state.model_trainer_states))
+
+    @staticmethod
+    def create_epoch_visdom_data(epoch, state: ModelTrainerState):
+        return VisdomData(state.name, "Learning Rate", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH, epoch,
+                          state.optimizer_lr)
