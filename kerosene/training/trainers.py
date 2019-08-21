@@ -153,6 +153,14 @@ class Trainer(EventGenerator):
         return self._name
 
     @property
+    def train_data_loader(self):
+        return self._train_data_loader
+
+    @property
+    def valid_data_loader(self):
+        return self._valid_data_loader
+
+    @property
     def nb_of_train_batch(self):
         return len(self._train_data_loader)
 
