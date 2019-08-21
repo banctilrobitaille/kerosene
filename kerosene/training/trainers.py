@@ -3,7 +3,6 @@ from typing import Union, List, Callable
 
 import torch
 from ignite.metrics import Metric
-from torch import nn
 from torch.utils.data import DataLoader
 
 from kerosene.config.trainers import ModelTrainerConfiguration, RunConfiguration
@@ -13,28 +12,20 @@ from kerosene.events.preprocessors.base_preprocessor import HandlerPreprocessor,
 from kerosene.metrics.gauges import AverageGauge
 from kerosene.metrics.metrics import MetricFactory
 from kerosene.models.models import ModelFactory
+from kerosene.nn.apex import ApexModule, ApexLoss
 from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training.state import TrainerState, ModelTrainerState
 from kerosene.utils.distributed import on_single_device
 
-try:
-    from apex import amp
 
-    APEX_AVAILABLE = True
-except ModuleNotFoundError:
-    APEX_AVAILABLE = False
-
-
-class ModelTrainer(nn.Module):
+class ModelTrainer(ApexModule):
 
     def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric):
-        super().__init__()
+        super().__init__(model, optimizer)
         self._model_name = model_name
 
-        self._model = model
-        self._optimizer = optimizer
         self._criterion = criterion
         self._scheduler = scheduler
         self._metric_computer = metric_computer
@@ -50,14 +41,6 @@ class ModelTrainer(nn.Module):
         self._valid_metric = AverageGauge()
 
         self._custom_variables = {}
-
-    @property
-    def model(self):
-        return self._model
-
-    @model.setter
-    def model(self, value):
-        self._model = value
 
     @property
     def optimizer_state(self):
@@ -107,24 +90,17 @@ class ModelTrainer(nn.Module):
     def zero_grad(self):
         self._optimizer.zero_grad()
 
-    def compute_train_loss(self, pred, target):
+    def compute_train_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_train_loss = self._criterion(pred, target)
         self._train_loss.update(self._step_train_loss)
 
-        return self._step_train_loss
+        return ApexLoss(self._amp_id, self._step_train_loss, self._optimizer) if self.use_amp else self._step_train_loss
 
-    def compute_valid_loss(self, pred, target):
+    def compute_valid_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_valid_loss = self._criterion(pred, target)
         self._valid_loss.update(self._step_valid_loss)
 
-        return self._step_valid_loss
-
-    def backward(self, loss):
-        if APEX_AVAILABLE:
-            with amp.scale_loss(loss, self._optimizer) as scaled_loss:
-                scaled_loss.backward()
-        else:
-            loss.backward()
+        return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
 
     def compute_train_metric(self, pred, target):
         self._metric_computer.update((pred, target))
@@ -149,17 +125,6 @@ class ModelTrainer(nn.Module):
         self._train_metric.reset()
         self._valid_metric.reset()
 
-    def configure(self, run_config: RunConfiguration):
-        if on_single_device(run_config.devices):
-            self._model.cuda(device=run_config.devices[0])
-        else:
-            # TODO implement distributed training
-            raise NotImplementedError("Distributed training is not yet supported")
-
-        if APEX_AVAILABLE and run_config.use_amp:
-            self._model, self._optimizer = amp.initialize(
-                self._model, self._optimizer, opt_level=run_config.amp_opt_level)
-
 
 class Trainer(EventGenerator):
 
@@ -179,8 +144,8 @@ class Trainer(EventGenerator):
 
         self._custom_variables = {}
 
-        for model_trainer in self._model_trainers:
-            model_trainer.configure(self._run_config)
+        for amp_id, model_trainer in enumerate(self._model_trainers):
+            model_trainer.initialize(amp_id, len(self._model_trainers), self._run_config)
 
     @property
     def name(self):
