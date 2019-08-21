@@ -108,9 +108,7 @@ class DiceLoss(_Loss):
             raise ValueError("'Inputs' and 'Targets' must have the same shape.")
 
         inputs = flatten(inputs)
-        targets = flatten(targets)
-
-        targets = targets.float()
+        targets = flatten(targets).float()
 
         # Compute per channel Dice Coefficient
         intersect = (inputs * targets).sum(-1)
@@ -120,7 +118,9 @@ class DiceLoss(_Loss):
 
         denominator = (inputs + targets).sum(-1)
 
-        dice = 1.0 - (2.0 * intersect / denominator.clamp(min=EPSILON))
+        ones = torch.Tensor().new_ones((inputs.size(0),), dtype=torch.float, device=inputs.device)
+
+        dice = ones - (2.0 * intersect / denominator.clamp(min=EPSILON))
 
         if self._ignore_index != -100:
             def ignore_index_fn(dice_vector):
@@ -172,18 +172,16 @@ class GeneralizedDiceLoss(_Loss):
             raise ValueError("'Inputs' and 'Targets' must have the same shape.")
 
         inputs = flatten(inputs)
-        targets = flatten(targets)
-
-        targets = targets.float()
-
-        class_weights = 1.0 / torch.pow(targets.sum(-1), 2).clamp(min=EPSILON)
+        targets = flatten(targets).float()
+        ones = torch.Tensor().new_ones((inputs.size(0),), dtype=torch.float, device=inputs.device)
+        class_weights = ones / torch.pow(targets.sum(-1), 2).clamp(min=EPSILON)
 
         # Compute per channel Dice Coefficient
         intersect = (inputs * targets).sum(-1) * class_weights
 
         denominator = (inputs + targets).sum(-1) * class_weights
 
-        dice = 1.0 - (2.0 * intersect / denominator.clamp(min=EPSILON))
+        dice = ones - (2.0 * intersect / denominator.clamp(min=EPSILON))
 
         if self._ignore_index != -100:
             def ignore_index_fn(dice_vector):
