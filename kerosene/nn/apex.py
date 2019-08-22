@@ -34,7 +34,7 @@ class ApexLoss(object):
                  create_graph=False) -> None:
         if APEX_AVAILABLE:
             with amp.scale_loss(self._loss, self._optimizer, loss_id=self._loss_id) as scaled_loss:
-                scaled_loss.backward()
+                scaled_loss.backward(gradient, keep_graph, create_graph)
         else:
             self._loss.backward(gradient, keep_graph, create_graph)
 
