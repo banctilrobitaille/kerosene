@@ -103,11 +103,8 @@ class TestDiceLoss(unittest.TestCase):
 
 
 class TestGeneralizedDiceLoss(unittest.TestCase):
-    INVALID_VALUE_1 = -1
-    INVALID_VALUE_2 = "STEVE JOBS"
-    INVALID_VALUE_3 = 10
-    INVALID_VALUE_4 = 11
     INVALID_REDUCTION = "sum"
+    INVALID_INDEX = -1
 
     def setUp(self):
         self.y_true, self.y_pred = get_y_true_y_pred()
@@ -117,6 +114,8 @@ class TestGeneralizedDiceLoss(unittest.TestCase):
 
     def test_should_raise_exception_with_bad_values(self):
         generalized_dice_loss = GeneralizedDiceLoss()
+        assert_that(calling(GeneralizedDiceLoss).with_args(reduction=self.INVALID_REDUCTION),
+                    raises(NotImplementedError))
         assert_that(calling(generalized_dice_loss.forward).with_args(inputs=None, targets=None),
                     raises(AttributeError))
         assert_that(calling(generalized_dice_loss.forward).with_args(inputs=self.y_logits, targets=None),
@@ -125,7 +124,7 @@ class TestGeneralizedDiceLoss(unittest.TestCase):
                     raises(AttributeError))
 
     def test_should_raise_exception_with_bad_ignore_index_values(self):
-        generalized_dice_loss = GeneralizedDiceLoss(ignore_index=self.INVALID_VALUE_3)
+        generalized_dice_loss = GeneralizedDiceLoss(ignore_index=self.INVALID_INDEX)
 
         assert_that(calling(generalized_dice_loss.forward).with_args(inputs=self.y_logits,
                                                                      targets=to_onehot(self.y_true_tensor,
@@ -161,10 +160,6 @@ class TestGeneralizedDiceLoss(unittest.TestCase):
 
 
 class TestWeightedCrossEntropy(unittest.TestCase):
-    INVALID_VALUE_1 = -1
-    INVALID_VALUE_2 = "STEVE JOBS"
-    INVALID_VALUE_3 = 10
-    INVALID_VALUE_4 = 11
     WEIGHTED_CROSS_ENTROPY_LOSS_TRUTH = 1.0808
 
     def setUp(self):
