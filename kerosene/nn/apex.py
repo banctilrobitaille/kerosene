@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Optional
+from typing import Optional, Union
 
 import torch
 from torch import Tensor, nn
@@ -43,11 +43,11 @@ class ApexLoss(object):
         self._loss = self._loss + other.loss
         return self
 
-    def __mul__(self, value: int):
+    def __mul__(self, value: Union[int, float]):
         self._loss = self._loss * value
         return self
 
-    def __rmul__(self, value: int):
+    def __rmul__(self, value: Union[int, float]):
         self._loss = self._loss * value
         return self
 
