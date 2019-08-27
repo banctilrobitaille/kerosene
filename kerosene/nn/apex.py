@@ -40,7 +40,12 @@ class ApexLoss(object):
             self._loss.backward(gradient, keep_graph, create_graph)
 
     def __add__(self, other):
-        self._loss = self._loss + other.loss
+        if isinstance(other, Tensor):
+            self._loss = self._loss + other
+        elif isinstance(other, ApexLoss):
+            self._loss = self._loss + other.loss
+        else:
+            raise NotImplementedError("Cannot add an element of type: {} to an ApexLoss.".format(str(type(other))))
         return self
 
     def __mul__(self, value: Union[int, float]):
@@ -52,7 +57,13 @@ class ApexLoss(object):
         return self
 
     def __eq__(self, other):
-        return torch.all(torch.eq(self._loss, other.loss))
+        if isinstance(other, Tensor):
+            is_equal = torch.all(torch.eq(self._loss, other))
+        elif isinstance(other, ApexLoss):
+            is_equal = torch.all(torch.eq(self._loss, other.loss))
+        else:
+            raise NotImplementedError("Cannot compare an element of type: {} to an ApexLoss.".format(str(type(other))))
+        return is_equal
 
 
 class ApexModule(ABC, nn.Module):
