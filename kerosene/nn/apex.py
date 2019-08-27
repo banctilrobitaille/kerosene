@@ -1,6 +1,7 @@
 from abc import ABC
 from typing import Optional
 
+import torch
 from torch import Tensor, nn
 from torch.optim import Optimizer
 
@@ -37,6 +38,21 @@ class ApexLoss(object):
                 scaled_loss.backward(gradient, keep_graph, create_graph)
         else:
             self._loss.backward(gradient, keep_graph, create_graph)
+
+    def __add__(self, other):
+        self._loss = self._loss + other.loss
+        return self
+
+    def __mul__(self, value: int):
+        self._loss = self._loss * value
+        return self
+
+    def __rmul__(self, value: int):
+        self._loss = self._loss * value
+        return self
+
+    def __eq__(self, other):
+        return torch.all(torch.eq(self._loss, other.loss))
 
 
 class ApexModule(ABC, nn.Module):
