@@ -5,7 +5,7 @@ import torch
 from hamcrest import *
 
 from kerosene.nn.criterions import DiceLoss, GeneralizedDiceLoss, WeightedCrossEntropyLoss
-from kerosene.utils import to_onehot
+from kerosene.utils.tensors import to_onehot
 
 
 def get_y_true_y_pred():
