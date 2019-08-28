@@ -1,6 +1,7 @@
 from abc import ABC
-from typing import Optional
+from typing import Optional, Union
 
+import torch
 from torch import Tensor, nn
 from torch.optim import Optimizer
 
@@ -37,6 +38,32 @@ class ApexLoss(object):
                 scaled_loss.backward(gradient, keep_graph, create_graph)
         else:
             self._loss.backward(gradient, keep_graph, create_graph)
+
+    def __add__(self, other):
+        if isinstance(other, Tensor):
+            self._loss = self._loss + other
+        elif isinstance(other, ApexLoss):
+            self._loss = self._loss + other.loss
+        else:
+            raise NotImplementedError("Cannot add an element of type: {} to an ApexLoss.".format(str(type(other))))
+        return self
+
+    def __mul__(self, value: Union[int, float]):
+        self._loss = self._loss * value
+        return self
+
+    def __rmul__(self, value: Union[int, float]):
+        self._loss = self._loss * value
+        return self
+
+    def __eq__(self, other):
+        if isinstance(other, Tensor):
+            is_equal = torch.all(torch.eq(self._loss, other))
+        elif isinstance(other, ApexLoss):
+            is_equal = torch.all(torch.eq(self._loss, other.loss))
+        else:
+            raise NotImplementedError("Cannot compare an element of type: {} to an ApexLoss.".format(str(type(other))))
+        return is_equal
 
 
 class ApexModule(ABC, nn.Module):
