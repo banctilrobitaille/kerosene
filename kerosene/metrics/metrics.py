@@ -11,7 +11,7 @@ from kerosene.utils.tensors import flatten, to_onehot
 
 class MetricType(Enum):
     Dice = "Dice"
-    GeneralizedDice = "GeneralizeDice"
+    GeneralizedDice = "GeneralizedDice"
     Accuracy = "Accuracy"
     Precision = "Precision"
     MeanAbsoluteError = "MeanAbsoluteError"
@@ -40,6 +40,9 @@ class MetricFactory(object):
             "TopKCategoricalAccuracy": TopKCategoricalAccuracy,
             "IoU": IoU,
             "mIoU": mIoU,
+            "Dice": Dice,
+            "GeneralizedDice": GeneralizedDice
+
         }
 
     def create(self, metric_type: Union[str, MetricType], params):
