@@ -4,11 +4,15 @@ import torch
 
 
 class RunConfiguration(object):
-    def __init__(self, use_amp=True, amp_opt_level='O2',
-                 devices=(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),)):
+    def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O2', num_workers: int = 4, local_rank: int = 0):
+        use_cuda = torch.cuda.is_available()
+
         self._use_amp = use_amp
         self._amp_opt_level = amp_opt_level
-        self._devices = devices
+        self._devices = ([torch.device("cuda:{}".format(device_id)) for device_id in
+                          range(torch.cuda.device_count())]) if use_cuda else torch.device("cpu")
+        self._num_workers = num_workers
+        self._local_rank = local_rank
 
     @property
     def use_amp(self):
@@ -22,6 +26,14 @@ class RunConfiguration(object):
     def devices(self):
         return self._devices
 
+    @property
+    def num_workers(self):
+        return self._num_workers
+
+    @property
+    def local_rank(self):
+        return self._local_rank
+
     def with_amp_opt_level(self, amp_opt_level: str):
         self._amp_opt_level = amp_opt_level
         return self
@@ -30,8 +42,16 @@ class RunConfiguration(object):
         self._use_amp = use_amp
         return self
 
-    def with_devices(self, devices: Union[Iterable[int], Iterable[torch.device]]):
+    def with_devices(self, devices: Union[Iterable[torch.device]]):
         self._devices = devices
+        return self
+
+    def with_num_workers(self, num_workers: int):
+        self._num_workers = num_workers
+        return self
+
+    def with_local_rank(self, local_rank: int):
+        self._local_rank = local_rank
         return self
 
 
