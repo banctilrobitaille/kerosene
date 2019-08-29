@@ -14,6 +14,7 @@ class Event(Enum):
     ON_TRAIN_BATCH_END = "train_batch_end"
     ON_VALID_BATCH_BEGIN = "valid_batch_begin"
     ON_VALID_BATCH_END = "valid_batch_end"
+    ON_BATCH_END = "batch_end"
 
 
 class Monitor(Enum):

@@ -243,6 +243,7 @@ class Trainer(EventGenerator):
                 raise NotImplementedError("Distributed training not implemented yet !")
             self.train_step(inputs, target)
             self.fire(Event.ON_TRAIN_BATCH_END)
+            self.fire(Event.ON_BATCH_END)
 
     def _validate_epoch(self):
 
@@ -266,6 +267,7 @@ class Trainer(EventGenerator):
                     raise NotImplementedError("Distributed training not implemented yet !")
                 self.validate_step(inputs, target)
                 self.fire(Event.ON_VALID_BATCH_END)
+                self.fire(Event.ON_BATCH_END)
 
     def with_event_handler(self, handler, event: Event, preprocessor: Callable = Identity()):
         if event in self._event_handlers.keys():
