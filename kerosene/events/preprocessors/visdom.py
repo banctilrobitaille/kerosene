@@ -88,7 +88,7 @@ class PlotLosses(EventPreprocessor):
     @staticmethod
     def create_train_batch_visdom_data(step, state: ModelTrainerState):
         return [VisdomData(state.name, "Training Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           step, state.step_train_loss,
+                           [step], state.step_train_loss,
                            params={'opts': {'xlabel': str(PlotFrequency.EVERY_STEP),
                                             'ylabel': "Loss",
                                             'title': "{} {} per {}".format(state.name, "Training Loss",
@@ -98,7 +98,7 @@ class PlotLosses(EventPreprocessor):
     @staticmethod
     def create_valid_batch_visdom_data(step, state: ModelTrainerState):
         return [VisdomData(state.name, "Validation Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           step, state.step_valid_loss,
+                           [step], state.step_valid_loss,
                            params={'opts': {'xlabel': str(PlotFrequency.EVERY_STEP),
                                             'ylabel': "Loss",
                                             'title': "{} {} per {}".format(state.name, "Validation Loss",
@@ -146,7 +146,7 @@ class PlotMetrics(EventPreprocessor):
     @staticmethod
     def create_train_batch_visdom_data(step, state: ModelTrainerState):
         return [VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           step, state.step_train_metric,
+                           [step], state.step_train_metric,
                            params={'opts': {'xlabel': str(PlotFrequency.EVERY_STEP),
                                             'ylabel': "Metric",
                                             'title': "{} {} per {}".format(state.name, "Training Metric",
@@ -156,7 +156,7 @@ class PlotMetrics(EventPreprocessor):
     @staticmethod
     def create_valid_batch_visdom_data(step, state: ModelTrainerState):
         return [VisdomData(state.name, "Validation Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           step, state.step_valid_metric,
+                           [step], state.step_valid_metric,
                            params={'opts': {'xlabel': str(PlotFrequency.EVERY_STEP),
                                             'ylabel': "Metric",
                                             'title': "{} {} per {}".format(state.name, "Validation Metric",
@@ -187,15 +187,15 @@ class PlotCustomVariables(EventPreprocessor):
 
     def create_epoch_visdom_data(self, state: TrainerState):
         return [VisdomData(state.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_EPOCH,
-                           state.epoch, state.custom_variables[self._variable_name], self._params)]
+                           [state.epoch], state.custom_variables[self._variable_name], self._params)]
 
     def create_train_batch_visdom_data(self, state: TrainerState):
         return [VisdomData(state.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_STEP,
-                           state.train_step, state.custom_variables[self._variable_name], self._params)]
+                           [state.train_step], state.custom_variables[self._variable_name], self._params)]
 
     def create_valid_batch_visdom_data(self, state: TrainerState):
         return [VisdomData(state.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_STEP,
-                           state.valid_step, state.custom_variables[self._variable_name], self._params)]
+                           [state.valid_step], state.custom_variables[self._variable_name], self._params)]
 
 
 class PlotLR(EventPreprocessor):
@@ -207,7 +207,7 @@ class PlotLR(EventPreprocessor):
 
     @staticmethod
     def create_epoch_visdom_data(epoch, state: ModelTrainerState):
-        return VisdomData(state.name, "Learning Rate", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH, epoch,
+        return VisdomData(state.name, "Learning Rate", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH, [epoch],
                           state.optimizer_lr,
                           params={'opts': {'xlabel': str(PlotFrequency.EVERY_EPOCH),
                                            'ylabel': "Learning Rate",
