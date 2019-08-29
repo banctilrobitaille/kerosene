@@ -18,6 +18,9 @@ class YamlConfigurationParser(object):
                     map(lambda model_name: ModelTrainerConfiguration.from_dict(model_name,
                                                                                config["models"][model_name]),
                         config["models"]))
+
+                model_trainer_configs = model_trainer_configs if len(model_trainer_configs) > 1 else \
+                    model_trainer_configs[0]
                 training_config = TrainerConfiguration(config['training'])
                 return model_trainer_configs, training_config
             except yaml.YAMLError as e:
