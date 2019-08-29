@@ -9,6 +9,7 @@ class Event(Enum):
     ON_TRAIN_EPOCH_END = "train_epoch_end"
     ON_VALID_EPOCH_BEGIN = "valid_epoch_begin"
     ON_VALID_EPOCH_END = "valid_epoch_end"
+    ON_100_TRAIN_STEPS = "100_train_steps"
     ON_EPOCH_END = "epoch_end"
     ON_TRAIN_BATCH_BEGIN = "train_batch_begin"
     ON_TRAIN_BATCH_END = "train_batch_end"

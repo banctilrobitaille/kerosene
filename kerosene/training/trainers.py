@@ -242,6 +242,8 @@ class Trainer(EventGenerator):
                 # TODO Implement distributed training
                 raise NotImplementedError("Distributed training not implemented yet !")
             self.train_step(inputs, target)
+            if self._current_train_batch % 100 == 0:
+                self.fire(Event.ON_100_TRAIN_STEPS)
             self.fire(Event.ON_TRAIN_BATCH_END)
             self.fire(Event.ON_BATCH_END)
 
