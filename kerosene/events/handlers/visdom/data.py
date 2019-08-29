@@ -1,10 +1,12 @@
 from enum import Enum
+from typing import Union, List, Optional
 
 
 class PlotType(Enum):
     LINE_PLOT = "Line Plot"
     IMAGES_PLOT = "Images Plot"
     IMAGE_PLOT = "Image Plot"
+    PIE_PLOT = "Pie Plot"
 
     def __str__(self):
         return self.value
@@ -20,11 +22,13 @@ class PlotFrequency(Enum):
 
 class VisdomData(object):
 
-    def __init__(self, source_name, variable_name: str, plot_type: PlotType, plot_frequency: PlotFrequency, x, y):
+    def __init__(self, source_name, variable_name: Union[List[str], str], plot_type: PlotType,
+                 plot_frequency: PlotFrequency, opts: dict, x, y):
         self._source_name = source_name
         self._variable_name = variable_name
         self._plot_type = plot_type
         self._plot_frequency = plot_frequency
+        self._opts = opts
         self._x = x
         self._y = y
 
@@ -47,6 +51,10 @@ class VisdomData(object):
     @property
     def plot_frequency(self):
         return self._plot_frequency
+
+    @property
+    def opts(self):
+        return self._opts
 
     @property
     def x(self):

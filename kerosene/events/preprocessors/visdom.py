@@ -200,6 +200,32 @@ class Plot2DImagesVariable(EventPreprocessor):
                            state.valid_step, state.custom_variables[self._custom_variable_name])]
 
 
+class PlotPieChart(EventPreprocessor):
+    def __init__(self, custom_variable_name):
+        self._custom_variable_name = custom_variable_name
+
+    def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
+
+        if event == Event.ON_EPOCH_END:
+            return self.create_epoch_visdom_data(state)
+        elif event == Event.ON_TRAIN_BATCH_END:
+            return self.create_train_batch_visdom_data(state)
+        elif event == Event.ON_VALID_BATCH_END:
+            return self.create_valid_batch_visdom_data(state)
+
+    def create_epoch_visdom_data(self, state: TrainerState):
+        return [VisdomData(state.name, self._custom_variable_name, PlotType.PIE_PLOT, PlotFrequency.EVERY_EPOCH,
+                           state.epoch, state.custom_variables[self._custom_variable_name])]
+
+    def create_train_batch_visdom_data(self, state: TrainerState):
+        return [VisdomData(state.name, self._custom_variable_name, PlotType.PIE_PLOT, PlotFrequency.EVERY_STEP,
+                           state.train_step, state.custom_variables[self._custom_variable_name])]
+
+    def create_valid_batch_visdom_data(self, state: TrainerState):
+        return [VisdomData(state.name, self._custom_variable_name, PlotType.PIE_PLOT, PlotFrequency.EVERY_STEP,
+                           state.valid_step, state.custom_variables[self._custom_variable_name])]
+
+
 class PlotLR(EventPreprocessor):
 
     def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
