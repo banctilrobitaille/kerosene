@@ -200,6 +200,16 @@ class Plot2DImagesVariable(EventPreprocessor):
                            state.valid_step, state.custom_variables[self._custom_variable_name])]
 
 
+class PlotPieChart(EventPreprocessor):
+    def __init__(self, custom_variable_name, opts):
+        self._custom_variable_name = custom_variable_name
+        self._opts = opts
+
+    def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
+        return [VisdomData(state.name, self._custom_variable_name, PlotType.PIE_PLOT, None,
+                           state.custom_variables[self._custom_variable_name], None, self._opts)]
+
+
 class PlotLR(EventPreprocessor):
 
     def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
