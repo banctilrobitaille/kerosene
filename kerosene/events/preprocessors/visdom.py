@@ -77,7 +77,7 @@ class PlotLosses(EventPreprocessor):
     @staticmethod
     def create_epoch_visdom_data(epoch, state: ModelTrainerState):
         return [VisdomData(state.name, "Training Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           [epoch, epoch], [state.train_loss, state.valid_loss],
+                           [[epoch, epoch]], [[state.train_loss, state.valid_loss]],
                            params={'opts': {'xlabel': str(PlotFrequency.EVERY_EPOCH),
                                             'ylabel': "Loss",
                                             'title': "{} {} per {}".format(state.name, "Loss",
@@ -135,8 +135,8 @@ class PlotMetrics(EventPreprocessor):
 
     @staticmethod
     def create_epoch_visdom_data(epoch, state: ModelTrainerState):
-        return [VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH, [epoch, epoch],
-                           [state.train_metric, state.valid_metric],
+        return [VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH, [[epoch, epoch]],
+                           [[state.train_metric, state.valid_metric]],
                            params={'opts': {'xlabel': str(PlotFrequency.EVERY_EPOCH), 'ylabel': "Metric",
                                             'title': "{} {} per {}".format(state.name, "Metric",
                                                                            str(PlotFrequency.EVERY_EPOCH)),
