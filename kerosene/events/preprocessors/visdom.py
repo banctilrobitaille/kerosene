@@ -82,8 +82,8 @@ class PlotLosses(EventPreprocessor):
                                             'ylabel': "Loss",
                                             'title': "{} {} per {}".format(state.name, "Loss",
                                                                            str(PlotFrequency.EVERY_EPOCH)),
-                                            'legend': ["{} Training".format(state.name),
-                                                       "{} Validation".format(state.name)]}})]
+                                            'legend': ["Training",
+                                                       "Validation"]}})]
 
     @staticmethod
     def create_train_batch_visdom_data(step, state: ModelTrainerState):
@@ -135,13 +135,14 @@ class PlotMetrics(EventPreprocessor):
 
     @staticmethod
     def create_epoch_visdom_data(epoch, state: ModelTrainerState):
-        return [VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH, [[epoch, epoch]],
-                           [[state.train_metric, state.valid_metric]],
-                           params={'opts': {'xlabel': str(PlotFrequency.EVERY_EPOCH), 'ylabel': "Metric",
-                                            'title': "{} {} per {}".format(state.name, "Metric",
-                                                                           str(PlotFrequency.EVERY_EPOCH)),
-                                            'legend': ["{} Training".format(state.name),
-                                                       "{} Validation".format(state.name)]}})]
+        return [
+            VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH, [[epoch, epoch]],
+                       [[state.train_metric, state.valid_metric]],
+                       params={'opts': {'xlabel': str(PlotFrequency.EVERY_EPOCH), 'ylabel': "Metric",
+                                        'title': "{} {} per {}".format(state.name, "Metric",
+                                                                       str(PlotFrequency.EVERY_EPOCH)),
+                                        'legend': ["Training",
+                                                   "Validation"]}})]
 
     @staticmethod
     def create_train_batch_visdom_data(step, state: ModelTrainerState):
