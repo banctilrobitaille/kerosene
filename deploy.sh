@@ -1,2 +1,2 @@
 python3 setup.py sdist
-python3 -m twine upload dist/torch-kerosene-0.0.75.tar.gz
+python3 -m twine upload dist/torch-kerosene-0.0.76.tar.gz
