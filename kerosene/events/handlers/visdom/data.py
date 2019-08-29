@@ -23,7 +23,7 @@ class PlotFrequency(Enum):
 class VisdomData(object):
 
     def __init__(self, source_name, variable_name: Union[List[str], str], plot_type: PlotType,
-                 plot_frequency: Optional[PlotFrequency], x, y, opts: Optional[dict]):
+                 plot_frequency: Optional[PlotFrequency], x, y, opts: dict = None):
         self._source_name = source_name
         self._variable_name = variable_name
         self._plot_type = plot_type
