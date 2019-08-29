@@ -28,28 +28,24 @@ class PlotAllModelStateVariables(EventPreprocessor):
 
     @staticmethod
     def create_epoch_visdom_data(epoch, state: ModelTrainerState):
-        return [VisdomData(state.name, "Training Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           epoch, state.train_loss),
-                VisdomData(state.name, "Validation Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           epoch, state.valid_loss),
-                VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           epoch, state.train_metric),
-                VisdomData(state.name, "Validation Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           epoch, state.valid_metric, )]
+        data = PlotLosses.create_epoch_visdom_data(epoch, state)
+        data.extend(PlotMetrics.create_epoch_visdom_data(epoch, state))
+
+        return data
 
     @staticmethod
     def create_train_batch_visdom_data(step, state: ModelTrainerState):
-        return [VisdomData(state.name, "Training Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           step, state.step_train_loss),
-                VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           step, state.step_train_metric)]
+        data = PlotLosses.create_train_batch_visdom_data(step, state)
+        data.extend(PlotMetrics.create_train_batch_visdom_data(step, state))
+
+        return data
 
     @staticmethod
     def create_valid_batch_visdom_data(step, state: ModelTrainerState):
-        return [VisdomData(state.name, "Validation Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           step, state.step_valid_loss),
-                VisdomData(state.name, "Validation Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           step, state.step_valid_metric)]
+        data = PlotLosses.create_valid_batch_visdom_data(step, state)
+        data.extend(PlotMetrics.create_valid_batch_visdom_data(step, state))
+
+        return data
 
     def filter_by_name(self, model_trainer_state: ModelTrainerState):
         return True if self._model_name is None else model_trainer_state.name == self._model_name
@@ -81,19 +77,31 @@ class PlotLosses(EventPreprocessor):
     @staticmethod
     def create_epoch_visdom_data(epoch, state: ModelTrainerState):
         return [VisdomData(state.name, "Training Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           epoch, state.train_loss),
-                VisdomData(state.name, "Validation Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           epoch, state.valid_loss)]
+                           epoch, [state.train_loss, state.valid_loss],
+                           params={'xlabel': str(PlotFrequency.EVERY_EPOCH),
+                                   'ylabel': "Loss",
+                                   'title': "{} {} per {}".format(state.name, "Loss", str(PlotFrequency.EVERY_EPOCH)),
+                                   'legend': ["{} Training".format(state.name), "{} Validation".format(state.name)]})]
 
     @staticmethod
     def create_train_batch_visdom_data(step, state: ModelTrainerState):
         return [VisdomData(state.name, "Training Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           step, state.step_train_loss)]
+                           step, state.step_train_loss, params={'xlabel': str(PlotFrequency.EVERY_STEP),
+                                                                'ylabel': "Loss",
+                                                                'title': "{} {} per {}".format(state.name,
+                                                                                               "Training Loss", str(
+                                                                        PlotFrequency.EVERY_EPOCH)),
+                                                                'legend': [state.name]})]
 
     @staticmethod
     def create_valid_batch_visdom_data(step, state: ModelTrainerState):
         return [VisdomData(state.name, "Validation Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           step, state.step_valid_loss)]
+                           step, state.step_valid_loss, params={'xlabel': str(PlotFrequency.EVERY_STEP),
+                                                                'ylabel': "Loss",
+                                                                'title': "{} {} per {}".format(state.name,
+                                                                                               "Validation Loss", str(
+                                                                        PlotFrequency.EVERY_EPOCH)),
+                                                                'legend': [state.name]})]
 
     def filter_by_name(self, model_trainer_state: ModelTrainerState):
         return True if self._model_name is None else model_trainer_state.name == self._model_name
@@ -124,20 +132,32 @@ class PlotMetrics(EventPreprocessor):
 
     @staticmethod
     def create_epoch_visdom_data(epoch, state: ModelTrainerState):
-        return [VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           epoch, state.train_metric),
-                VisdomData(state.name, "Validation Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           epoch, state.valid_metric, )]
+        return [VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH, epoch,
+                           [state.train_metric, state.valid_metric],
+                           params={'xlabel': str(PlotFrequency.EVERY_EPOCH), 'ylabel': "Metric",
+                                   'title': "{} {} per {}".format(state.name, "Metric", str(PlotFrequency.EVERY_EPOCH)),
+                                   'legend': ["{} Training".format(state.name), "{} Validation".format(state.name)]})]
 
     @staticmethod
     def create_train_batch_visdom_data(step, state: ModelTrainerState):
         return [VisdomData(state.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           step, state.step_train_metric)]
+                           step, state.step_train_metric, params={'xlabel': str(PlotFrequency.EVERY_STEP),
+                                                                  'ylabel': "Metric",
+                                                                  'title': "{} {} per {}".format(state.name,
+                                                                                                 "Training Metric", str(
+                                                                          PlotFrequency.EVERY_STEP)),
+                                                                  'legend': [state.name]})]
 
     @staticmethod
     def create_valid_batch_visdom_data(step, state: ModelTrainerState):
         return [VisdomData(state.name, "Validation Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           step, state.step_valid_metric)]
+                           step, state.step_valid_metric, params={'xlabel': str(PlotFrequency.EVERY_STEP),
+                                                                  'ylabel': "Metric",
+                                                                  'title': "{} {} per {}".format(state.name,
+                                                                                                 "Validation Metric",
+                                                                                                 str(
+                                                                                                     PlotFrequency.EVERY_STEP)),
+                                                                  'legend': [state.name]})]
 
     def filter_by_name(self, model_trainer_state: ModelTrainerState):
         return True if self._model_name is None else model_trainer_state.name == self._model_name
@@ -146,37 +166,11 @@ class PlotMetrics(EventPreprocessor):
         return [item for sublist in list_of_visdom_data for item in sublist]
 
 
-class Plot2DImageVariable(EventPreprocessor):
-
-    def __init__(self, custom_variable_name):
-        self._custom_variable_name = custom_variable_name
-
-    def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
-
-        if event == Event.ON_EPOCH_END:
-            return self.create_epoch_visdom_data(state)
-        elif event == Event.ON_TRAIN_BATCH_END:
-            return self.create_train_batch_visdom_data(state)
-        elif event == Event.ON_VALID_BATCH_END:
-            return self.create_valid_batch_visdom_data(state)
-
-    def create_epoch_visdom_data(self, state: TrainerState):
-        return [VisdomData(state.name, self._custom_variable_name, PlotType.IMAGE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           state.epoch, state.custom_variables[self._custom_variable_name])]
-
-    def create_train_batch_visdom_data(self, state: TrainerState):
-        return [VisdomData(state.name, self._custom_variable_name, PlotType.IMAGE_PLOT, PlotFrequency.EVERY_STEP,
-                           state.train_step, state.custom_variables[self._custom_variable_name])]
-
-    def create_valid_batch_visdom_data(self, state: TrainerState):
-        return [VisdomData(state.name, self._custom_variable_name, PlotType.IMAGE_PLOT, PlotFrequency.EVERY_STEP,
-                           state.valid_step, state.custom_variables[self._custom_variable_name])]
-
-
-class Plot2DImagesVariable(EventPreprocessor):
-
-    def __init__(self, custom_variable_name):
-        self._custom_variable_name = custom_variable_name
+class PlotCustomVariables(EventPreprocessor):
+    def __init__(self, variable_name, plot_type: PlotType, params):
+        self._variable_name = variable_name
+        self._plot_type = plot_type
+        self._params = params
 
     def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
 
@@ -188,26 +182,16 @@ class Plot2DImagesVariable(EventPreprocessor):
             return self.create_valid_batch_visdom_data(state)
 
     def create_epoch_visdom_data(self, state: TrainerState):
-        return [VisdomData(state.name, self._custom_variable_name, PlotType.IMAGES_PLOT, PlotFrequency.EVERY_EPOCH,
-                           state.epoch, state.custom_variables[self._custom_variable_name])]
+        return [VisdomData(state.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_EPOCH,
+                           state.epoch, state.custom_variables[self._variable_name], self._params)]
 
     def create_train_batch_visdom_data(self, state: TrainerState):
-        return [VisdomData(state.name, self._custom_variable_name, PlotType.IMAGES_PLOT, PlotFrequency.EVERY_STEP,
-                           state.train_step, state.custom_variables[self._custom_variable_name])]
+        return [VisdomData(state.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_STEP,
+                           state.train_step, state.custom_variables[self._variable_name], self._params)]
 
     def create_valid_batch_visdom_data(self, state: TrainerState):
-        return [VisdomData(state.name, self._custom_variable_name, PlotType.IMAGES_PLOT, PlotFrequency.EVERY_STEP,
-                           state.valid_step, state.custom_variables[self._custom_variable_name])]
-
-
-class PlotPieChart(EventPreprocessor):
-    def __init__(self, custom_variable_name, opts):
-        self._custom_variable_name = custom_variable_name
-        self._opts = opts
-
-    def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
-        return [VisdomData(state.name, self._custom_variable_name, PlotType.PIE_PLOT, None,
-                           state.custom_variables[self._custom_variable_name], None, self._opts)]
+        return [VisdomData(state.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_STEP,
+                           state.valid_step, state.custom_variables[self._variable_name], self._params)]
 
 
 class PlotLR(EventPreprocessor):
@@ -220,4 +204,10 @@ class PlotLR(EventPreprocessor):
     @staticmethod
     def create_epoch_visdom_data(epoch, state: ModelTrainerState):
         return VisdomData(state.name, "Learning Rate", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH, epoch,
-                          state.optimizer_lr)
+                          state.optimizer_lr, params={'xlabel': str(PlotFrequency.EVERY_EPOCH),
+                                                      'ylabel': "Learning Rate",
+                                                      'title': "{} {} per {}".format(state.name,
+                                                                                     "Learning Rate",
+                                                                                     str(
+                                                                                         PlotFrequency.EVERY_STEP)),
+                                                      'legend': [state.name]})

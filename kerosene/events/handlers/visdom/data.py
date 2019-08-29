@@ -23,14 +23,14 @@ class PlotFrequency(Enum):
 class VisdomData(object):
 
     def __init__(self, source_name, variable_name: Union[List[str], str], plot_type: PlotType,
-                 plot_frequency: Optional[PlotFrequency], x, y, opts: dict = None):
+                 plot_frequency: Optional[PlotFrequency], x, y, params: dict = None):
         self._source_name = source_name
         self._variable_name = variable_name
         self._plot_type = plot_type
         self._plot_frequency = plot_frequency
         self._x = x
         self._y = y
-        self._opts = opts
+        self._params = params
 
     @property
     def id(self):
@@ -61,8 +61,8 @@ class VisdomData(object):
         return self._y
 
     @property
-    def opts(self):
-        return self._opts
+    def params(self):
+        return self._params
 
     def __hash__(self):
         return hash(self._source_name + self._variable_name + str(self._plot_frequency) + str(self._plot_type))
