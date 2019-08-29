@@ -303,8 +303,8 @@ class SimpleTrainer(Trainer):
         model = self._model_trainers[0]
 
         pred = model.forward(inputs)
-        model.compute_train_metric(pred, target)
-        model.compute_train_loss(pred, target)
+        model.compute_valid_metric(pred, target)
+        model.compute_valid_loss(pred, target)
 
     def scheduler_step(self):
         self._model_trainers[0].scheduler_step()
