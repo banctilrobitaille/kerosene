@@ -98,7 +98,7 @@ class ApexModule(ABC, nn.Module):
         self._amp_id = amp_id
 
         if on_single_device(run_config.devices):
-            self._model.cuda(device=run_config.devices[0])
+            self._model.to(device=run_config.devices[0])
         else:
             # TODO implement distributed training
             raise NotImplementedError("Distributed training is not yet supported")
