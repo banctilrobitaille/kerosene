@@ -10,7 +10,7 @@ class RunConfiguration(object):
         self._use_amp = use_amp
         self._amp_opt_level = amp_opt_level
         self._devices = ([torch.device("cuda:{}".format(device_id)) for device_id in
-                          range(torch.cuda.device_count())]) if use_cuda else torch.device("cpu")
+                          range(torch.cuda.device_count())]) if use_cuda else [torch.device("cpu")]
         self._local_rank = local_rank
 
     @property
