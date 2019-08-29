@@ -7,7 +7,7 @@ README_CONTENT = (pathlib.Path(__file__).parent / "README.md").read_text()
 
 setup(
     name='torch-kerosene',
-    version='0.0.78',
+    version='0.0.79',
     description='Deep Learning framework for fast and clean research development with Pytorch',
     long_description=README_CONTENT,
     long_description_content_type='text/markdown',
