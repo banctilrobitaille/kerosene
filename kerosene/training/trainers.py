@@ -317,18 +317,22 @@ class SimpleTrainer(Trainer):
 
 
 class ModelTrainerFactory(object):
-    def __init__(self, model_factory: ModelFactory, optimizer_factory=OptimizerFactory(),
+    def __init__(self, model=None, model_factory: ModelFactory = None, optimizer_factory=OptimizerFactory(),
                  scheduler_factory=SchedulerFactory(), criterion_factory=CriterionFactory(),
                  metric_factory=MetricFactory()):
+        self._model = model
         self._model_factory = model_factory
         self._optimizer_factory = optimizer_factory
         self._scheduler_factory = scheduler_factory
         self._criterion_factory = criterion_factory
         self._metric_factory = metric_factory
 
+        assert (self._model is not None) or (
+                self._model_factory is not None), "A model or a model factory must be provided !"
+
     def create(self, model_trainer_config: ModelTrainerConfiguration):
-        model = self._model_factory.create(model_trainer_config.model_type,
-                                           model_trainer_config.model_params)
+        model = self._model if self._model is not None else self._model_factory.create(model_trainer_config.model_type,
+                                                                                       model_trainer_config.model_params)
         optimizer = self._optimizer_factory.create(model_trainer_config.optimizer_type,
                                                    model.parameters(),
                                                    model_trainer_config.optimizer_params)
