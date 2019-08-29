@@ -181,6 +181,8 @@ class PlotCustomVariables(EventPreprocessor):
 
         if event == Event.ON_EPOCH_END:
             return self.create_epoch_visdom_data(state)
+        elif event == Event.ON_100_TRAIN_STEPS:
+            return self.create_train_batch_visdom_data(state)
         elif event == Event.ON_TRAIN_BATCH_END:
             return self.create_train_batch_visdom_data(state)
         elif event == Event.ON_VALID_BATCH_END:
