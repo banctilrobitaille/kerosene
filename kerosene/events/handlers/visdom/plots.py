@@ -53,9 +53,9 @@ class LinePlot(VisdomPlot):
 
     def update(self, visdom_data: VisdomData):
         if self._window is None:
-            self._window = self._visdom.line(X=[visdom_data.x], Y=visdom_data.y, **visdom_data.params)
+            self._window = self._visdom.line(X=visdom_data.x, Y=visdom_data.y, **visdom_data.params)
         else:
-            self._visdom.line(X=[visdom_data.x], Y=visdom_data.y, win=self._window, update='append')
+            self._visdom.line(X=visdom_data.x, Y=visdom_data.y, win=self._window, update='append')
 
 
 class PiePlot(VisdomPlot):
@@ -66,9 +66,9 @@ class PiePlot(VisdomPlot):
 
     def update(self, visdom_data: VisdomData):
         if self._window is None:
-            self._window = self._visdom.pie(X=visdom_data.x, **visdom_data.params)
+            self._window = self._visdom.pie(X=visdom_data.y, **visdom_data.params)
         else:
-            self._visdom.pie(X=visdom_data.x, win=self._window, **visdom_data.params)
+            self._visdom.pie(X=visdom_data.y, win=self._window, **visdom_data.params)
 
 
 class VisdomPlotFactory(object):
