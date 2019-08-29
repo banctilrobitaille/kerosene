@@ -132,7 +132,8 @@ class ModelTrainer(ApexModule):
 class Trainer(EventGenerator):
 
     def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
-                 model_trainers: Union[List[ModelTrainer], ModelTrainer], run_config: RunConfiguration):
+                 model_trainers: Union[List[ModelTrainer], ModelTrainer],
+                 run_config: RunConfiguration = RunConfiguration()):
         super().__init__()
         self._name = name
         self._train_data_loader = train_data_loader
