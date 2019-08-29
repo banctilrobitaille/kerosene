@@ -67,12 +67,12 @@ class PiePlot(VisdomPlot):
 
     def update(self, visdom_data: VisdomData):
         if self._window is None:
-            self._visdom.pie(X=[visdom_data.x],
+            self._visdom.pie(X=visdom_data.x,
                              win=self._window,
                              opts=visdom_data.opts)
         else:
             self._visdom.pie(
-                X=[visdom_data.x],
+                X=visdom_data.x,
                 win=self._window)
 
 
