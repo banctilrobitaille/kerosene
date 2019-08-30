@@ -84,5 +84,4 @@ if __name__ == '__main__':
             .train(training_config.nb_epochs)
     else:
         trainer = MNISTTrainer(training_config, model_trainer, train_loader, test_loader, run_config) \
-            .with_event_handler(ConsoleLogger(), Event.ON_EPOCH_END) \
             .train(training_config.nb_epochs)

@@ -46,10 +46,14 @@ class MNISTTrainer(Trainer):
         model.step()
 
     def validate_step(self, inputs, target):
-        pass
+        model = self._model_trainers[0]
+
+        pred = model.forward(inputs)
+        model.compute_valid_metric(pred, target)
+        model.compute_valid_loss(pred, target)
 
     def scheduler_step(self):
-        pass
+        self._model_trainers[0].scheduler_step()
 
     @staticmethod
     def merge_tensors(tensor_0, tensor_1):
