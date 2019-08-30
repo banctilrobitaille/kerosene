@@ -43,6 +43,7 @@ class MNISTTrainer(Trainer):
 
         model.zero_grad()
         loss.backward()
+        self.average_gradients(model)
         model.step()
 
     def validate_step(self, inputs, target):
@@ -56,15 +57,11 @@ class MNISTTrainer(Trainer):
         self._model_trainers[0].scheduler_step()
 
     @staticmethod
-    def merge_tensors(tensor_0, tensor_1):
-        return torch.cat((tensor_0, tensor_1), dim=0)
-
-    @staticmethod
-    def _reduce_tensor(tensor):
-        rt = tensor.clone()
-        torch.distributed.all_reduce(rt, op=torch.distributed.ReduceOp.SUM)
-        rt /= int(os.environ['WORLD_SIZE'])
-        return rt
+    def average_gradients(model):
+        size = float(torch.distributed.get_world_size())
+        for param in model.parameters():
+            torch.distributed.all_reduce(param.grad.data, op=torch.distributed.ReduceOp.SUM)
+            param.grad.data /= size
 
     def on_epoch_begin(self):
         pass

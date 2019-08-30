@@ -106,4 +106,5 @@ class ApexModule(ABC, nn.Module):
                 self._model, self._optimizer, opt_level=run_config.amp_opt_level, num_losses=num_losses)
 
         if not on_single_device(run_config.devices):
+
             self._model = DDP(self._model, delay_allreduce=True)
