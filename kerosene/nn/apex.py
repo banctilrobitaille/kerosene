@@ -98,13 +98,10 @@ class ApexModule(ABC, nn.Module):
     def initialize(self, amp_id: int, num_losses: int, run_config: RunConfiguration):
         self._amp_id = amp_id
         self._use_amp = run_config.use_amp
-        torch.cuda.set_device(run_config.devices[run_config.local_rank])
         self._model.to(run_config.devices[run_config.local_rank])
 
         if APEX_AVAILABLE and self._use_amp:
             self._model, self._optimizer = amp.initialize(
                 self._model, self._optimizer, opt_level=run_config.amp_opt_level, num_losses=num_losses)
-
         if not on_single_device(run_config.devices):
-
             self._model = DDP(self._model, delay_allreduce=True)

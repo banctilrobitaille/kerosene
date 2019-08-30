@@ -40,10 +40,11 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     CONFIG_FILE_PATH = "config.yml"
     args = ArgsParserFactory.create_parser().parse_args()
-    run_config = RunConfiguration(True, args.amp_opt_level, args.local_rank)
+    run_config = RunConfiguration(args.use_amp, args.amp_opt_level, args.local_rank)
     devices = run_config.devices
 
     torch.distributed.init_process_group(backend='nccl', init_method='env://', rank=args.local_rank)
+
     model_trainer_config, training_config = YamlConfigurationParser.parse(CONFIG_FILE_PATH)
 
     train_dataset = torchvision.datasets.MNIST('./files/', train=True, download=True, transform=Compose(
@@ -74,7 +75,7 @@ if __name__ == '__main__':
         visdom_logger = VisdomLogger(VisdomConfiguration.from_yml(CONFIG_FILE_PATH))
 
     # Initialize the model trainers
-    model_trainer = ModelTrainerFactory(model=SimpleNet()).create(model_trainer_config)
+    model_trainer = ModelTrainerFactory(model=SimpleNet()).create(model_trainer_config, run_config)
 
     if run_config.local_rank == 0:
         # Train with the training strategy

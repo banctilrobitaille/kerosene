@@ -1,13 +1,13 @@
 training:
   nb_epochs: 100
-  batch_size: 16
+  batch_size: 32
 
 models:
   SimpleNet:
     type: SimpleNet
     params:
     optimizer:
-      type: SGD
+      type: FusedSGD
       params:
         lr: 0.01
         momentum: 0.5

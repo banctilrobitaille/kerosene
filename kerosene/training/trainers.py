@@ -330,16 +330,19 @@ class ModelTrainerFactory(object):
         assert (self._model is not None) or (
                 self._model_factory is not None), "A model or a model factory must be provided !"
 
-    def create(self, model_trainer_config: ModelTrainerConfiguration):
+    def create(self, model_trainer_config: ModelTrainerConfiguration, run_config):
         model = self._model if self._model is not None else self._model_factory.create(model_trainer_config.model_type,
                                                                                        model_trainer_config.model_params)
+        torch.cuda.set_device(run_config.devices[run_config.local_rank])
         optimizer = self._optimizer_factory.create(model_trainer_config.optimizer_type,
                                                    model.parameters(),
                                                    model_trainer_config.optimizer_params)
+
         scheduler = self._scheduler_factory.create(model_trainer_config.scheduler_type, optimizer,
                                                    model_trainer_config.scheduler_params)
         criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
                                                    model_trainer_config.criterion_params)
+
         metric = self._metric_factory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
 
         return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric)

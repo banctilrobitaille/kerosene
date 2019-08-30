@@ -3,9 +3,12 @@ from typing import Union
 
 from torch import optim
 from torch.optim import Optimizer
+from apex.optimizers import FusedSGD, FusedAdam
 
 
 class OptimizerType(Enum):
+    FusedSGD = "FusedSGD"
+    FusedAdam = "FusedAdam"
     SGD = "SGD"
     Adam = "Adam"
     Adagrad = "Adagrad"
@@ -26,6 +29,8 @@ class OptimizerFactory(object):
         self._optimizers = {
             "Adam": optim.Adam,
             "SGD": optim.SGD,
+            "FusedSGD": FusedSGD,
+            "FusedAdam": FusedAdam,
         }
 
     def create(self, optimizer_type: Union[str, OptimizerType], model_params, params):
