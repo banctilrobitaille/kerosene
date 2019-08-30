@@ -14,15 +14,15 @@
 # limitations under the License.
 # ==============================================================================
 
-import os
 from typing import List
 
-import numpy as np
 import torch
+from torch.utils.data import DataLoader
+
 from kerosene.config.trainers import RunConfiguration
 from kerosene.training.trainers import ModelTrainer
 from kerosene.training.trainers import Trainer
-from torch.utils.data import DataLoader
+from kerosene.utils.distributed import on_single_device
 
 
 class MNISTTrainer(Trainer):
@@ -43,7 +43,10 @@ class MNISTTrainer(Trainer):
 
         model.zero_grad()
         loss.backward()
-        self.average_gradients(model)
+
+        if not on_single_device(self._run_config.devices):
+            self.average_gradients(model)
+
         model.step()
 
     def validate_step(self, inputs, target):

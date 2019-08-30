@@ -6,7 +6,6 @@ from argparse import ArgumentParser
 from kerosene.config.trainers import RunConfiguration
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + '/../../../')
-import torch
 import torchvision
 from torchvision.transforms import Compose, ToTensor, Normalize
 
@@ -39,31 +38,31 @@ if __name__ == '__main__':
     CONFIG_FILE_PATH = "config.yml"
     args = ArgsParserFactory.create_parser().parse_args()
     run_config = RunConfiguration(args.use_amp, args.amp_opt_level, args.local_rank)
-    devices = run_config.devices
 
     model_trainer_config, training_config = YamlConfigurationParser.parse(CONFIG_FILE_PATH)
 
+    # Initialize the dataset. This is the only part the user must define manually.
     train_dataset = torchvision.datasets.MNIST('./files/', train=True, download=True, transform=Compose(
         [ToTensor(), Normalize((0.1307,), (0.3081,))]))
-
     test_dataset = torchvision.datasets.MNIST('./files/', train=False, download=True, transform=Compose(
         [ToTensor(), Normalize((0.1307,), (0.3081,))]))
 
+    # Initialize loaders.
     train_loader, valid_loader = DataloaderFactory(train_dataset, test_dataset).create(run_config, training_config)
 
+    # Initialize the loggers.
     if run_config.local_rank == 0:
-        # Initialize the loggers
         visdom_logger = VisdomLogger(VisdomConfiguration.from_yml(CONFIG_FILE_PATH))
 
-    # Initialize the model trainers
+    # Initialize the model trainers.
     model_trainer = ModelTrainerFactory(model=SimpleNet()).create(model_trainer_config, run_config)
 
+    # Train with the training strategy.
     if run_config.local_rank == 0:
-        # Train with the training strategy
-        trainer = MNISTTrainer(training_config, model_trainer, train_loader, test_loader, run_config) \
+        trainer = MNISTTrainer(training_config, model_trainer, train_loader, valid_loader, run_config) \
             .with_event_handler(ConsoleLogger(), Event.ON_EPOCH_END) \
             .with_event_handler(visdom_logger, Event.ON_EPOCH_END, PlotAllModelStateVariables()) \
             .train(training_config.nb_epochs)
     else:
-        trainer = MNISTTrainer(training_config, model_trainer, train_loader, test_loader, run_config) \
+        trainer = MNISTTrainer(training_config, model_trainer, train_loader, valid_loader, run_config) \
             .train(training_config.nb_epochs)
