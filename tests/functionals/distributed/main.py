@@ -23,7 +23,6 @@ from tests.functionals.distributed.models import SimpleNet
 from tests.functionals.distributed.mnist_trainer import MNISTTrainer
 
 
-
 class ArgsParserFactory(object):
 
     @staticmethod
@@ -39,9 +38,8 @@ if __name__ == '__main__':
     CONFIG_FILE_PATH = "config.yml"
     args = ArgsParserFactory.create_parser().parse_args()
     run_config = RunConfiguration(True, "O2", args.local_rank, args.distributed)
-    print("local_rank : {} ".format(args.local_rank))
-    print(run_config.device)
-    
+    print("local_rank : {} device : {} ".format(args.local_rank, run_config.device))
+
     torch.distributed.init_process_group(backend='nccl', init_method='env://')
     model_trainer_config, training_config = YamlConfigurationParser.parse(CONFIG_FILE_PATH)
 
@@ -52,8 +50,8 @@ if __name__ == '__main__':
         [ToTensor(), Normalize((0.1307,), (0.3081,))]))
 
     if run_config.is_distributed:
-        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
-        valid_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset)
+        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, rank=run_config.local_rank)
+        valid_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset, rank=run_config.local_rank)
 
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                batch_size=training_config.batch_size,
