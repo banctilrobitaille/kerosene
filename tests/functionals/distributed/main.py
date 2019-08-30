@@ -8,12 +8,11 @@ from kerosene.config.trainers import RunConfiguration
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + '/../../../')
 import torch
 import torchvision
-import multiprocessing
-from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToTensor, Normalize
 
 from kerosene.config.parsers import YamlConfigurationParser
 from kerosene.events import Event
+from kerosene.dataloaders.factories import DataloaderFactory
 from kerosene.events.handlers.console import ConsoleLogger
 from kerosene.events.handlers.visdom.config import VisdomConfiguration
 from kerosene.events.handlers.visdom.visdom import VisdomLogger
@@ -21,7 +20,6 @@ from kerosene.events.preprocessors.visdom import PlotAllModelStateVariables
 from kerosene.training.trainers import ModelTrainerFactory
 from tests.functionals.distributed.models import SimpleNet
 from tests.functionals.distributed.mnist_trainer import MNISTTrainer
-from kerosene.utils.distributed import on_single_device
 
 
 class ArgsParserFactory(object):
@@ -43,8 +41,6 @@ if __name__ == '__main__':
     run_config = RunConfiguration(args.use_amp, args.amp_opt_level, args.local_rank)
     devices = run_config.devices
 
-    torch.distributed.init_process_group(backend='nccl', init_method='env://', rank=args.local_rank)
-
     model_trainer_config, training_config = YamlConfigurationParser.parse(CONFIG_FILE_PATH)
 
     train_dataset = torchvision.datasets.MNIST('./files/', train=True, download=True, transform=Compose(
@@ -53,23 +49,8 @@ if __name__ == '__main__':
     test_dataset = torchvision.datasets.MNIST('./files/', train=False, download=True, transform=Compose(
         [ToTensor(), Normalize((0.1307,), (0.3081,))]))
 
-    if not on_single_device(devices):
-        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
-        valid_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset)
+    train_loader, valid_loader = DataloaderFactory(train_dataset, test_dataset).create(run_config, training_config)
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                               batch_size=training_config.batch_size,
-                                               shuffle=False if not on_single_device(devices) else True,
-                                               num_workers=multiprocessing.cpu_count(),
-                                               sampler=train_sampler if not on_single_device(devices) else None,
-                                               pin_memory=torch.cuda.is_available())
-
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                              batch_size=training_config.batch_size,
-                                              shuffle=False if not on_single_device(devices) else True,
-                                              num_workers=multiprocessing.cpu_count(),
-                                              sampler=valid_sampler if not on_single_device(devices) else None,
-                                              pin_memory=torch.cuda.is_available())
     if run_config.local_rank == 0:
         # Initialize the loggers
         visdom_logger = VisdomLogger(VisdomConfiguration.from_yml(CONFIG_FILE_PATH))
