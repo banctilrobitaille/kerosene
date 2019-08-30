@@ -1,7 +1,7 @@
-from abc import ABC, abstractmethod
+import multiprocessing
+from typing import Callable
 
 import torch
-import multiprocessing
 from torch.utils.data import Dataset
 
 from kerosene.config.trainers import RunConfiguration, TrainerConfiguration
@@ -13,7 +13,7 @@ class DataloaderFactory(object):
         self._train_dataset = train_dataset
         self._valid_dataset = valid_dataset
 
-    def create(self, run_config: RunConfiguration, training_config: TrainerConfiguration):
+    def create(self, run_config: RunConfiguration, training_config: TrainerConfiguration, collate_fn: Callable = None):
         devices = run_config.devices
         if not on_single_device(devices):
             torch.distributed.init_process_group(backend='nccl', init_method='env://', rank=run_config.local_rank)
@@ -25,6 +25,7 @@ class DataloaderFactory(object):
                                                    shuffle=False if not on_single_device(devices) else True,
                                                    num_workers=multiprocessing.cpu_count(),
                                                    sampler=train_sampler if not on_single_device(devices) else None,
+                                                   collate_fn=collate_fn,
                                                    pin_memory=torch.cuda.is_available())
 
         valid_loader = torch.utils.data.DataLoader(dataset=self._valid_dataset,
@@ -32,5 +33,6 @@ class DataloaderFactory(object):
                                                    shuffle=False if not on_single_device(devices) else True,
                                                    num_workers=multiprocessing.cpu_count(),
                                                    sampler=valid_sampler if not on_single_device(devices) else None,
+                                                   collate_fn=collate_fn,
                                                    pin_memory=torch.cuda.is_available())
         return train_loader, valid_loader
