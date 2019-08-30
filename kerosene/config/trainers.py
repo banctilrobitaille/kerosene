@@ -4,13 +4,12 @@ import torch
 
 
 class RunConfiguration(object):
-    def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O2', local_rank: int = 0, distributed: bool = False):
+    def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O2', local_rank: int = 0):
         self._use_amp = use_amp
         self._amp_opt_level = amp_opt_level
-        self._device = [torch.device("cuda:" + str(local_rank)) if torch.cuda.is_available() else torch.device(
-            "cpu")]
+        self._devices = ([torch.device("cuda:{}".format(device_id)) for device_id in
+                          range(torch.cuda.device_count())]) if torch.cuda.is_available() else [torch.device("cpu")]
         self._local_rank = local_rank
-        self._is_distributed = distributed
 
     @property
     def use_amp(self):
@@ -21,16 +20,12 @@ class RunConfiguration(object):
         return self._amp_opt_level
 
     @property
-    def device(self):
-        return self._device
+    def devices(self):
+        return self._devices
 
     @property
     def local_rank(self):
         return self._local_rank
-
-    @property
-    def is_distributed(self):
-        return self._is_distributed
 
     def with_amp_opt_level(self, amp_opt_level: str):
         self._amp_opt_level = amp_opt_level

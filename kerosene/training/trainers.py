@@ -230,13 +230,13 @@ class Trainer(EventGenerator):
             self.fire(Event.ON_TRAIN_BATCH_BEGIN)
             self._state.with_train_step(self.current_train_step)
 
-            inputs = [single_input.to(self._run_config.device[0], non_blocking=True) for
+            inputs = [single_input.to(self._run_config.devices[self._run_config.local_rank], non_blocking=True) for
                       single_input in inputs] if isinstance(inputs, list) else inputs.to(
-                self._run_config.device[0], non_blocking=True)
+                self._run_config.devices[self._run_config.local_rank], non_blocking=True)
 
-            target = [single_target.to(self._run_config.device[0], non_blocking=True) for
+            target = [single_target.to(self._run_config.devices[self._run_config.local_rank], non_blocking=True) for
                       single_target in target] if isinstance(target, list) else target.to(
-                self._run_config.device[0], non_blocking=True)
+                self._run_config.devices[self._run_config.local_rank], non_blocking=True)
 
             self.train_step(inputs, target)
             if self._current_train_batch % 100 == 0:
@@ -254,13 +254,13 @@ class Trainer(EventGenerator):
                 self.fire(Event.ON_VALID_BATCH_BEGIN)
                 self._state.with_valid_step(self.current_valid_step)
 
-                inputs = [single_input.to(self._run_config.device[0], non_blocking=True) for
+                inputs = [single_input.to(self._run_config.devices[self._run_config.local_rank], non_blocking=True) for
                           single_input in inputs] if isinstance(inputs, list) else inputs.to(
-                    self._run_config.device[0], non_blocking=True)
+                    self._run_config.devices[self._run_config.local_rank], non_blocking=True)
 
-                target = [single_target.to(self._run_config.device[0], non_blocking=True) for
+                target = [single_target.to(self._run_config.devices[self._run_config.local_rank], non_blocking=True) for
                           single_target in target] if isinstance(target, list) else target.to(
-                    self._run_config.device[0], non_blocking=True)
+                    self._run_config.devices[self._run_config.local_rank], non_blocking=True)
 
                 self.validate_step(inputs, target)
                 self.fire(Event.ON_VALID_BATCH_END)

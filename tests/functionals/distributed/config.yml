@@ -1,6 +1,6 @@
 training:
-  nb_epochs: 10
-  batch_size: 64
+  nb_epochs: 100
+  batch_size: 16
 
 models:
   SimpleNet:

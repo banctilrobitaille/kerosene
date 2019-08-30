@@ -21,6 +21,7 @@ from kerosene.events.preprocessors.visdom import PlotAllModelStateVariables
 from kerosene.training.trainers import ModelTrainerFactory
 from tests.functionals.distributed.models import SimpleNet
 from tests.functionals.distributed.mnist_trainer import MNISTTrainer
+from kerosene.utils.distributed import on_single_device
 
 
 class ArgsParserFactory(object):
@@ -28,8 +29,10 @@ class ArgsParserFactory(object):
     @staticmethod
     def create_parser():
         parser = ArgumentParser(description='DeepNormalize Training')
+        parser.add_argument("--use_amp", dest="use_amp", action="store_true", default=True)
+        parser.add_argument("--amp-opt-level", dest="amp_opt_level", type=str, default="O2",
+                            help="O0 - FP32 training, O1 - Mixed Precision (recommended), O2 - Almost FP16 Mixed Precision, O3 - FP16 Training.")
         parser.add_argument("--local_rank", dest="local_rank", default=0, type=int, help="The local_rank of the GPU.")
-        parser.add_argument('--distributed', action='store_true', default=False)
         return parser
 
 
@@ -37,8 +40,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     CONFIG_FILE_PATH = "config.yml"
     args = ArgsParserFactory.create_parser().parse_args()
-    run_config = RunConfiguration(True, "O2", args.local_rank, args.distributed)
-    print("local_rank : {} device : {} ".format(args.local_rank, run_config.device))
+    run_config = RunConfiguration(True, args.amp_opt_level, args.local_rank)
+    devices = run_config.devices
 
     torch.distributed.init_process_group(backend='nccl', init_method='env://')
     model_trainer_config, training_config = YamlConfigurationParser.parse(CONFIG_FILE_PATH)
@@ -49,22 +52,22 @@ if __name__ == '__main__':
     test_dataset = torchvision.datasets.MNIST('./files/', train=False, download=True, transform=Compose(
         [ToTensor(), Normalize((0.1307,), (0.3081,))]))
 
-    if run_config.is_distributed:
-        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, rank=run_config.local_rank)
-        valid_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset, rank=run_config.local_rank)
+    if not on_single_device(devices):
+        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+        valid_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset)
 
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                batch_size=training_config.batch_size,
-                                               shuffle=False if run_config.is_distributed else True,
+                                               shuffle=False if not on_single_device(devices) else True,
                                                num_workers=multiprocessing.cpu_count(),
-                                               sampler=train_sampler if run_config.is_distributed else None,
+                                               sampler=train_sampler if not on_single_device(devices) else None,
                                                pin_memory=torch.cuda.is_available())
 
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
                                               batch_size=training_config.batch_size,
-                                              shuffle=False if run_config.is_distributed else True,
+                                              shuffle=False if not on_single_device(devices) else True,
                                               num_workers=multiprocessing.cpu_count(),
-                                              sampler=valid_sampler if run_config.is_distributed else None,
+                                              sampler=valid_sampler if not on_single_device(devices) else None,
                                               pin_memory=torch.cuda.is_available())
     if run_config.local_rank == 0:
         # Initialize the loggers
