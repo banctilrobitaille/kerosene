@@ -32,13 +32,13 @@ class ApexLoss(object):
     def loss(self):
         return self._loss
 
-    def backward(self, gradient: Optional[Tensor] = None, keep_graph=False,
+    def backward(self, gradient: Optional[Tensor] = None, retain_graph=False,
                  create_graph=False) -> None:
         if APEX_AVAILABLE:
             with amp.scale_loss(self._loss, self._optimizer, loss_id=self._loss_id) as scaled_loss:
-                scaled_loss.backward(gradient, keep_graph, create_graph)
+                scaled_loss.backward(gradient, retain_graph, create_graph)
         else:
-            self._loss.backward(gradient, keep_graph, create_graph)
+            self._loss.backward(gradient, retain_graph, create_graph)
 
     def __add__(self, other):
         if isinstance(other, Tensor):
