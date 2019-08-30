@@ -1,0 +1,31 @@
+training:
+  nb_epochs: 10
+  batch_size: 64
+
+models:
+  SimpleNet:
+    type: SimpleNet
+    params:
+    optimizer:
+      type: SGD
+      params:
+        lr: 0.01
+        momentum: 0.5
+        weight_decay: 0
+    scheduler:
+      type: ReduceLROnPlateau
+      params:
+        mode: 'min'
+        factor: 0.1
+        patience: 3
+    criterion:
+      type: CrossEntropyLoss
+      params:
+    metric:
+      type: Accuracy
+      params:
+
+visdom:
+  server: "http://10.0.3.9"
+  port: 8097
+  env: "Kerosene-MNIST"

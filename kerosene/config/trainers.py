@@ -4,14 +4,13 @@ import torch
 
 
 class RunConfiguration(object):
-    def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O2', local_rank: int = 0):
-        use_cuda = torch.cuda.is_available()
-
+    def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O2', local_rank: int = 0, distributed: bool = False):
         self._use_amp = use_amp
         self._amp_opt_level = amp_opt_level
-        self._devices = ([torch.device("cuda:{}".format(device_id)) for device_id in
-                          range(torch.cuda.device_count())]) if use_cuda else [torch.device("cpu")]
+        self._device = [torch.device("cuda:" + str(local_rank)) if torch.cuda.is_available() else torch.device(
+            "cpu")]
         self._local_rank = local_rank
+        self._is_distributed = distributed
 
     @property
     def use_amp(self):
@@ -22,12 +21,16 @@ class RunConfiguration(object):
         return self._amp_opt_level
 
     @property
-    def devices(self):
-        return self._devices
+    def device(self):
+        return self._device
 
     @property
     def local_rank(self):
         return self._local_rank
+
+    @property
+    def is_distributed(self):
+        return self._is_distributed
 
     def with_amp_opt_level(self, amp_opt_level: str):
         self._amp_opt_level = amp_opt_level
@@ -37,8 +40,8 @@ class RunConfiguration(object):
         self._use_amp = use_amp
         return self
 
-    def with_devices(self, devices: Union[Iterable[torch.device]]):
-        self._devices = devices
+    def with_device(self, devices: Union[Iterable[torch.device]]):
+        self._device = devices
         return self
 
     def with_local_rank(self, local_rank: int):

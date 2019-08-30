@@ -17,7 +17,6 @@ from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training.state import TrainerState, ModelTrainerState
-from kerosene.utils.distributed import on_single_device
 
 
 class ModelTrainer(ApexModule):
@@ -231,16 +230,14 @@ class Trainer(EventGenerator):
             self.fire(Event.ON_TRAIN_BATCH_BEGIN)
             self._state.with_train_step(self.current_train_step)
 
-            if on_single_device(self._run_config.devices):
+            inputs = [single_input.to(self._run_config.device[0], non_blocking=True) for
+                      single_input in inputs] if isinstance(inputs, list) else inputs.to(
+                self._run_config.device[0], non_blocking=True)
 
-                inputs = [single_input.to(self._run_config.devices[0]) for single_input in inputs] if isinstance(
-                    inputs, list) else inputs.to(self._run_config.devices[0])
+            target = [single_target.to(self._run_config.device[0], non_blocking=True) for
+                      single_target in target] if isinstance(target, list) else target.to(
+                self._run_config.device[0], non_blocking=True)
 
-                target = [single_target.to(self._run_config.devices[0]) for single_target in target] if isinstance(
-                    target, list) else target.to(self._run_config.devices[0])
-            else:
-                # TODO Implement distributed training
-                raise NotImplementedError("Distributed training not implemented yet !")
             self.train_step(inputs, target)
             if self._current_train_batch % 100 == 0:
                 self.fire(Event.ON_100_TRAIN_STEPS)
@@ -257,16 +254,14 @@ class Trainer(EventGenerator):
                 self.fire(Event.ON_VALID_BATCH_BEGIN)
                 self._state.with_valid_step(self.current_valid_step)
 
-                if on_single_device(self._run_config.devices):
-                    if on_single_device(self._run_config.devices):
-                        inputs = [single_input.to(self._run_config.devices[0]) for single_input in
-                                  inputs] if isinstance(inputs, list) else inputs.to(self._run_config.devices[0])
+                inputs = [single_input.to(self._run_config.device[0], non_blocking=True) for
+                          single_input in inputs] if isinstance(inputs, list) else inputs.to(
+                    self._run_config.device[0], non_blocking=True)
 
-                        target = [single_target.to(self._run_config.devices[0]) for single_target in
-                                  target] if isinstance(target, list) else target.to(self._run_config.devices[0])
-                else:
-                    # TODO Implement distributed training
-                    raise NotImplementedError("Distributed training not implemented yet !")
+                target = [single_target.to(self._run_config.device[0], non_blocking=True) for
+                          single_target in target] if isinstance(target, list) else target.to(
+                    self._run_config.device[0], non_blocking=True)
+
                 self.validate_step(inputs, target)
                 self.fire(Event.ON_VALID_BATCH_END)
                 self.fire(Event.ON_BATCH_END)
