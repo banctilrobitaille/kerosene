@@ -2,7 +2,7 @@
 > Deep Learning framework for fast and clean research development with Pytorch
 
 ## MNIST Example
- > Here is a simple example that shows how easy and clean it is to train a simple network. In very few lines of code, the model is trained and you got Visdom + Console logging automatically. See full example there: [MNIST-Kerosene](https://github.com/banctilrobitaille/kerosene-mnist)
+ > Here is a simple example that shows how easy and clean it is to train a simple network. In very few lines of code, the model is trained using mixed precision and you got Visdom + Console logging automatically. See full example there: [MNIST-Kerosene](https://github.com/banctilrobitaille/kerosene-mnist)
  
 ```python
 if __name__ == "__main__":
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     model_trainer = ModelTrainerFactory(model=SimpleNet()).create(model_trainer_config)
 
     # Train with the training strategy
-    trainer = SimpleTrainer("MNIST Trainer", train_loader, test_loader, model_trainer) \
+    SimpleTrainer("MNIST Trainer", train_loader, test_loader, model_trainer) \
         .with_event_handler(ConsoleLogger(), Event.ON_EPOCH_END) \
         .with_event_handler(visdom_logger, Event.ON_EPOCH_END, PlotAllModelStateVariables()) \
         .train(training_config.nb_epochs)
