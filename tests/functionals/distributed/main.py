@@ -43,7 +43,7 @@ if __name__ == '__main__':
     run_config = RunConfiguration(True, args.amp_opt_level, args.local_rank)
     devices = run_config.devices
 
-    torch.distributed.init_process_group(backend='nccl', init_method='env://')
+    torch.distributed.init_process_group(backend='nccl', init_method='env://', rank=args.local_rank)
     model_trainer_config, training_config = YamlConfigurationParser.parse(CONFIG_FILE_PATH)
 
     train_dataset = torchvision.datasets.MNIST('./files/', train=True, download=True, transform=Compose(
