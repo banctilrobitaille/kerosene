@@ -35,8 +35,8 @@ class RunConfiguration(object):
         self._use_amp = use_amp
         return self
 
-    def with_device(self, devices: Union[Iterable[torch.device]]):
-        self._device = devices
+    def with_devices(self, devices: Union[Iterable[torch.device]]):
+        self._devices = devices
         return self
 
     def with_local_rank(self, local_rank: int):
