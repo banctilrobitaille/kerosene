@@ -1,6 +1,5 @@
 import unittest
 
-import torch
 from hamcrest import *
 from ignite.metrics import Accuracy
 from mockito import mock, verify, spy
@@ -8,21 +7,12 @@ from torch import nn
 from torch.optim import Optimizer, lr_scheduler
 
 from kerosene.training.trainers import ModelTrainer
+from tests.constants import *
 
 
 # noinspection PyUnresolvedReferences
 class ModelTrainerTest(unittest.TestCase):
-    DELTA = 0.0001
     MODEL_NAME = "Harry Potter"
-    ZERO_TENSOR = torch.tensor([0.0])
-    TARGET_CLASS_0 = torch.tensor([0])
-    TARGET_CLASS_1 = torch.tensor([1])
-    MODEL_PREDICTION_CLASS_0 = torch.tensor([[1.0, 0.0]])
-    MODEL_PREDICTION_CLASS_1 = torch.tensor([[0.0, 1.0]])
-
-    MINIMUM_BINARY_CROSS_ENTROPY_LOSS = torch.tensor(0.3133)
-    MAXIMUM_BINARY_CROSS_ENTROPY_LOSS = torch.tensor(1.3133)
-    AVERAGED_BINARY_CROSS_ENTROPY_LOSS = (MINIMUM_BINARY_CROSS_ENTROPY_LOSS + MAXIMUM_BINARY_CROSS_ENTROPY_LOSS) / 2
 
     def setUp(self) -> None:
         self._model_mock = mock(nn.Module)
@@ -38,85 +28,77 @@ class ModelTrainerTest(unittest.TestCase):
         super().tearDown()
 
     def test_should_compute_train_metric_and_update_state(self):
-        self._model_trainer.compute_train_metric(self.MODEL_PREDICTION_CLASS_0, self.TARGET_CLASS_0)
+        self._model_trainer.compute_train_metric(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
         assert_that(self._model_trainer.state.train_metric, equal_to(torch.tensor([1.0])))
         assert_that(self._model_trainer.state.step_train_metric, equal_to(torch.tensor([1.0])))
-        verify(self._metric_computer_mock).update((self.MODEL_PREDICTION_CLASS_0, self.TARGET_CLASS_0))
+        verify(self._metric_computer_mock).update((MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0))
 
-        self._model_trainer.compute_train_metric(self.MODEL_PREDICTION_CLASS_1, self.TARGET_CLASS_0)
+        self._model_trainer.compute_train_metric(MODEL_PREDICTION_CLASS_1, TARGET_CLASS_0)
         assert_that(self._model_trainer.state.train_metric, equal_to(torch.tensor([0.5])))
         assert_that(self._model_trainer.state.step_train_metric, equal_to(torch.tensor([0.0])))
 
         verify(self._metric_computer_mock, times=2).compute()
 
-        assert_that(self._model_trainer.state.valid_metric, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_valid_metric, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_train_loss, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_valid_loss, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.train_loss, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.valid_loss, equal_to(self.ZERO_TENSOR))
+        assert_that(self._model_trainer.state.valid_metric, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.step_valid_metric, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.step_train_loss, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.step_valid_loss, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.train_loss, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.valid_loss, equal_to(ZERO_TENSOR))
 
     def test_should_compute_valid_metric_and_update_state(self):
-        self._model_trainer.compute_valid_metric(self.MODEL_PREDICTION_CLASS_0, self.TARGET_CLASS_0)
+        self._model_trainer.compute_valid_metric(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
         assert_that(self._model_trainer.state.valid_metric, equal_to(torch.tensor([1.0])))
         assert_that(self._model_trainer.state.step_valid_metric, equal_to(torch.tensor([1.0])))
-        verify(self._metric_computer_mock).update((self.MODEL_PREDICTION_CLASS_0, self.TARGET_CLASS_0))
+        verify(self._metric_computer_mock).update((MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0))
 
-        self._model_trainer.compute_valid_metric(self.MODEL_PREDICTION_CLASS_1, self.TARGET_CLASS_0)
+        self._model_trainer.compute_valid_metric(MODEL_PREDICTION_CLASS_1, TARGET_CLASS_0)
         assert_that(self._model_trainer.state.valid_metric, equal_to(torch.tensor([0.5])))
         assert_that(self._model_trainer.state.step_valid_metric, equal_to(torch.tensor([0.0])))
 
         verify(self._metric_computer_mock, times=2).compute()
 
-        assert_that(self._model_trainer.state.train_metric, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_train_metric, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_train_loss, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_valid_loss, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.train_loss, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.valid_loss, equal_to(self.ZERO_TENSOR))
+        assert_that(self._model_trainer.state.train_metric, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.step_train_metric, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.step_train_loss, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.step_valid_loss, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.train_loss, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.valid_loss, equal_to(ZERO_TENSOR))
 
     def test_should_compute_train_loss_and_update_state(self):
-        loss = self._model_trainer.compute_train_loss(self.MODEL_PREDICTION_CLASS_0, self.TARGET_CLASS_0)
+        loss = self._model_trainer.compute_train_loss(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
 
-        assert_that(loss._loss, close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
-        assert_that(self._model_trainer.state.step_train_loss,
-                    close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
-        assert_that(self._model_trainer.state.train_loss,
-                    close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
+        assert_that(loss._loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.state.step_train_loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.state.train_loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
 
-        loss = self._model_trainer.compute_train_loss(self.MODEL_PREDICTION_CLASS_0, self.TARGET_CLASS_1)
-        assert_that(loss._loss, close_to(self.MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
-        assert_that(self._model_trainer.state.step_train_loss,
-                    close_to(self.MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
-        assert_that(self._model_trainer.state.train_loss,
-                    close_to(self.AVERAGED_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
+        loss = self._model_trainer.compute_train_loss(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_1)
+        assert_that(loss._loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.state.step_train_loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.state.train_loss, close_to(AVERAGED_BINARY_CROSS_ENTROPY_LOSS, DELTA))
 
-        assert_that(self._model_trainer.state.train_metric, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.valid_metric, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_train_metric, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_valid_metric, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_valid_loss, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.valid_loss, equal_to(self.ZERO_TENSOR))
+        assert_that(self._model_trainer.state.train_metric, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.valid_metric, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.step_train_metric, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.step_valid_metric, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.step_valid_loss, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.valid_loss, equal_to(ZERO_TENSOR))
 
     def test_should_compute_valid_loss_and_update_state(self):
-        loss = self._model_trainer.compute_valid_loss(self.MODEL_PREDICTION_CLASS_0, self.TARGET_CLASS_0)
+        loss = self._model_trainer.compute_valid_loss(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
 
-        assert_that(loss._loss, close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
-        assert_that(self._model_trainer.state.step_valid_loss,
-                    close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
-        assert_that(self._model_trainer.state.valid_loss,
-                    close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
+        assert_that(loss._loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.state.step_valid_loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.state.valid_loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
 
-        loss = self._model_trainer.compute_valid_loss(self.MODEL_PREDICTION_CLASS_0, self.TARGET_CLASS_1)
-        assert_that(loss._loss, close_to(self.MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
-        assert_that(self._model_trainer.state.step_valid_loss,
-                    close_to(self.MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
-        assert_that(self._model_trainer.state.valid_loss,
-                    close_to(self.AVERAGED_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
+        loss = self._model_trainer.compute_valid_loss(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_1)
+        assert_that(loss._loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.state.step_valid_loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.state.valid_loss, close_to(AVERAGED_BINARY_CROSS_ENTROPY_LOSS, DELTA))
 
-        assert_that(self._model_trainer.state.train_metric, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.valid_metric, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_train_metric, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_valid_metric, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_train_loss, equal_to(self.ZERO_TENSOR))
-        assert_that(self._model_trainer.state.train_loss, equal_to(self.ZERO_TENSOR))
+        assert_that(self._model_trainer.state.train_metric, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.valid_metric, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.step_train_metric, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.step_valid_metric, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.step_train_loss, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.train_loss, equal_to(ZERO_TENSOR))
