@@ -1,5 +1,5 @@
 #  <img src="/icons/oil.png" width="90" vertical-align="bottom">Kerosene
-> Deep Learning framework for fast and clean research development with Pytorch
+> Deep Learning framework for fast and clean research development with Pytorch - <b>[see the doc for more details.](https://kerosene.readthedocs.io/en/latest/)</b>
 
 ## MNIST Example
  > Here is a simple example that shows how easy and clean it is to train a simple network. In very few lines of code, the model is trained using mixed precision and you got Visdom + Console logging automatically. See full example there: [MNIST-Kerosene](https://github.com/banctilrobitaille/kerosene-mnist)
