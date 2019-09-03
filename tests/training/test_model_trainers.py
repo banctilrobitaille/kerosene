@@ -73,7 +73,30 @@ class ModelTrainerTest(unittest.TestCase):
 
     def test_should_compute_train_loss_and_update_state(self):
         loss = self._model_trainer.compute_train_loss(self.MODEL_PREDICTION_CLASS_0, self.TARGET_CLASS_0)
+
         assert_that(loss._loss, close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
+        assert_that(self._model_trainer.state.step_train_loss,
+                    close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
+        assert_that(self._model_trainer.state.train_loss, close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
+
+        assert_that(self._model_trainer.state.train_metric, equal_to(torch.tensor([0.0])))
+        assert_that(self._model_trainer.state.valid_metric, equal_to(torch.tensor([0.0])))
+        assert_that(self._model_trainer.state.step_train_metric, equal_to(torch.tensor([0.0])))
+        assert_that(self._model_trainer.state.step_valid_metric, equal_to(torch.tensor([0.0])))
+        assert_that(self._model_trainer.state.step_valid_loss, equal_to(torch.tensor([0.0])))
+        assert_that(self._model_trainer.state.valid_loss, equal_to(torch.tensor([0.0])))
 
     def test_should_compute_valid_loss_and_update_state(self):
-        pass
+        loss = self._model_trainer.compute_valid_loss(self.MODEL_PREDICTION_CLASS_0, self.TARGET_CLASS_0)
+
+        assert_that(loss._loss, close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
+        assert_that(self._model_trainer.state.step_valid_loss,
+                    close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
+        assert_that(self._model_trainer.state.valid_loss, close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
+
+        assert_that(self._model_trainer.state.train_metric, equal_to(torch.tensor([0.0])))
+        assert_that(self._model_trainer.state.valid_metric, equal_to(torch.tensor([0.0])))
+        assert_that(self._model_trainer.state.step_train_metric, equal_to(torch.tensor([0.0])))
+        assert_that(self._model_trainer.state.step_valid_metric, equal_to(torch.tensor([0.0])))
+        assert_that(self._model_trainer.state.step_train_loss, equal_to(torch.tensor([0.0])))
+        assert_that(self._model_trainer.state.train_loss, equal_to(torch.tensor([0.0])))
