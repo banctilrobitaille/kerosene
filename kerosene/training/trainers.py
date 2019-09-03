@@ -230,13 +230,11 @@ class Trainer(EventGenerator):
             self.fire(Event.ON_TRAIN_BATCH_BEGIN)
             self._state.with_train_step(self.current_train_step)
 
-            inputs = [single_input.to(self._run_config.devices[self._run_config.local_rank], non_blocking=True) for
-                      single_input in inputs] if isinstance(inputs, list) else inputs.to(
-                self._run_config.devices[self._run_config.local_rank], non_blocking=True)
+            inputs = [single_input.to(self._run_config.device, non_blocking=True) for single_input in
+                      inputs] if isinstance(inputs, list) else inputs.to(self._run_config.device, non_blocking=True)
 
-            target = [single_target.to(self._run_config.devices[self._run_config.local_rank], non_blocking=True) for
-                      single_target in target] if isinstance(target, list) else target.to(
-                self._run_config.devices[self._run_config.local_rank], non_blocking=True)
+            target = [single_target.to(self._run_config.device, non_blocking=True) for single_target in
+                      target] if isinstance(target, list) else target.to(self._run_config.device, non_blocking=True)
 
             self.train_step(inputs, target)
             if self._current_train_batch % 100 == 0:
@@ -254,13 +252,11 @@ class Trainer(EventGenerator):
                 self.fire(Event.ON_VALID_BATCH_BEGIN)
                 self._state.with_valid_step(self.current_valid_step)
 
-                inputs = [single_input.to(self._run_config.devices[self._run_config.local_rank], non_blocking=True) for
-                          single_input in inputs] if isinstance(inputs, list) else inputs.to(
-                    self._run_config.devices[self._run_config.local_rank], non_blocking=True)
+                inputs = [single_input.to(self._run_config.device, non_blocking=True) for single_input in
+                          inputs] if isinstance(inputs, list) else inputs.to(self._run_config.device, non_blocking=True)
 
-                target = [single_target.to(self._run_config.devices[self._run_config.local_rank], non_blocking=True) for
-                          single_target in target] if isinstance(target, list) else target.to(
-                    self._run_config.devices[self._run_config.local_rank], non_blocking=True)
+                target = [single_target.to(self._run_config.device, non_blocking=True) for single_target in
+                          target] if isinstance(target, list) else target.to(self._run_config.device, non_blocking=True)
 
                 self.validate_step(inputs, target)
                 self.fire(Event.ON_VALID_BATCH_END)
@@ -331,7 +327,7 @@ class ModelTrainerFactory(object):
                 self._model_factory is not None), "A model or a model factory must be provided !"
 
     def create(self, model_trainer_config: ModelTrainerConfiguration, run_config):
-        torch.cuda.set_device(run_config.devices[run_config.local_rank])
+        torch.cuda.set_device(run_config.device)
 
         model = self._model if self._model is not None else self._model_factory.create(model_trainer_config.model_type,
                                                                                        model_trainer_config.model_params)

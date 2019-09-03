@@ -98,7 +98,7 @@ class ApexModule(ABC, nn.Module):
     def initialize(self, amp_id: int, num_losses: int, run_config: RunConfiguration):
         self._amp_id = amp_id
         self._use_amp = run_config.use_amp
-        self._model.to(run_config.devices[run_config.local_rank])
+        self._model.to(run_config.device)
 
         if APEX_AVAILABLE and self._use_amp:
             self._model, self._optimizer = amp.initialize(
