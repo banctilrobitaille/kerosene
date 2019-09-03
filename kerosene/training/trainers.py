@@ -352,7 +352,7 @@ class ModelTrainerFactory(object):
         scheduler = self._scheduler_factory.create(model_trainer_config.scheduler_type, optimizer,
                                                    model_trainer_config.scheduler_params)
         criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
-                                                   model_trainer_config.criterion_params)
+                                                   model_trainer_config.criterion_params).to(run_config.device)
 
         metric = self._metric_factory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
 
