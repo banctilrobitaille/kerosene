@@ -22,6 +22,7 @@ class PlotType(Enum):
     IMAGES_PLOT = "Images Plot"
     IMAGE_PLOT = "Image Plot"
     PIE_PLOT = "Pie Plot"
+    TEXT_PLOT = "Text Plot"
 
     def __str__(self):
         return self.value

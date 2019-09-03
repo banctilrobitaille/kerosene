@@ -86,6 +86,19 @@ class PiePlot(VisdomPlot):
             self._visdom.pie(X=visdom_data.y, win=self._window, **visdom_data.params)
 
 
+class TextPlot(VisdomPlot):
+    def __init__(self, visdom):
+        super().__init__(visdom)
+        self._visdom = visdom
+        self._window = None
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.text(text=visdom_data.y)
+        else:
+            self._visdom.text(text=visdom_data.y, win=self._window)
+
+
 class VisdomPlotFactory(object):
 
     @staticmethod
