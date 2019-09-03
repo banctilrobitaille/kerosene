@@ -12,13 +12,15 @@ from kerosene.training.trainers import ModelTrainer
 
 # noinspection PyUnresolvedReferences
 class ModelTrainerTest(unittest.TestCase):
-    MODEL_NAME = "Harry Potter"
     DELTA = 0.0001
-    MODEL_PREDICTION_CLASS_0 = torch.tensor([[1.0, 0.0]])
-    MODEL_PREDICTION_CLASS_1 = torch.tensor([[0.0, 1.0]])
-    MINIMUM_BINARY_CROSS_ENTROPY_LOSS = torch.tensor(0.3133)
+    MODEL_NAME = "Harry Potter"
     TARGET_CLASS_0 = torch.tensor([0])
     TARGET_CLASS_1 = torch.tensor([1])
+    MODEL_PREDICTION_CLASS_0 = torch.tensor([[1.0, 0.0]])
+    MODEL_PREDICTION_CLASS_1 = torch.tensor([[0.0, 1.0]])
+
+    # The minimum possible value of CrossEntropyLoss when tha pred dist == target dist
+    MINIMUM_BINARY_CROSS_ENTROPY_LOSS = torch.tensor(0.3133)
 
     def setUp(self) -> None:
         self._model_mock = mock(nn.Module)
