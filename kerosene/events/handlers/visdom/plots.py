@@ -86,6 +86,146 @@ class PiePlot(VisdomPlot):
             self._visdom.pie(X=visdom_data.y, win=self._window, **visdom_data.params)
 
 
+class HistogramPlot(VisdomPlot):
+
+    def __init__(self, visdom: Visdom):
+        super().__init__(visdom)
+        self._visdom = visdom
+        self._window = None
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.histogram(X=visdom_data.y, **visdom_data.params)
+        else:
+            self._visdom.histogram(X=visdom_data.y, win=self._window, **visdom_data.params)
+
+
+class ScatterPlot(VisdomPlot):
+
+    def __init__(self, visdom: Visdom):
+        super().__init__(visdom)
+        self._visdom = visdom
+        self._window = None
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.scatter(X=visdom_data.x, Y=visdom_data.y, **visdom_data.params)
+        else:
+            self._visdom.scatter(X=visdom_data.x, Y=visdom_data.y, win=self._window, **visdom_data.params)
+
+
+class StemPlot(VisdomPlot):
+
+    def __init__(self, visdom: Visdom):
+        super().__init__(visdom)
+        self._visdom = visdom
+        self._window = None
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.stem(X=visdom_data.x, Y=visdom_data.y, **visdom_data.params)
+        else:
+            self._visdom.stem(X=visdom_data.x, Y=visdom_data.y, win=self._window, **visdom_data.params)
+
+
+class HeatmapPlot(VisdomPlot):
+
+    def __init__(self, visdom: Visdom):
+        super().__init__(visdom)
+        self._visdom = visdom
+        self._window = None
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.heatmap(X=visdom_data.y, **visdom_data.params)
+        else:
+            self._visdom.heatmap(X=visdom_data.y, win=self._window, **visdom_data.params)
+
+
+class BarPlot(VisdomPlot):
+
+    def __init__(self, visdom: Visdom):
+        super().__init__(visdom)
+        self._visdom = visdom
+        self._window = None
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.bar(X=visdom_data.x, Y=visdom_data.y, **visdom_data.params)
+        else:
+            self._visdom.bar(X=visdom_data.x, Y=visdom_data.y, win=self._window, **visdom_data.params)
+
+
+class BoxPlot(VisdomPlot):
+
+    def __init__(self, visdom: Visdom):
+        super().__init__(visdom)
+        self._visdom = visdom
+        self._window = None
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.boxplot(X=visdom_data.y, **visdom_data.params)
+        else:
+            self._visdom.boxplot(X=visdom_data.x, win=self._window, **visdom_data.params)
+
+
+class SurfacePlot(VisdomPlot):
+
+    def __init__(self, visdom: Visdom):
+        super().__init__(visdom)
+        self._visdom = visdom
+        self._window = None
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.surf(X=visdom_data.y, **visdom_data.params)
+        else:
+            self._visdom.surf(X=visdom_data.y, win=self._window, **visdom_data.params)
+
+
+class ContourPlot(VisdomPlot):
+
+    def __init__(self, visdom: Visdom):
+        super().__init__(visdom)
+        self._visdom = visdom
+        self._window = None
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.contour(X=visdom_data.y, **visdom_data.params)
+        else:
+            self._visdom.contour(X=visdom_data.y, win=self._window, **visdom_data.params)
+
+
+class QuiverPlot(VisdomPlot):
+
+    def __init__(self, visdom: Visdom):
+        super().__init__(visdom)
+        self._visdom = visdom
+        self._window = None
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.quiver(X=visdom_data.x, Y=visdom_data.y, **visdom_data.params)
+        else:
+            self._visdom.quiver(X=visdom_data.x, Y=visdom_data.y, **visdom_data.params)
+
+
+class MeshPlot(VisdomPlot):
+
+    def __init__(self, visdom: Visdom):
+        super().__init__(visdom)
+        self._visdom = visdom
+        self._window = None
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.mesh(X=visdom_data.x, Y=visdom_data.y, **visdom_data.params)
+        else:
+            self._visdom.mesh(X=visdom_data.x, Y=visdom_data.y, **visdom_data.params)
+
+
 class VisdomPlotFactory(object):
 
     @staticmethod
@@ -99,6 +239,26 @@ class VisdomPlotFactory(object):
             plot = ImagesPlot(visdom)
         elif plot_type == PlotType.PIE_PLOT:
             plot = PiePlot(visdom)
+        elif plot_type == PlotType.HISTOGRAM_PLOT:
+            plot = HistogramPlot(visdom)
+        elif plot_type == PlotType.SCATTER_PLOT:
+            plot = ScatterPlot(visdom)
+        elif plot_type == PlotType.STEM_PLOT:
+            plot = StemPlot(visdom)
+        elif plot_type == PlotType.HEATMAP_PLOT:
+            plot = HeatmapPlot(visdom)
+        elif plot_type == PlotType.BAR_PLOT:
+            plot = BarPlot(visdom)
+        elif plot_type == PlotType.BOX_PLOT:
+            plot = BoxPlot(visdom)
+        elif plot_type == PlotType.SURFACE_PLOT:
+            plot = SurfacePlot(visdom)
+        elif plot_type == PlotType.CONTOUR_PLOT:
+            plot = ContourPlot(visdom)
+        elif plot_type == PlotType.QUIVER_PLOT:
+            plot = QuiverPlot(visdom)
+        elif plot_type == PlotType.MESH_PLOT:
+            plot = MeshPlot(visdom)
         else:
             raise NotImplementedError("Unable to create a plot for {}".format(plot_type))
 
