@@ -34,8 +34,8 @@ class Gauge(ABC):
 class AverageGauge(Gauge):
 
     def __init__(self):
-        self._value = 0
-        self._sum = 0
+        self._value = 0.0
+        self._sum = 0.0
         self._count = 0
 
     def update(self, value, n=1):
@@ -44,9 +44,9 @@ class AverageGauge(Gauge):
         self._count += n
 
     def compute(self):
-        return self._sum / self._count if self._count != 0 else 0
+        return self._sum / self._count if self._count != 0 else 0.0
 
     def reset(self):
-        self._value = 0
-        self._sum = 0
+        self._value = 0.0
+        self._sum = 0.0
         self._count = 0
