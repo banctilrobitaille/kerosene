@@ -13,8 +13,10 @@ from kerosene.training.trainers import ModelTrainer
 # noinspection PyUnresolvedReferences
 class ModelTrainerTest(unittest.TestCase):
     MODEL_NAME = "Harry Potter"
+    DELTA = 0.0001
     MODEL_PREDICTION_CLASS_0 = torch.tensor([[1.0, 0.0]])
     MODEL_PREDICTION_CLASS_1 = torch.tensor([[0.0, 1.0]])
+    MINIMUM_BINARY_CROSS_ENTROPY_LOSS = torch.tensor(0.3133)
     TARGET_CLASS_0 = torch.tensor([0])
     TARGET_CLASS_1 = torch.tensor([1])
 
@@ -70,12 +72,8 @@ class ModelTrainerTest(unittest.TestCase):
         assert_that(self._model_trainer.state.valid_loss, equal_to(torch.tensor([0.0])))
 
     def test_should_compute_train_loss_and_update_state(self):
-
-        loss = nn.CrossEntropyLoss()(torch.tensor([[1.0, 0.0]]), torch.tensor([1]))
-
         loss = self._model_trainer.compute_train_loss(self.MODEL_PREDICTION_CLASS_0, self.TARGET_CLASS_0)
-
-        assert_that(loss._loss, equal_to(torch.tensor([0.0])))
+        assert_that(loss._loss, close_to(self.MINIMUM_BINARY_CROSS_ENTROPY_LOSS, self.DELTA))
 
     def test_should_compute_valid_loss_and_update_state(self):
         pass
