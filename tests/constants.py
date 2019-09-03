@@ -1,7 +1,8 @@
 import torch
 
 DELTA = 0.0001
-ZERO_TENSOR = torch.tensor([0.0])
+ZERO = torch.tensor([0.0])
+ONE = torch.tensor([1.0])
 TARGET_CLASS_0 = torch.tensor([0])
 TARGET_CLASS_1 = torch.tensor([1])
 MODEL_PREDICTION_CLASS_0 = torch.tensor([[1.0, 0.0]])

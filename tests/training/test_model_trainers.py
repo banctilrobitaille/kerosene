@@ -29,41 +29,41 @@ class ModelTrainerTest(unittest.TestCase):
 
     def test_should_compute_train_metric_and_update_state(self):
         self._model_trainer.compute_train_metric(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
-        assert_that(self._model_trainer.state.train_metric, equal_to(torch.tensor([1.0])))
-        assert_that(self._model_trainer.state.step_train_metric, equal_to(torch.tensor([1.0])))
+        assert_that(self._model_trainer.state.train_metric, equal_to(ONE))
+        assert_that(self._model_trainer.state.step_train_metric, equal_to(ONE))
         verify(self._metric_computer_mock).update((MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0))
 
         self._model_trainer.compute_train_metric(MODEL_PREDICTION_CLASS_1, TARGET_CLASS_0)
-        assert_that(self._model_trainer.state.train_metric, equal_to(torch.tensor([0.5])))
-        assert_that(self._model_trainer.state.step_train_metric, equal_to(torch.tensor([0.0])))
+        assert_that(self._model_trainer.state.train_metric, equal_to(ONE / 2))
+        assert_that(self._model_trainer.state.step_train_metric, equal_to(ZERO))
 
         verify(self._metric_computer_mock, times=2).compute()
 
-        assert_that(self._model_trainer.state.valid_metric, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_valid_metric, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_train_loss, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_valid_loss, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.train_loss, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.valid_loss, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.valid_metric, equal_to(ZERO))
+        assert_that(self._model_trainer.state.step_valid_metric, equal_to(ZERO))
+        assert_that(self._model_trainer.state.step_train_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.state.step_valid_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.state.train_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.state.valid_loss, equal_to(ZERO))
 
     def test_should_compute_valid_metric_and_update_state(self):
         self._model_trainer.compute_valid_metric(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
-        assert_that(self._model_trainer.state.valid_metric, equal_to(torch.tensor([1.0])))
-        assert_that(self._model_trainer.state.step_valid_metric, equal_to(torch.tensor([1.0])))
+        assert_that(self._model_trainer.state.valid_metric, equal_to(ONE))
+        assert_that(self._model_trainer.state.step_valid_metric, equal_to(ONE))
         verify(self._metric_computer_mock).update((MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0))
 
         self._model_trainer.compute_valid_metric(MODEL_PREDICTION_CLASS_1, TARGET_CLASS_0)
-        assert_that(self._model_trainer.state.valid_metric, equal_to(torch.tensor([0.5])))
-        assert_that(self._model_trainer.state.step_valid_metric, equal_to(torch.tensor([0.0])))
+        assert_that(self._model_trainer.state.valid_metric, equal_to(ONE / 2))
+        assert_that(self._model_trainer.state.step_valid_metric, equal_to(ZERO))
 
         verify(self._metric_computer_mock, times=2).compute()
 
-        assert_that(self._model_trainer.state.train_metric, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_train_metric, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_train_loss, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_valid_loss, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.train_loss, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.valid_loss, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.train_metric, equal_to(ZERO))
+        assert_that(self._model_trainer.state.step_train_metric, equal_to(ZERO))
+        assert_that(self._model_trainer.state.step_train_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.state.step_valid_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.state.train_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.state.valid_loss, equal_to(ZERO))
 
     def test_should_compute_train_loss_and_update_state(self):
         loss = self._model_trainer.compute_train_loss(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
@@ -77,12 +77,12 @@ class ModelTrainerTest(unittest.TestCase):
         assert_that(self._model_trainer.state.step_train_loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
         assert_that(self._model_trainer.state.train_loss, close_to(AVERAGED_BINARY_CROSS_ENTROPY_LOSS, DELTA))
 
-        assert_that(self._model_trainer.state.train_metric, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.valid_metric, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_train_metric, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_valid_metric, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_valid_loss, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.valid_loss, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.train_metric, equal_to(ZERO))
+        assert_that(self._model_trainer.state.valid_metric, equal_to(ZERO))
+        assert_that(self._model_trainer.state.step_train_metric, equal_to(ZERO))
+        assert_that(self._model_trainer.state.step_valid_metric, equal_to(ZERO))
+        assert_that(self._model_trainer.state.step_valid_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.state.valid_loss, equal_to(ZERO))
 
     def test_should_compute_valid_loss_and_update_state(self):
         loss = self._model_trainer.compute_valid_loss(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
@@ -96,9 +96,9 @@ class ModelTrainerTest(unittest.TestCase):
         assert_that(self._model_trainer.state.step_valid_loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
         assert_that(self._model_trainer.state.valid_loss, close_to(AVERAGED_BINARY_CROSS_ENTROPY_LOSS, DELTA))
 
-        assert_that(self._model_trainer.state.train_metric, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.valid_metric, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_train_metric, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_valid_metric, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.step_train_loss, equal_to(ZERO_TENSOR))
-        assert_that(self._model_trainer.state.train_loss, equal_to(ZERO_TENSOR))
+        assert_that(self._model_trainer.state.train_metric, equal_to(ZERO))
+        assert_that(self._model_trainer.state.valid_metric, equal_to(ZERO))
+        assert_that(self._model_trainer.state.step_train_metric, equal_to(ZERO))
+        assert_that(self._model_trainer.state.step_valid_metric, equal_to(ZERO))
+        assert_that(self._model_trainer.state.step_train_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.state.train_loss, equal_to(ZERO))
