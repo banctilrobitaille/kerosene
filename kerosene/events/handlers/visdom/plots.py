@@ -94,9 +94,9 @@ class TextPlot(VisdomPlot):
 
     def update(self, visdom_data: VisdomData):
         if self._window is None:
-            self._window = self._visdom.text(text=visdom_data.y)
+            self._window = self._visdom.text(visdom_data.y)
         else:
-            self._visdom.text(text=visdom_data.y, win=self._window)
+            self._visdom.text(visdom_data.y, win=self._window)
 
 
 class VisdomPlotFactory(object):
