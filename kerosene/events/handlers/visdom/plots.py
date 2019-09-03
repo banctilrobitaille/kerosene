@@ -112,6 +112,8 @@ class VisdomPlotFactory(object):
             plot = ImagesPlot(visdom)
         elif plot_type == PlotType.PIE_PLOT:
             plot = PiePlot(visdom)
+        elif plot_type == PlotType.TEXT_PLOT:
+            plot = TextPlot(visdom)
         else:
             raise NotImplementedError("Unable to create a plot for {}".format(plot_type))
 
