@@ -73,6 +73,10 @@ class TrainerConfiguration(object):
         for key in config_dict:
             setattr(self, key, config_dict[key])
 
+    def to_html(self):
+        configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
+        return "<h2>Training Configuration</h2> \n {}".format(configuration_values)
+
 
 class ModelTrainerConfiguration(object):
 
@@ -145,3 +149,7 @@ class ModelTrainerConfiguration(object):
                    config_dict["scheduler"]["params"], config_dict["criterion"]["type"],
                    config_dict["criterion"]["params"], config_dict["metric"]["type"],
                    config_dict["metric"]["params"])
+
+    def to_html(self):
+        configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
+        return "<h4>{}</h4> \n {}".format(self._model_name, configuration_values)

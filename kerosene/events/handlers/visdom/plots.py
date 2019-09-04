@@ -86,6 +86,19 @@ class PiePlot(VisdomPlot):
             self._visdom.pie(X=visdom_data.y, win=self._window, **visdom_data.params)
 
 
+class TextPlot(VisdomPlot):
+    def __init__(self, visdom):
+        super().__init__(visdom)
+        self._visdom = visdom
+        self._window = None
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.text(visdom_data.y)
+        else:
+            self._visdom.text(visdom_data.y, win=self._window)
+
+
 class VisdomPlotFactory(object):
 
     @staticmethod
@@ -99,6 +112,8 @@ class VisdomPlotFactory(object):
             plot = ImagesPlot(visdom)
         elif plot_type == PlotType.PIE_PLOT:
             plot = PiePlot(visdom)
+        elif plot_type == PlotType.TEXT_PLOT:
+            plot = TextPlot(visdom)
         else:
             raise NotImplementedError("Unable to create a plot for {}".format(plot_type))
 
