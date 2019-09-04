@@ -24,7 +24,7 @@ class DataloaderFactory(object):
                                                    batch_size=training_config.batch_size,
                                                    shuffle=False if not on_single_device(devices) else True,
                                                    num_workers=multiprocessing.cpu_count() if not on_single_device(
-                                                       devices) else multiprocessing.cpu_count() // 2,
+                                                       devices) else multiprocessing.cpu_count() // 4,
                                                    sampler=train_sampler if not on_single_device(devices) else None,
                                                    collate_fn=collate_fn,
                                                    pin_memory=torch.cuda.is_available())
@@ -33,7 +33,7 @@ class DataloaderFactory(object):
                                                    batch_size=training_config.batch_size,
                                                    shuffle=False if not on_single_device(devices) else True,
                                                    num_workers=multiprocessing.cpu_count() if not on_single_device(
-                                                       devices) else multiprocessing.cpu_count() // 2,
+                                                       devices) else multiprocessing.cpu_count() // 4,
                                                    sampler=valid_sampler if not on_single_device(devices) else None,
                                                    collate_fn=collate_fn,
                                                    pin_memory=torch.cuda.is_available())
