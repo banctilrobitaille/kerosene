@@ -23,6 +23,16 @@ class PlotType(Enum):
     IMAGE_PLOT = "Image Plot"
     PIE_PLOT = "Pie Plot"
     TEXT_PLOT = "Text Plot"
+    HISTOGRAM_PLOT = "Histogram Plot"
+    SCATTER_PLOT = "Scatter Plot"
+    STEM_PLOT = "Stem Plot"
+    HEATMAP_PLOT = "Heatmap Plot"
+    BAR_PLOT = "Bar Plot"
+    BOX_PLOT = "Box Plot"
+    SURFACE_PLOT = "Surface Plot"
+    CONTOUR_PLOT = "Contour Plot"
+    QUIVER_PLOT = "Quiver Plot"
+    MESH_PLOT = "Mesh Plot"
 
     def __str__(self):
         return self.value
