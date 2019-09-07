@@ -12,7 +12,7 @@ class MonitorFailedInspection(Exception):
 class MonitorInspection(object):
     def __init__(self, value=0, inspection_num=0):
         self._value = value
-        self._num_inspection = inspection_num
+        self._inspection_num = inspection_num
 
     @property
     def value(self):
@@ -23,14 +23,14 @@ class MonitorInspection(object):
         self._value = new_value
 
     @property
-    def num_inspection(self):
-        return self._num_inspection
+    def inspection_num(self):
+        return self._inspection_num
 
     def add_inspection(self):
-        self._num_inspection = self._num_inspection + 1
+        self._inspection_num = self._inspection_num + 1
 
-    def reset_num_inspection(self):
-        self._num_inspection = 0
+    def reset_inspection_num(self):
+        self._inspection_num = 0
         return self
 
     def with_value(self, value):
@@ -82,10 +82,10 @@ class MonitorInspector(EventHandler, ABC):
             delta = current_monitor_value - self._monitor_values[source_name].value
 
         if delta >= self._min_delta:
-            self._monitor_values[source_name].with_value(current_monitor_value).reset_num_inspection()
+            self._monitor_values[source_name].with_value(current_monitor_value).reset_inspection_num()
         else:
             self._monitor_values[source_name].add_inspection()
-            if self._monitor_values[source_name].num_inspection >= self._patience:
+            if self._monitor_values[source_name].inspection_num >= self._patience:
                 raise MonitorFailedInspection()
 
     @staticmethod
