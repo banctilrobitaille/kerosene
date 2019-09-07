@@ -10,12 +10,12 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
+# See the License for the specific language governing permissions and-
 # limitations under the License.
 # ==============================================================================
 from typing import List
 
-from kerosene.events import Event
+from kerosene.events import Event, BaseEvent
 from kerosene.events.handlers.visdom.data import VisdomData, PlotType, PlotFrequency
 from kerosene.events.preprocessors.base_preprocessor import EventPreprocessor
 from kerosene.training.state import TrainerState, ModelTrainerState
@@ -26,7 +26,7 @@ class PlotAllModelStateVariables(EventPreprocessor):
     def __init__(self, model_name=None):
         self._model_name = model_name
 
-    def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
+    def __call__(self, event: BaseEvent, state: TrainerState) -> List[VisdomData]:
         model_states = list(filter(self.filter_by_name, state.model_trainer_states))
 
         if event == Event.ON_EPOCH_END:
@@ -74,7 +74,7 @@ class PlotLosses(EventPreprocessor):
     def __init__(self, model_name=None):
         self._model_name = model_name
 
-    def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
+    def __call__(self, event: BaseEvent, state: TrainerState) -> List[VisdomData]:
         model_states = list(filter(self.filter_by_name, state.model_trainer_states))
 
         if event == Event.ON_EPOCH_END:
@@ -132,7 +132,7 @@ class PlotMetrics(EventPreprocessor):
     def __init__(self, model_name=None):
         self._model_name = model_name
 
-    def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
+    def __call__(self, event: BaseEvent, state: TrainerState) -> List[VisdomData]:
         model_states = list(filter(self.filter_by_name, state.model_trainer_states))
 
         if event == Event.ON_EPOCH_END:
@@ -192,7 +192,7 @@ class PlotCustomVariables(EventPreprocessor):
         self._plot_type = plot_type
         self._params = params
 
-    def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
+    def __call__(self, event: BaseEvent, state: TrainerState) -> List[VisdomData]:
 
         if event == Event.ON_EPOCH_END:
             return self.create_epoch_visdom_data(state)
@@ -218,7 +218,7 @@ class PlotCustomVariables(EventPreprocessor):
 
 class PlotLR(EventPreprocessor):
 
-    def __call__(self, event: Event, state: TrainerState) -> List[VisdomData]:
+    def __call__(self, event: BaseEvent, state: TrainerState) -> List[VisdomData]:
         if event == Event.ON_EPOCH_END:
             return list(map(lambda model_state: self.create_epoch_visdom_data(state.epoch, model_state),
                             state.model_trainer_states))

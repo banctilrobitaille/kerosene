@@ -21,7 +21,7 @@ from ignite.metrics import Metric
 from torch.utils.data import DataLoader
 
 from kerosene.config.trainers import ModelTrainerConfiguration, RunConfiguration
-from kerosene.events import Event
+from kerosene.events import Event, BaseEvent
 from kerosene.events.generators.base_generator import EventGenerator
 from kerosene.events.preprocessors.base_preprocessor import HandlerPreprocessor, Identity
 from kerosene.metrics.gauges import AverageGauge
@@ -286,7 +286,7 @@ class Trainer(EventGenerator):
                 self.fire(Event.ON_VALID_BATCH_END)
                 self.fire(Event.ON_BATCH_END)
 
-    def with_event_handler(self, handler, event: Event, preprocessor: Callable = Identity()):
+    def with_event_handler(self, handler, event: BaseEvent, preprocessor: Callable = Identity()):
         if event in self._event_handlers.keys():
             self._event_handlers[event].append(HandlerPreprocessor(handler, preprocessor))
         else:

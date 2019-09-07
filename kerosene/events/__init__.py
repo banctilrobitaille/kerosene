@@ -1,7 +1,17 @@
 from enum import Enum
 
 
-class Event(Enum):
+class BaseEvent(Enum):
+    def __str__(self):
+        return self.value
+
+
+class BaseVariable(Enum):
+    def __str__(self):
+        return self.value
+
+
+class Event(BaseEvent):
     ON_TRAINING_BEGIN = "training_begin"
     ON_TRAINING_END = "training_end"
     ON_EPOCH_BEGIN = "epoch_begin"
@@ -18,13 +28,23 @@ class Event(Enum):
     ON_BATCH_END = "batch_end"
 
 
-class Monitor(Enum):
+class Monitor(BaseVariable):
     TRAINING_LOSS = "TrainingLoss"
     TRAINING_METRIC = "TrainingMetric"
     VALIDATION_LOSS = "ValidationLoss"
     VALIDATION_METRIC = "ValidationMetric"
 
+    def is_loss(self):
+        return "Loss" in self.value
+
+    def is_metric(self):
+        return "Metric" in self.value
+
 
 class MonitorMode(Enum):
-    MIN = "min"
-    MAX = "max"
+    MIN = -1
+    MAX = 1
+    AUTO = "auto"
+
+    def __str__(self):
+        return self.value

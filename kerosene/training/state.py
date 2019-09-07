@@ -15,11 +15,14 @@
 # ==============================================================================
 import torch
 
+from kerosene.training import Status
+
 
 class TrainerState(object):
     def __init__(self, name, train_data_loader, valid_data_loader, epoch=0, train_step=0, valid_step=0,
                  custom_variables=None, model_trainer_states=()):
         self._name = name
+        self._status = Status.TRAIN
         self._epoch = epoch
         self._train_step = train_step
         self._valid_step = valid_step
@@ -31,6 +34,14 @@ class TrainerState(object):
     @property
     def name(self):
         return self._name
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, value):
+        self._status = value
 
     @property
     def epoch(self):
@@ -92,6 +103,7 @@ class ModelTrainerState(object):
                  valid_metric=torch.tensor([0.0]), step_valid_metric=torch.tensor([0.0]),
                  model=None, optimizer=None):
         self._name = name
+        self._status = Status.TRAIN
         self._train_loss = train_loss
         self._step_train_loss = step_train_loss
 
@@ -110,6 +122,14 @@ class ModelTrainerState(object):
     @property
     def name(self):
         return self._name
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, value):
+        self._status = value
 
     @property
     def train_loss(self):
