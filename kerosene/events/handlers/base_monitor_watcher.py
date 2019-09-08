@@ -5,7 +5,7 @@ from kerosene.events import BaseVariable, MonitorMode, Monitor
 from kerosene.events.handlers.base_handler import EventHandler
 
 
-class MonitorFailedInspection(Exception):
+class MonitorPatienceExceeded(Exception):
     pass
 
 
@@ -38,7 +38,7 @@ class MonitorInspection(object):
         return self
 
 
-class MonitorInspector(EventHandler, ABC):
+class MonitorWatcher(EventHandler, ABC):
     def __init__(self, monitor: BaseVariable, mode: MonitorMode = MonitorMode.AUTO, min_delta=0.01, patience=3):
         assert isinstance(monitor,
                           Monitor) or mode is not MonitorMode.AUTO, "Auto mode is not allowed with custom variables"
@@ -50,7 +50,7 @@ class MonitorInspector(EventHandler, ABC):
         self._monitor_values: Dict[str, MonitorInspection] = {}
 
         if mode is MonitorMode.AUTO:
-            self._mode = MonitorInspector.get_mode_for(monitor)
+            self._mode = MonitorWatcher.get_mode_for(monitor)
 
     @property
     def monitor(self):
@@ -72,7 +72,7 @@ class MonitorInspector(EventHandler, ABC):
     def monitor_values(self):
         return self._monitor_values
 
-    def inspect(self, source_name, current_monitor_value):
+    def watch(self, source_name, current_monitor_value):
         if source_name not in self._monitor_values.keys():
             self._monitor_values[source_name] = MonitorInspection(value=current_monitor_value)
         else:
@@ -86,7 +86,7 @@ class MonitorInspector(EventHandler, ABC):
             else:
                 self._monitor_values[source_name].add_inspection()
                 if self._monitor_values[source_name].inspection_num >= self._patience:
-                    raise MonitorFailedInspection()
+                    raise MonitorPatienceExceeded()
 
     @staticmethod
     def get_mode_for(monitor: Monitor):
