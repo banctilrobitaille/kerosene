@@ -1,18 +1,18 @@
 from kerosene.events import Monitor
 from kerosene.events.handlers.base_monitor_inspector import MonitorInspector, MonitorFailedInspection
 from kerosene.training import Status
-from kerosene.training.state import TrainerState
+from kerosene.training.trainers import Trainer
 
 
 class EarlyStopping(MonitorInspector):
 
-    def __call__(self, state: TrainerState):
-        for model_trainer_state in state.model_trainer_states:
+    def __call__(self, state: Trainer):
+        for model_trainer in state.model_trainers:
             try:
                 if isinstance(self._monitor, Monitor):
-                    value = getattr(model_trainer_state, str(self._monitor))
+                    value = getattr(model_trainer, str(self._monitor))
                 else:
                     value = state.custom_variables[self._monitor]
-                self.inspect(model_trainer_state.name, value)
+                self.inspect(model_trainer.name, value)
             except MonitorFailedInspection as e:
-                model_trainer_state.status = Status.FINALIZE
+                model_trainer.status = Status.FINALIZE

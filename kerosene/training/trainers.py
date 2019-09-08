@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import logging
 from abc import abstractmethod
 from typing import Union, List, Callable
 
@@ -31,10 +32,12 @@ from kerosene.nn.apex import ApexModule, ApexLoss
 from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
+from kerosene.training import Status
 from kerosene.utils.distributed import on_single_device
 
 
 class ModelTrainer(ApexModule):
+    LOGGER = logging.getLogger("ModelTrainer")
 
     def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric):
         super().__init__(model, optimizer)
@@ -53,6 +56,8 @@ class ModelTrainer(ApexModule):
         self._valid_loss = AverageGauge()
         self._train_metric = AverageGauge()
         self._valid_metric = AverageGauge()
+
+        self._status = Status.INITIALIZED
 
     @property
     def name(self):
@@ -111,17 +116,23 @@ class ModelTrainer(ApexModule):
     def scheduler(self):
         return self._scheduler
 
+    def is_active(self):
+        return self._status is not Status.FINALIZE
+
     def forward(self, *input):
         return self._model.forward(*input)
 
     def eval(self):
+        self._status = Status.VALID
         self._model.eval()
 
     def train(self, mode=True):
+        self._status = Status.TRAIN
         self._model.train()
 
     def step(self):
-        self._optimizer.step()
+        if self._status is Status.TRAIN:
+            self._optimizer.step()
 
     def scheduler_step(self):
         if self._scheduler is not None:
@@ -167,6 +178,7 @@ class ModelTrainer(ApexModule):
 
 
 class Trainer(EventGenerator):
+    LOGGER = logging.getLogger("Trainer")
 
     def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
                  model_trainers: Union[List[ModelTrainer], ModelTrainer],
@@ -187,6 +199,8 @@ class Trainer(EventGenerator):
 
         for amp_id, model_trainer in enumerate(self._model_trainers):
             model_trainer.initialize(amp_id, len(self._model_trainers), self._run_config)
+
+        self._status = Status.INITIALIZED
 
     @property
     def name(self):
@@ -244,27 +258,35 @@ class Trainer(EventGenerator):
     def state(self):
         return self
 
+    def is_active(self):
+        return self._status is not Status.FINALIZE
+
     def _reset_model_trainers(self):
         for model_trainer in self._model_trainers:
             model_trainer.reset()
 
+    def _at_least_one_model_is_active(self):
+        return len(list(filter(lambda model_trainer: model_trainer.is_active(), self._model_trainers))) > 0
+
     def train(self, nb_epoch):
         self.fire(Event.ON_TRAINING_BEGIN)
 
-        for self._current_epoch in range(0, nb_epoch):
-            self._on_epoch_begin()
-            self.fire(Event.ON_TRAIN_EPOCH_BEGIN)
-            self._train_epoch()
-            self.fire(Event.ON_TRAIN_EPOCH_END)
-            self.fire(Event.ON_VALID_EPOCH_BEGIN)
-            self._validate_epoch()
-            self.fire(Event.ON_VALID_EPOCH_END)
-            self._on_epoch_end()
+        for self._current_epoch in range(0, nb_epoch) and self.is_active():
+            if self._at_least_one_model_is_active():
+                self._on_epoch_begin()
+                self.fire(Event.ON_TRAIN_EPOCH_BEGIN)
+                self._train_epoch()
+                self.fire(Event.ON_TRAIN_EPOCH_END)
+                self.fire(Event.ON_VALID_EPOCH_BEGIN)
+                self._validate_epoch()
+                self.fire(Event.ON_VALID_EPOCH_END)
+                self._on_epoch_end()
+            else:
+                self.finalize()
 
         self.fire(Event.ON_TRAINING_END)
 
     def _train_epoch(self):
-
         for model_trainer in self._model_trainers:
             model_trainer.train()
 
@@ -309,6 +331,9 @@ class Trainer(EventGenerator):
                 self.validate_step(inputs, target)
                 self.fire(Event.ON_VALID_BATCH_END)
                 self.fire(Event.ON_BATCH_END)
+
+    def finalize(self):
+        self._status = Status.FINALIZE
 
     def with_event_handler(self, handler, event: BaseEvent, preprocessor: Callable = Identity()):
         if event in self._event_handlers.keys():
