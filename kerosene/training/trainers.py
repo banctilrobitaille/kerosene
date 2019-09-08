@@ -176,6 +176,9 @@ class ModelTrainer(ApexModule):
         self._train_metric.reset()
         self._valid_metric.reset()
 
+    def finalize(self):
+        self._status = Status.FINALIZE
+
 
 class Trainer(EventGenerator):
     LOGGER = logging.getLogger("Trainer")
