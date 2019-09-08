@@ -41,10 +41,10 @@ class Monitor(BaseVariable):
     VALIDATION_METRIC = "valid_metric"
 
     def is_loss(self):
-        return "Loss" in self.value
+        return "loss" in self.value
 
     def is_metric(self):
-        return "Metric" in self.value
+        return "metric" in self.value
 
 
 class MonitorMode(Enum):

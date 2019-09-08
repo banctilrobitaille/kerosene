@@ -75,18 +75,18 @@ class MonitorInspector(EventHandler, ABC):
     def inspect(self, source_name, current_monitor_value):
         if source_name not in self._monitor_values.keys():
             self._monitor_values[source_name] = MonitorInspection(value=current_monitor_value)
-
-        if self._mode is MonitorMode.MIN:
-            delta = self._monitor_values[source_name].value - current_monitor_value
         else:
-            delta = current_monitor_value - self._monitor_values[source_name].value
+            if self._mode is MonitorMode.MIN:
+                delta = self._monitor_values[source_name].value - current_monitor_value
+            else:
+                delta = current_monitor_value - self._monitor_values[source_name].value
 
-        if delta >= self._min_delta:
-            self._monitor_values[source_name].with_value(current_monitor_value).reset_inspection_num()
-        else:
-            self._monitor_values[source_name].add_inspection()
-            if self._monitor_values[source_name].inspection_num >= self._patience:
-                raise MonitorFailedInspection()
+            if delta >= self._min_delta:
+                self._monitor_values[source_name].with_value(current_monitor_value).reset_inspection_num()
+            else:
+                self._monitor_values[source_name].add_inspection()
+                if self._monitor_values[source_name].inspection_num >= self._patience:
+                    raise MonitorFailedInspection()
 
     @staticmethod
     def get_mode_for(monitor: Monitor):

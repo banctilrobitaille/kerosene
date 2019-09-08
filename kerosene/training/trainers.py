@@ -274,7 +274,7 @@ class Trainer(EventGenerator):
     def train(self, nb_epoch):
         self.fire(Event.ON_TRAINING_BEGIN)
 
-        for self._current_epoch in range(0, nb_epoch) and self.is_active():
+        for self._current_epoch in range(0, nb_epoch):
             if self._at_least_one_model_is_active():
                 self._on_epoch_begin()
                 self.fire(Event.ON_TRAIN_EPOCH_BEGIN)
