@@ -18,19 +18,19 @@ from typing import Callable
 
 from kerosene.events import Event
 from kerosene.events.handlers.base_handler import EventHandler
-from kerosene.training.state import TrainerState
+from kerosene.training.trainers import Trainer
 
 
 class EventPreprocessor(ABC):
 
     @abstractmethod
-    def __call__(self, event: Event, state: TrainerState):
+    def __call__(self, event: Event, state: Trainer):
         raise NotImplementedError()
 
 
 class Identity(EventPreprocessor):
 
-    def __call__(self, event: Event, state: TrainerState):
+    def __call__(self, event: Event, state: Trainer):
         return state
 
 
@@ -39,6 +39,6 @@ class HandlerPreprocessor(EventPreprocessor):
         self._handler = handler
         self._preprocessor = preprocessor
 
-    def __call__(self, event: Event, state: TrainerState):
+    def __call__(self, event: Event, state: Trainer):
         processed_state = self._preprocessor(event, state)
         self._handler(processed_state)
