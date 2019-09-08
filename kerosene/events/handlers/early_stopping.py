@@ -13,5 +13,4 @@ class EarlyStopping(MonitorInspector):
                 value = getattr(model_trainer, str(self._monitor))
                 self.inspect(model_trainer.name, value)
             except MonitorFailedInspection as e:
-                self.LOGGER.debug("Finalizing model: {}".format(model_trainer.name))
                 model_trainer.finalize()
