@@ -31,7 +31,6 @@ from kerosene.nn.apex import ApexModule, ApexLoss
 from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
-from kerosene.training.state import TrainerState, ModelTrainerState
 from kerosene.utils.distributed import on_single_device
 
 
@@ -45,21 +44,60 @@ class ModelTrainer(ApexModule):
         self._scheduler = scheduler
         self._metric_computer = metric_computer
 
-        self._step_train_loss = 0
-        self._step_valid_loss = 0
-        self._step_train_metric = 0
-        self._step_valid_metric = 0
+        self._step_train_loss = torch.tensor([0.0])
+        self._step_valid_loss = torch.tensor([0.0])
+        self._step_train_metric = torch.tensor([0.0])
+        self._step_valid_metric = torch.tensor([0.0])
 
         self._train_loss = AverageGauge()
         self._valid_loss = AverageGauge()
         self._train_metric = AverageGauge()
         self._valid_metric = AverageGauge()
 
-        self._state = ModelTrainerState(self._model_name, optimizer=self._optimizer, model=self.model)
+    @property
+    def name(self):
+        return self._model_name
+
+    @property
+    def step_train_loss(self):
+        return torch.tensor([self._step_train_loss]).cpu()
+
+    @property
+    def step_valid_loss(self):
+        return torch.tensor([self._step_valid_loss]).cpu()
+
+    @property
+    def step_train_metric(self):
+        return torch.tensor([self._step_train_metric]).cpu()
+
+    @property
+    def step_valid_metric(self):
+        return torch.tensor([self._step_valid_metric]).cpu()
+
+    @property
+    def train_loss(self):
+        return torch.tensor([self._train_loss.compute()]).cpu()
+
+    @property
+    def valid_loss(self):
+        return torch.tensor([self._valid_loss.compute()]).cpu()
+
+    @property
+    def train_metric(self):
+        return torch.tensor([self._train_metric.compute()]).cpu()
+
+    @property
+    def valid_metric(self):
+        return torch.tensor([self._valid_metric.compute()]).cpu()
 
     @property
     def optimizer_state(self):
         return self._optimizer.state_dict()
+
+    @property
+    def optimizer_lr(self):
+        for param_group in self._optimizer.param_groups:
+            return torch.tensor([param_group["lr"]])
 
     @property
     def model_state(self):
@@ -72,14 +110,6 @@ class ModelTrainer(ApexModule):
     @property
     def scheduler(self):
         return self._scheduler
-
-    @property
-    def state(self):
-        return self._state \
-            .with_train_loss(torch.tensor([self._train_loss.compute()]).cpu()) \
-            .with_valid_loss(torch.tensor([self._valid_loss.compute()]).cpu()) \
-            .with_train_metric(torch.tensor([self._train_metric.compute()]).cpu()) \
-            .with_valid_metric(torch.tensor([self._valid_metric.compute()]).cpu())
 
     def forward(self, *input):
         return self._model.forward(*input)
@@ -104,15 +134,11 @@ class ModelTrainer(ApexModule):
         self._step_train_loss = self._criterion(pred, target)
         self._train_loss.update(self._step_train_loss)
 
-        self._state.with_step_train_loss(torch.tensor([self._step_train_loss]).cpu())
-
         return ApexLoss(self._amp_id, self._step_train_loss, self._optimizer) if self.use_amp else self._step_train_loss
 
     def compute_valid_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_valid_loss = self._criterion(pred, target)
         self._valid_loss.update(self._step_valid_loss)
-
-        self._state.with_step_valid_loss(torch.tensor([self._step_valid_loss]).cpu())
 
         return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
 
@@ -122,8 +148,6 @@ class ModelTrainer(ApexModule):
         self._train_metric.update(self._step_train_metric)
         self._metric_computer.reset()
 
-        self._state.with_step_train_metric(torch.tensor([self._step_train_metric]).cpu())
-
         return self._step_train_metric
 
     def compute_valid_metric(self, pred, target):
@@ -131,8 +155,6 @@ class ModelTrainer(ApexModule):
         self._step_valid_metric = self._metric_computer.compute()
         self._valid_metric.update(self._step_valid_metric)
         self._metric_computer.reset()
-
-        self._state.with_step_valid_metric(torch.tensor([self._step_valid_metric]).cpu())
 
         return self._step_valid_metric
 
@@ -163,8 +185,6 @@ class Trainer(EventGenerator):
 
         self._custom_variables = {}
 
-        self._state = TrainerState(self._name, self._train_data_loader, self._valid_data_loader)
-
         for amp_id, model_trainer in enumerate(self._model_trainers):
             model_trainer.initialize(amp_id, len(self._model_trainers), self._run_config)
 
@@ -181,12 +201,8 @@ class Trainer(EventGenerator):
         return self._valid_data_loader
 
     @property
-    def nb_of_train_batch(self):
-        return len(self._train_data_loader)
-
-    @property
-    def nb_of_valid_batch(self):
-        return len(self._valid_data_loader)
+    def model_trainers(self):
+        return self._model_trainers
 
     @property
     def current_train_step(self):
@@ -197,14 +213,20 @@ class Trainer(EventGenerator):
         return self._current_epoch * len(self._valid_data_loader) + self._current_valid_batch
 
     @property
+    def epoch(self):
+        return self._current_epoch
+
+    @property
     def custom_variables(self):
         return self._custom_variables
 
     @property
-    def state(self):
-        return self._state \
-            .with_custom_variables(self._custom_variables) \
-            .with_model_trainers_state([model_trainer.state for model_trainer in self._model_trainers])
+    def nb_of_train_batch(self):
+        return len(self._train_data_loader)
+
+    @property
+    def nb_of_valid_batch(self):
+        return len(self._valid_data_loader)
 
     @abstractmethod
     def train_step(self, inputs, target):
@@ -217,6 +239,10 @@ class Trainer(EventGenerator):
     @abstractmethod
     def scheduler_step(self):
         raise NotImplementedError()
+
+    @property
+    def state(self):
+        return self
 
     def _reset_model_trainers(self):
         for model_trainer in self._model_trainers:
@@ -244,7 +270,6 @@ class Trainer(EventGenerator):
 
         for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
             self.fire(Event.ON_TRAIN_BATCH_BEGIN)
-            self._state.with_train_step(self.current_train_step)
 
             if on_single_device(self._run_config.devices):
 
@@ -270,7 +295,6 @@ class Trainer(EventGenerator):
         with torch.no_grad():
             for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
                 self.fire(Event.ON_VALID_BATCH_BEGIN)
-                self._state.with_valid_step(self.current_valid_step)
 
                 if on_single_device(self._run_config.devices):
                     if on_single_device(self._run_config.devices):
@@ -296,7 +320,6 @@ class Trainer(EventGenerator):
 
     def _on_epoch_begin(self):
         self.fire(Event.ON_EPOCH_BEGIN)
-        self._state.with_epoch(self._current_epoch)
         self._reset_model_trainers()
         self.on_epoch_begin()
 

@@ -16,21 +16,20 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 
-from kerosene.events import Event, BaseEvent
+from kerosene.events import Event
 from kerosene.events.handlers.base_handler import EventHandler
-from kerosene.training.state import TrainerState
 
 
 class EventPreprocessor(ABC):
 
     @abstractmethod
-    def __call__(self, event: BaseEvent, state: TrainerState):
+    def __call__(self, event: Event, state):
         raise NotImplementedError()
 
 
 class Identity(EventPreprocessor):
 
-    def __call__(self, event: BaseEvent, state: TrainerState):
+    def __call__(self, event: Event, state):
         return state
 
 
@@ -39,6 +38,6 @@ class HandlerPreprocessor(EventPreprocessor):
         self._handler = handler
         self._preprocessor = preprocessor
 
-    def __call__(self, event: BaseEvent, state: TrainerState):
+    def __call__(self, event: Event, state):
         processed_state = self._preprocessor(event, state)
         self._handler(processed_state)
