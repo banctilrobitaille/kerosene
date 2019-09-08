@@ -60,19 +60,19 @@ class ModelTrainer(ApexModule):
 
     @property
     def step_train_loss(self):
-        return self._step_train_loss
+        return torch.tensor([self._step_train_loss]).cpu()
 
     @property
     def step_valid_loss(self):
-        return self._step_valid_loss
+        return torch.tensor([self._step_valid_loss]).cpu()
 
     @property
     def step_train_metric(self):
-        return self._step_train_metric
+        return torch.tensor([self._step_train_metric]).cpu()
 
     @property
     def step_valid_metric(self):
-        return self._step_valid_metric
+        return torch.tensor([self._step_valid_metric]).cpu()
 
     @property
     def train_loss(self):
@@ -134,15 +134,11 @@ class ModelTrainer(ApexModule):
         self._step_train_loss = self._criterion(pred, target)
         self._train_loss.update(self._step_train_loss)
 
-        self._state.with_step_train_loss(torch.tensor([self._step_train_loss]).cpu())
-
         return ApexLoss(self._amp_id, self._step_train_loss, self._optimizer) if self.use_amp else self._step_train_loss
 
     def compute_valid_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_valid_loss = self._criterion(pred, target)
         self._valid_loss.update(self._step_valid_loss)
-
-        self._state.with_step_valid_loss(torch.tensor([self._step_valid_loss]).cpu())
 
         return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
 
@@ -152,8 +148,6 @@ class ModelTrainer(ApexModule):
         self._train_metric.update(self._step_train_metric)
         self._metric_computer.reset()
 
-        self._state.with_step_train_metric(torch.tensor([self._step_train_metric]).cpu())
-
         return self._step_train_metric
 
     def compute_valid_metric(self, pred, target):
@@ -161,8 +155,6 @@ class ModelTrainer(ApexModule):
         self._step_valid_metric = self._metric_computer.compute()
         self._valid_metric.update(self._step_valid_metric)
         self._metric_computer.reset()
-
-        self._state.with_step_valid_metric(torch.tensor([self._step_valid_metric]).cpu())
 
         return self._step_valid_metric
 
