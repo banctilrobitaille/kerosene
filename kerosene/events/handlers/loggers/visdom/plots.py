@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 
 from visdom import Visdom
 
-from kerosene.events.handlers.visdom.data import VisdomData, PlotType
+from kerosene.events.handlers.loggers.visdom import VisdomData, PlotType
 
 
 class VisdomPlot(ABC):

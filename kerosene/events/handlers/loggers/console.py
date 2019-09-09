@@ -13,31 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from abc import ABC, abstractmethod
-from typing import Callable
+import logging
+from abc import ABC
 
-from kerosene.events import Event
+from kerosene.events import BaseEvent
 from kerosene.events.handlers.base_handler import EventHandler
+from kerosene.training.trainers import Trainer
 
 
-class EventPreprocessor(ABC):
-
-    @abstractmethod
-    def __call__(self, event: Event, state):
-        raise NotImplementedError()
+class BaseConsoleLogger(EventHandler, ABC):
+    LOGGER = logging.getLogger("ConsoleLogger")
 
 
-class Identity(EventPreprocessor):
-
-    def __call__(self, event: Event, state):
-        return state
-
-
-class HandlerPreprocessor(EventPreprocessor):
-    def __init__(self, handler: EventHandler, preprocessor: Callable = Identity()):
-        self._handler = handler
-        self._preprocessor = preprocessor
-
-    def __call__(self, event: Event, state):
-        processed_state = self._preprocessor(event, state)
-        self._handler(processed_state)
+class PrintTrainingStatus(BaseConsoleLogger):
+    def __call__(self, event: BaseEvent, trainer: Trainer):
+        return self.LOGGER.info("Training state: Epoch: {} | Training step: {} | Validation step: {} \n".format(
+            trainer.epoch, trainer.current_train_step, trainer.current_valid_step))
