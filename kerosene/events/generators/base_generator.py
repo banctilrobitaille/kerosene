@@ -16,7 +16,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 
-from kerosene.events import Event
+from kerosene.events import BaseEvent
 
 
 class EventGenerator(ABC):
@@ -29,10 +29,10 @@ class EventGenerator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def with_event_handler(self, handler, event: Event, preprocessor: Callable):
+    def with_event_handler(self, handler, event: BaseEvent, preprocessor: Callable):
         raise NotImplementedError()
 
-    def fire(self, event: Event):
+    def fire(self, event: BaseEvent):
         if event in self._event_handlers.keys():
             state = self.state
 
