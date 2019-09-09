@@ -14,12 +14,18 @@
 # limitations under the License.
 # ==============================================================================
 import logging
+from abc import ABC
 
+from kerosene.events import BaseEvent
 from kerosene.events.handlers.base_handler import EventHandler
+from kerosene.training.trainers import Trainer
 
 
-class ConsoleLogger(EventHandler):
+class BaseConsoleLogger(EventHandler, ABC):
     LOGGER = logging.getLogger("ConsoleLogger")
 
-    def __call__(self, state):
-        self.LOGGER.info("{}".format(str(state)))
+
+class PrintTrainingStatus(BaseConsoleLogger):
+    def __call__(self, event: BaseEvent, trainer: Trainer):
+        return self.LOGGER.info("Training state: Epoch: {} | Training step: {} | Validation step: {} \n".format(
+            trainer.epoch, trainer.current_train_step, trainer.current_valid_step))
