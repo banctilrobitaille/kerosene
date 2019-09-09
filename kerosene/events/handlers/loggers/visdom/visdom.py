@@ -20,16 +20,17 @@ from visdom import Visdom
 from kerosene.events import BaseEvent, Event
 from kerosene.events.handlers.loggers.visdom.base_handler import BaseVisdomHandler
 from kerosene.events.handlers.loggers.visdom.config import VisdomConfiguration
-from kerosene.events.handlers.loggers.visdom.data import PlotType, PlotFrequency, VisdomData
-from kerosene.events.handlers.loggers.visdom.plots import VisdomPlot, VisdomPlotFactory
+from kerosene.events.handlers.loggers.visdom.data import VisdomData
+from kerosene.events.handlers.loggers.visdom.plots import VisdomPlot, VisdomPlotFactory, PlotType, PlotFrequency
 from kerosene.training.trainers import Trainer, ModelTrainer
 
 
 class VisdomLogger(object):
-    def __init__(self, visdom_config: VisdomConfiguration):
+    def __init__(self, visdom_config: VisdomConfiguration, plot_factory: VisdomPlotFactory = VisdomPlotFactory()):
         self._visdom_config = visdom_config
         self._visdom = Visdom(server=visdom_config.server, port=visdom_config.port, env=visdom_config.env)
         self._plots: Dict[int, VisdomPlot] = {}
+        self._plot_factory = plot_factory
 
     @property
     def visdom_config(self):
@@ -44,7 +45,7 @@ class VisdomLogger(object):
 
         for visdom_datum in visdom_data:
             if visdom_datum.id not in self._plots.keys():
-                self._plots[visdom_datum.id] = VisdomPlotFactory.create_plot(self._visdom, visdom_datum.plot_type)
+                self._plots[visdom_datum.id] = self._plot_factory.create_plot(self._visdom, visdom_datum.plot_type)
 
             self._plots[visdom_datum.id].update(visdom_datum)
 
@@ -52,21 +53,21 @@ class VisdomLogger(object):
 class PlotAllModelStateVariables(BaseVisdomHandler):
     SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
 
-    def __init__(self, visdom_logger: VisdomLogger, every_n=1):
-        super().__init__(visdom_logger, every_n)
+    def __init__(self, visdom_logger: VisdomLogger, every=1):
+        super().__init__(visdom_logger, every)
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Event not supported"
         data = None
 
-        if event == Event.ON_EPOCH_END:
+        if self.should_plot_epoch_data(event, trainer.epoch):
             data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
                             trainer.model_trainers))
-        elif event == Event.ON_TRAIN_BATCH_END:
+        elif self.should_plot_step_data(event, trainer.current_train_step):
             data = list(map(
                 lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
                 trainer.model_trainers))
-        elif event == Event.ON_VALID_BATCH_END:
+        elif self.should_plot_step_data(event, trainer.current_valid_step):
             data = list(map(
                 lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                 trainer.model_trainers))
@@ -99,21 +100,21 @@ class PlotAllModelStateVariables(BaseVisdomHandler):
 class PlotLosses(BaseVisdomHandler):
     SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
 
-    def __init__(self, visdom_logger: VisdomLogger, every_n=1):
-        super().__init__(visdom_logger, every_n)
+    def __init__(self, visdom_logger: VisdomLogger, every=1):
+        super().__init__(visdom_logger, every)
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Event not supported"
         data = None
 
-        if event == Event.ON_EPOCH_END:
+        if self.should_plot_epoch_data(event, trainer.epoch):
             data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
                             trainer.model_trainers))
-        elif event == Event.ON_TRAIN_BATCH_END:
+        elif self.should_plot_step_data(event, trainer.current_train_step):
             data = list(
                 map(lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
                     trainer.model_trainers))
-        elif event == Event.ON_VALID_BATCH_END:
+        elif self.should_plot_step_data(event, trainer.current_valid_step):
             data = list(
                 map(lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                     trainer.model_trainers))
@@ -155,21 +156,21 @@ class PlotLosses(BaseVisdomHandler):
 class PlotMetrics(BaseVisdomHandler):
     SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
 
-    def __init__(self, visdom_logger: VisdomLogger, every_n=1):
-        super().__init__(visdom_logger, every_n)
+    def __init__(self, visdom_logger: VisdomLogger, every=1):
+        super().__init__(visdom_logger, every)
 
     def __call__(self, event: Event, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Event not supported"
         data = None
 
-        if event == Event.ON_EPOCH_END:
+        if self.should_plot_epoch_data(event, trainer.epoch):
             data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
                             trainer.model_trainers))
-        elif event == Event.ON_TRAIN_BATCH_END:
+        elif self.should_plot_step_data(event, trainer.current_train_step):
             data = list(
                 map(lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
                     trainer.model_trainers))
-        elif event == Event.ON_VALID_BATCH_END:
+        elif self.should_plot_step_data(event, trainer.current_valid_step):
             data = list(
                 map(lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                     trainer.model_trainers))
@@ -213,8 +214,8 @@ class PlotMetrics(BaseVisdomHandler):
 class PlotCustomVariables(BaseVisdomHandler):
     SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
 
-    def __init__(self, visdom_logger: VisdomLogger, variable_name, plot_type: PlotType, params, every_n=1):
-        super().__init__(visdom_logger, every_n)
+    def __init__(self, visdom_logger: VisdomLogger, variable_name, plot_type: PlotType, params, every=1):
+        super().__init__(visdom_logger, every)
         self._variable_name = variable_name
         self._plot_type = plot_type
         self._params = params
@@ -223,11 +224,11 @@ class PlotCustomVariables(BaseVisdomHandler):
         assert event in self.SUPPORTED_EVENTS, "Event not supported"
         data = None
 
-        if event == Event.ON_EPOCH_END:
+        if self.should_plot_epoch_data(event, trainer.epoch):
             data = self.create_epoch_visdom_data(trainer)
-        elif event == Event.ON_TRAIN_BATCH_END:
+        elif self.should_plot_step_data(event, trainer.current_train_step):
             data = self.create_train_batch_visdom_data(trainer)
-        elif event == Event.ON_VALID_BATCH_END:
+        elif self.should_plot_step_data(event, trainer.current_valid_step):
             data = self.create_valid_batch_visdom_data(trainer)
 
         if data is not None:
@@ -249,14 +250,14 @@ class PlotCustomVariables(BaseVisdomHandler):
 class PlotLR(BaseVisdomHandler):
     SUPPORTED_EVENTS = [Event.ON_EPOCH_END]
 
-    def __init__(self, visdom_logger: VisdomLogger, every_n=1):
-        super().__init__(visdom_logger, every_n)
+    def __init__(self, visdom_logger: VisdomLogger, every=1):
+        super().__init__(visdom_logger, every)
 
     def __call__(self, event: Event, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Event not supported"
         data = None
 
-        if event == Event.ON_EPOCH_END:
+        if self.should_plot_epoch_data(event, trainer.epoch):
             data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
                             trainer.model_trainers))
 
@@ -272,3 +273,34 @@ class PlotLR(BaseVisdomHandler):
                                            'title': "{} {} per {}".format(model_trainer.name, "Learning Rate",
                                                                           str(PlotFrequency.EVERY_EPOCH)),
                                            'legend': [model_trainer.name]}})
+
+
+class PlotGradientFlow(BaseVisdomHandler):
+    SUPPORTED_EVENTS = [Event.ON_TRAIN_BATCH_END]
+
+    def __init__(self, visdom_logger: VisdomLogger, every=1):
+        super().__init__(visdom_logger, every)
+
+    def __call__(self, event: BaseEvent, trainer: Trainer):
+        assert event in self.SUPPORTED_EVENTS, "Supported event for gradient flow are: {}".format(self.SUPPORTED_EVENTS)
+        data = None
+
+        if self.should_plot_step_data(event, trainer.current_train_step):
+            data = list(map(lambda model_trainer: self.create_visdom_data(model_trainer), trainer.model_trainers))
+
+        if data is not None:
+            self.visdom_logger(data)
+
+    def create_visdom_data(self, model_trainer: ModelTrainer):
+        avg_grads, layers = [], []
+
+        for n, p in model_trainer.named_parameters():
+            if p.requires_grad and ("bias" not in n):
+                layers.append(n)
+                avg_grads.append(p.grad.abs().mean())
+
+        return VisdomData(model_trainer.name, "Gradient Flow", PlotType.BAR_PLOT, PlotFrequency.EVERY_EPOCH, y=layers,
+                          x=avg_grads, params={'opts': {'xlabel': "Layers", 'ylabel': "Avg. Gradients",
+                                                        'title': "{} {} per {}".format(model_trainer.name,
+                                                                                       "Gradient Flow",
+                                                                                       "Layer")}})

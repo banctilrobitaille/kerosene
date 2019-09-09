@@ -118,6 +118,9 @@ class ModelTrainer(ApexModule):
     def is_active(self):
         return self._status is not Status.FINALIZE
 
+    def named_parameters(self, prefix: str = ..., recurse: bool = ...):
+        return self.model.named_parameters()
+
     def forward(self, *input):
         return self._model.forward(*input)
 
