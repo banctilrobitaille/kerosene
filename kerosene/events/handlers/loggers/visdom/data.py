@@ -17,23 +17,7 @@ from enum import Enum
 from typing import Union, List, Optional
 
 
-class PlotType(Enum):
-    LINE_PLOT = "Line Plot"
-    IMAGES_PLOT = "Images Plot"
-    IMAGE_PLOT = "Image Plot"
-    PIE_PLOT = "Pie Plot"
-    TEXT_PLOT = "Text Plot"
 
-    def __str__(self):
-        return self.value
-
-
-class PlotFrequency(Enum):
-    EVERY_STEP = "Step"
-    EVERY_EPOCH = "Epoch"
-
-    def __str__(self):
-        return self.value
 
 
 class VisdomData(object):

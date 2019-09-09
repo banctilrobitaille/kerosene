@@ -29,7 +29,7 @@ class EventGenerator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def with_event_handler(self, handler, event: BaseEvent, preprocessor: Callable):
+    def with_event_handler(self, handler, event: BaseEvent):
         raise NotImplementedError()
 
     def fire(self, event: BaseEvent):

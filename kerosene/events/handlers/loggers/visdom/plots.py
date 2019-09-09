@@ -14,20 +14,46 @@
 # limitations under the License.
 # ==============================================================================
 from abc import ABC, abstractmethod
+from enum import Enum
 
 from visdom import Visdom
 
-from kerosene.events.handlers.visdom.data import VisdomData, PlotType
+from kerosene.events.handlers.loggers.visdom.data import VisdomData
+
+
+class PlotType(Enum):
+    LINE_PLOT = "Line Plot"
+    IMAGES_PLOT = "Images Plot"
+    IMAGE_PLOT = "Image Plot"
+    PIE_PLOT = "Pie Plot"
+    TEXT_PLOT = "Text Plot"
+    BAR_PLOT = "Bar Plot"
+
+    def __str__(self):
+        return self.value
+
+
+class PlotFrequency(Enum):
+    EVERY_STEP = "Step"
+    EVERY_EPOCH = "Epoch"
+
+    def __str__(self):
+        return self.value
 
 
 class VisdomPlot(ABC):
 
     def __init__(self, visdom: Visdom):
         self._visdom = visdom
+        self._window = None
 
     @property
     def visdom(self):
         return self._visdom
+
+    @property
+    def window(self):
+        return self._window
 
     @abstractmethod
     def update(self, visdom_data: VisdomData):
@@ -37,21 +63,17 @@ class VisdomPlot(ABC):
 class ImagePlot(VisdomPlot):
     def __init__(self, visdom: Visdom):
         super().__init__(visdom)
-        self._visdom = visdom
-        self._window = None
 
     def update(self, visdom_data: VisdomData):
         if self._window is None:
-            self._window = self._visdom.image(img=visdom_data.y, **visdom_data.params)
+            self._window = self.visdom.image(img=visdom_data.y, **visdom_data.params)
         else:
-            self._visdom.image(img=visdom_data.y, win=self._window, **visdom_data.params)
+            self.visdom.image(img=visdom_data.y, win=self._window, **visdom_data.params)
 
 
 class ImagesPlot(VisdomPlot):
     def __init__(self, visdom: Visdom):
         super().__init__(visdom)
-        self._visdom = visdom
-        self._window = None
 
     def update(self, visdom_data: VisdomData):
         if self._window is None:
@@ -63,8 +85,6 @@ class ImagesPlot(VisdomPlot):
 class LinePlot(VisdomPlot):
     def __init__(self, visdom):
         super().__init__(visdom)
-        self._visdom = visdom
-        self._window = None
 
     def update(self, visdom_data: VisdomData):
         if self._window is None:
@@ -76,8 +96,6 @@ class LinePlot(VisdomPlot):
 class PiePlot(VisdomPlot):
     def __init__(self, visdom):
         super().__init__(visdom)
-        self._visdom = visdom
-        self._window = None
 
     def update(self, visdom_data: VisdomData):
         if self._window is None:
@@ -89,8 +107,6 @@ class PiePlot(VisdomPlot):
 class TextPlot(VisdomPlot):
     def __init__(self, visdom):
         super().__init__(visdom)
-        self._visdom = visdom
-        self._window = None
 
     def update(self, visdom_data: VisdomData):
         if self._window is None:
@@ -99,22 +115,28 @@ class TextPlot(VisdomPlot):
             self._visdom.text(visdom_data.y, win=self._window)
 
 
+class BarPlot(VisdomPlot):
+    def __init__(self, visdom):
+        super().__init__(visdom)
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.bar(X=visdom_data.x, Y=visdom_data.y, **visdom_data.params)
+        else:
+            self._visdom.bar(X=visdom_data.x, Y=visdom_data.y, win=self._window, **visdom_data.params)
+
+
 class VisdomPlotFactory(object):
 
-    @staticmethod
-    def create_plot(visdom, plot_type):
+    def __init__(self):
+        self._plot = {
+            PlotType.LINE_PLOT: LinePlot,
+            PlotType.IMAGE_PLOT: ImagePlot,
+            PlotType.IMAGES_PLOT: ImagesPlot,
+            PlotType.PIE_PLOT: PiePlot,
+            PlotType.TEXT_PLOT: TextPlot,
+            PlotType.BAR_PLOT: BarPlot,
+        }
 
-        if plot_type == PlotType.LINE_PLOT:
-            plot = LinePlot(visdom)
-        elif plot_type == PlotType.IMAGE_PLOT:
-            plot = ImagePlot(visdom)
-        elif plot_type == PlotType.IMAGES_PLOT:
-            plot = ImagesPlot(visdom)
-        elif plot_type == PlotType.PIE_PLOT:
-            plot = PiePlot(visdom)
-        elif plot_type == PlotType.TEXT_PLOT:
-            plot = TextPlot(visdom)
-        else:
-            raise NotImplementedError("Unable to create a plot for {}".format(plot_type))
-
-        return plot
+    def create_plot(self, visdom, plot_type: PlotType):
+        return self._plot[plot_type](visdom)
