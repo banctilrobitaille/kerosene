@@ -14,31 +14,11 @@
 # limitations under the License.
 # ==============================================================================
 from abc import ABC, abstractmethod
-from enum import Enum
 
 from visdom import Visdom
 
-from kerosene.events.handlers.loggers.visdom.data import VisdomData
-
-
-class PlotType(Enum):
-    LINE_PLOT = "Line Plot"
-    IMAGES_PLOT = "Images Plot"
-    IMAGE_PLOT = "Image Plot"
-    PIE_PLOT = "Pie Plot"
-    TEXT_PLOT = "Text Plot"
-    BAR_PLOT = "Bar Plot"
-
-    def __str__(self):
-        return self.value
-
-
-class PlotFrequency(Enum):
-    EVERY_STEP = "Step"
-    EVERY_EPOCH = "Epoch"
-
-    def __str__(self):
-        return self.value
+from kerosene.loggers.visdom import PlotType
+from kerosene.loggers.visdom.data import VisdomData
 
 
 class VisdomPlot(ABC):

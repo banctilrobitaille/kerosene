@@ -1,29 +1,10 @@
-# -*- coding: utf-8 -*-
-# Copyright 2019 Kerosene Authors. All Rights Reserved.
-#
-# Licensed under the MIT License;
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://opensource.org/licenses/MIT
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-from enum import Enum
-from typing import Union, List, Optional
-
-
-
+from typing import Union, List
 
 
 class VisdomData(object):
 
-    def __init__(self, source_name, variable_name: Union[List[str], str], plot_type: PlotType,
-                 plot_frequency: Optional[PlotFrequency], x, y, params: dict = None):
+    def __init__(self, source_name, variable_name: Union[List[str], str], plot_type, plot_frequency, x, y,
+                 params: dict = None):
         self._source_name = source_name
         self._variable_name = variable_name
         self._plot_type = plot_type

@@ -13,41 +13,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from typing import List, Union, Dict
-
-from visdom import Visdom
+from abc import ABC
 
 from kerosene.events import BaseEvent, Event
-from kerosene.events.handlers.loggers.visdom.base_handler import BaseVisdomHandler
-from kerosene.events.handlers.loggers.visdom.config import VisdomConfiguration
-from kerosene.events.handlers.loggers.visdom.data import VisdomData
-from kerosene.events.handlers.loggers.visdom.plots import VisdomPlot, VisdomPlotFactory, PlotType, PlotFrequency
+from kerosene.events.handlers.base_handler import EventHandler
+from kerosene.loggers.visdom import PlotFrequency, PlotType
+from kerosene.loggers.visdom.visdom import VisdomLogger, VisdomData
 from kerosene.training.trainers import Trainer, ModelTrainer
 
 
-class VisdomLogger(object):
-    def __init__(self, visdom_config: VisdomConfiguration, plot_factory: VisdomPlotFactory = VisdomPlotFactory()):
-        self._visdom_config = visdom_config
-        self._visdom = Visdom(server=visdom_config.server, port=visdom_config.port, env=visdom_config.env)
-        self._plots: Dict[int, VisdomPlot] = {}
-        self._plot_factory = plot_factory
+class BaseVisdomHandler(EventHandler, ABC):
+    def __init__(self, visdom_logger: VisdomLogger, every=1):
+        self._visdom_logger = visdom_logger
+        self._every = every
 
     @property
-    def visdom_config(self):
-        return self._visdom_config
+    def visdom_logger(self):
+        return self._visdom_logger
 
     @property
-    def plots(self):
-        return self._plots
+    def every(self):
+        return self._every
 
-    def __call__(self, visdom_data: Union[List[VisdomData], VisdomData]):
-        visdom_data = [visdom_data] if not hasattr(visdom_data, '__iter__') else visdom_data
+    def should_plot_epoch_data(self, event, epoch):
+        return (event in [Event.ON_EPOCH_BEGIN, Event.ON_EPOCH_END]) and (epoch % self._every == 0)
 
-        for visdom_datum in visdom_data:
-            if visdom_datum.id not in self._plots.keys():
-                self._plots[visdom_datum.id] = self._plot_factory.create_plot(self._visdom, visdom_datum.plot_type)
+    def should_plot_step_data(self, event, step):
+        return (event in [Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_BEGIN,
+                          Event.ON_VALID_BATCH_END]) and (step % self._every == 0)
 
-            self._plots[visdom_datum.id].update(visdom_datum)
+    def flatten(self, list_of_visdom_data):
+        return [item for sublist in list_of_visdom_data for item in sublist]
 
 
 class PlotAllModelStateVariables(BaseVisdomHandler):
@@ -73,7 +69,7 @@ class PlotAllModelStateVariables(BaseVisdomHandler):
                 trainer.model_trainers))
 
         if data is not None:
-            self.visdom_logger(data)
+            self.visdom_logger(self.flatten(data))
 
     @staticmethod
     def create_epoch_visdom_data(epoch, model_trainer: ModelTrainer):
@@ -120,7 +116,7 @@ class PlotLosses(BaseVisdomHandler):
                     trainer.model_trainers))
 
         if data is not None:
-            self.visdom_logger(data)
+            self.visdom_logger(self.flatten(data))
 
     @staticmethod
     def create_epoch_visdom_data(epoch, model_trainer: ModelTrainer):
@@ -176,7 +172,7 @@ class PlotMetrics(BaseVisdomHandler):
                     trainer.model_trainers))
 
         if data is not None:
-            self.visdom_logger(data)
+            self.visdom_logger(self.flatten(data))
 
     @staticmethod
     def create_epoch_visdom_data(epoch, model_trainer: ModelTrainer):
@@ -297,7 +293,10 @@ class PlotGradientFlow(BaseVisdomHandler):
         for n, p in model_trainer.named_parameters():
             if p.requires_grad and ("bias" not in n):
                 layers.append(n)
-                avg_grads.append(p.grad.abs().mean())
+                if p.grad is not None:
+                    avg_grads.append(p.grad.abs().mean().item())
+                else:
+                    avg_grads.append(0)
 
         return VisdomData(model_trainer.name, "Gradient Flow", PlotType.BAR_PLOT, PlotFrequency.EVERY_EPOCH, y=layers,
                           x=avg_grads, params={'opts': {'xlabel': "Layers", 'ylabel': "Avg. Gradients",
