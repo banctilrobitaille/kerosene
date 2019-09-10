@@ -32,7 +32,6 @@ from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training import Status
-from kerosene.utils.distributed import on_single_device
 
 
 class ModelTrainer(ApexModule):
@@ -298,16 +297,12 @@ class Trainer(EventGenerator):
         for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
             self.fire(Event.ON_TRAIN_BATCH_BEGIN)
 
-            if on_single_device(self._run_config.devices):
+            inputs = [single_input.to(self._run_config.device, non_blocking=True) for single_input in
+                      inputs] if isinstance(inputs, list) else inputs.to(self._run_config.device, non_blocking=True)
 
-                inputs = [single_input.to(self._run_config.devices[0]) for single_input in inputs] if isinstance(
-                    inputs, list) else inputs.to(self._run_config.devices[0])
+            target = [single_target.to(self._run_config.device, non_blocking=True) for single_target in
+                      target] if isinstance(target, list) else target.to(self._run_config.device, non_blocking=True)
 
-                target = [single_target.to(self._run_config.devices[0]) for single_target in target] if isinstance(
-                    target, list) else target.to(self._run_config.devices[0])
-            else:
-                # TODO Implement distributed training
-                raise NotImplementedError("Distributed training not implemented yet !")
             self.train_step(inputs, target)
             if self._current_train_batch % 100 == 0:
                 self.fire(Event.ON_100_TRAIN_STEPS)
@@ -323,16 +318,12 @@ class Trainer(EventGenerator):
             for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
                 self.fire(Event.ON_VALID_BATCH_BEGIN)
 
-                if on_single_device(self._run_config.devices):
-                    if on_single_device(self._run_config.devices):
-                        inputs = [single_input.to(self._run_config.devices[0]) for single_input in
-                                  inputs] if isinstance(inputs, list) else inputs.to(self._run_config.devices[0])
+                inputs = [single_input.to(self._run_config.device, non_blocking=True) for single_input in
+                          inputs] if isinstance(inputs, list) else inputs.to(self._run_config.device, non_blocking=True)
 
-                        target = [single_target.to(self._run_config.devices[0]) for single_target in
-                                  target] if isinstance(target, list) else target.to(self._run_config.devices[0])
-                else:
-                    # TODO Implement distributed training
-                    raise NotImplementedError("Distributed training not implemented yet !")
+                target = [single_target.to(self._run_config.device, non_blocking=True) for single_target in
+                          target] if isinstance(target, list) else target.to(self._run_config.device, non_blocking=True)
+
                 self.validate_step(inputs, target)
                 self.fire(Event.ON_VALID_BATCH_END)
                 self.fire(Event.ON_BATCH_END)
@@ -403,7 +394,9 @@ class ModelTrainerFactory(object):
         assert (self._model is not None) or (
                 self._model_factory is not None), "A model or a model factory must be provided !"
 
-    def create(self, model_trainer_config: ModelTrainerConfiguration):
+    def create(self, model_trainer_config: ModelTrainerConfiguration, run_config):
+        torch.cuda.set_device(run_config.device)
+
         model = self._model if self._model is not None else self._model_factory.create(model_trainer_config.model_type,
                                                                                        model_trainer_config.model_params)
         optimizer = self._optimizer_factory.create(model_trainer_config.optimizer_type,
@@ -412,7 +405,8 @@ class ModelTrainerFactory(object):
         scheduler = self._scheduler_factory.create(model_trainer_config.scheduler_type, optimizer,
                                                    model_trainer_config.scheduler_params)
         criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
-                                                   model_trainer_config.criterion_params)
+                                                   model_trainer_config.criterion_params).to(run_config.device)
+
         metric = self._metric_factory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
 
         return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric)
