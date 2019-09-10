@@ -302,4 +302,5 @@ class PlotGradientFlow(BaseVisdomHandler):
                           x=avg_grads, params={'opts': {'xlabel': "Layers", 'ylabel': "Avg. Gradients",
                                                         'title': "{} {} per {}".format(model_trainer.name,
                                                                                        "Gradient Flow",
-                                                                                       "Layer")}})
+                                                                                       "Layer"),
+                                                        'marginbottom': 200}})
