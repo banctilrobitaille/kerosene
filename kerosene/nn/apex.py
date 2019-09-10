@@ -76,6 +76,10 @@ class ApexLoss(object):
         self._loss = self._loss / value
         return self
 
+    def __sub__(self, value: Union[int, float]):
+        self._loss = self._loss - value
+        return self
+
     def __eq__(self, other):
         if isinstance(other, Tensor):
             is_equal = torch.all(torch.eq(self._loss, other))
