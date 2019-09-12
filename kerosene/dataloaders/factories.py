@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import Dataset
 
 from kerosene.config.trainers import RunConfiguration, TrainerConfiguration
-from kerosene.utils.distributed import on_single_device
+from kerosene.utils.devices import on_single_device
 
 
 class DataloaderFactory(object):

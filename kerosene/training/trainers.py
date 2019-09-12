@@ -32,6 +32,7 @@ from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training import Status
+from kerosene.utils.devices import on_cpu
 
 
 class ModelTrainer(ApexModule):
@@ -395,7 +396,8 @@ class ModelTrainerFactory(object):
                 self._model_factory is not None), "A model or a model factory must be provided !"
 
     def create(self, model_trainer_config: ModelTrainerConfiguration, run_config):
-        torch.cuda.set_device(run_config.device)
+        if not on_cpu(run_config.device):
+            torch.cuda.set_device(run_config.device)
 
         model = self._model if self._model is not None else self._model_factory.create(model_trainer_config.model_type,
                                                                                        model_trainer_config.model_params)

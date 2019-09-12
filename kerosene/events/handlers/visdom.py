@@ -24,23 +24,19 @@ from kerosene.training.trainers import Trainer, ModelTrainer
 
 class BaseVisdomHandler(EventHandler, ABC):
     def __init__(self, visdom_logger: VisdomLogger, every=1):
+        super().__init__(every)
         self._visdom_logger = visdom_logger
-        self._every = every
 
     @property
     def visdom_logger(self):
         return self._visdom_logger
 
-    @property
-    def every(self):
-        return self._every
-
-    def should_plot_epoch_data(self, event, epoch):
+    def should_handle_epoch_data(self, event, epoch):
         return (event in [Event.ON_EPOCH_BEGIN, Event.ON_EPOCH_END]) and (epoch % self._every == 0)
 
-    def should_plot_step_data(self, event, step):
+    def should_handle_step_data(self, event, step):
         return (event in [Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_BEGIN,
-                          Event.ON_VALID_BATCH_END]) and (step % self._every == 0)
+                          Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]) and (step % self._every == 0)
 
     def flatten(self, list_of_visdom_data):
         return [item for sublist in list_of_visdom_data for item in sublist]
@@ -53,17 +49,18 @@ class PlotAllModelStateVariables(BaseVisdomHandler):
         super().__init__(visdom_logger, every)
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Event not supported"
+        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
+            self.SUPPORTED_EVENTS)
         data = None
 
-        if self.should_plot_epoch_data(event, trainer.epoch):
+        if self.should_handle_epoch_data(event, trainer.epoch):
             data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
                             trainer.model_trainers))
-        elif self.should_plot_step_data(event, trainer.current_train_step):
+        elif self.should_handle_step_data(event, trainer.current_train_step):
             data = list(map(
                 lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
                 trainer.model_trainers))
-        elif self.should_plot_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_step_data(event, trainer.current_valid_step):
             data = list(map(
                 lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                 trainer.model_trainers))
@@ -100,17 +97,18 @@ class PlotLosses(BaseVisdomHandler):
         super().__init__(visdom_logger, every)
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Event not supported"
+        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
+            self.SUPPORTED_EVENTS)
         data = None
 
-        if self.should_plot_epoch_data(event, trainer.epoch):
+        if self.should_handle_epoch_data(event, trainer.epoch):
             data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
                             trainer.model_trainers))
-        elif self.should_plot_step_data(event, trainer.current_train_step):
+        elif self.should_handle_step_data(event, trainer.current_train_step):
             data = list(
                 map(lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
                     trainer.model_trainers))
-        elif self.should_plot_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_step_data(event, trainer.current_valid_step):
             data = list(
                 map(lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                     trainer.model_trainers))
@@ -156,17 +154,18 @@ class PlotMetrics(BaseVisdomHandler):
         super().__init__(visdom_logger, every)
 
     def __call__(self, event: Event, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Event not supported"
+        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
+            self.SUPPORTED_EVENTS)
         data = None
 
-        if self.should_plot_epoch_data(event, trainer.epoch):
+        if self.should_handle_epoch_data(event, trainer.epoch):
             data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
                             trainer.model_trainers))
-        elif self.should_plot_step_data(event, trainer.current_train_step):
+        elif self.should_handle_step_data(event, trainer.current_train_step):
             data = list(
                 map(lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
                     trainer.model_trainers))
-        elif self.should_plot_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_step_data(event, trainer.current_valid_step):
             data = list(
                 map(lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                     trainer.model_trainers))
@@ -217,14 +216,15 @@ class PlotCustomVariables(BaseVisdomHandler):
         self._params = params
 
     def __call__(self, event: Event, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Event not supported"
+        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
+            self.SUPPORTED_EVENTS)
         data = None
 
-        if self.should_plot_epoch_data(event, trainer.epoch):
+        if self.should_handle_epoch_data(event, trainer.epoch):
             data = self.create_epoch_visdom_data(trainer)
-        elif self.should_plot_step_data(event, trainer.current_train_step):
+        elif self.should_handle_step_data(event, trainer.current_train_step):
             data = self.create_train_batch_visdom_data(trainer)
-        elif self.should_plot_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_step_data(event, trainer.current_valid_step):
             data = self.create_valid_batch_visdom_data(trainer)
 
         if data is not None:
@@ -250,10 +250,11 @@ class PlotLR(BaseVisdomHandler):
         super().__init__(visdom_logger, every)
 
     def __call__(self, event: Event, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Event not supported"
+        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
+            self.SUPPORTED_EVENTS)
         data = None
 
-        if self.should_plot_epoch_data(event, trainer.epoch):
+        if self.should_handle_epoch_data(event, trainer.epoch):
             data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
                             trainer.model_trainers))
 
@@ -278,10 +279,11 @@ class PlotGradientFlow(BaseVisdomHandler):
         super().__init__(visdom_logger, every)
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Supported event for gradient flow are: {}".format(self.SUPPORTED_EVENTS)
+        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
+            self.SUPPORTED_EVENTS)
         data = None
 
-        if self.should_plot_step_data(event, trainer.current_train_step):
+        if self.should_handle_step_data(event, trainer.current_train_step):
             data = list(map(lambda model_trainer: self.create_visdom_data(model_trainer), trainer.model_trainers))
 
         if data is not None:

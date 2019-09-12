@@ -18,7 +18,13 @@ from typing import Union
 
 from torch import optim
 from torch.optim import Optimizer
-from apex.optimizers import FusedSGD, FusedAdam
+
+try:
+    from apex.optimizers import FusedSGD, FusedAdam
+
+    APEX_AVAILABLE = True
+except ModuleNotFoundError:
+    APEX_AVAILABLE = False
 
 
 class OptimizerType(Enum):
@@ -44,9 +50,11 @@ class OptimizerFactory(object):
         self._optimizers = {
             "Adam": optim.Adam,
             "SGD": optim.SGD,
-            "FusedSGD": FusedSGD,
-            "FusedAdam": FusedAdam,
         }
+
+        if APEX_AVAILABLE:
+            self.register("FusedSGD", FusedSGD)
+            self.register("FusedAdam", FusedAdam)
 
     def create(self, optimizer_type: Union[str, OptimizerType], model_params, params):
         return self._optimizers[str(optimizer_type)](model_params, **params) if params is not None else \
