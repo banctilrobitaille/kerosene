@@ -38,7 +38,8 @@ from kerosene.utils.devices import on_cpu
 class ModelTrainer(ApexModule):
     LOGGER = logging.getLogger("ModelTrainer")
 
-    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric, max_grad_norm):
+    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric,
+                 max_grad_norm: Union[None, float]):
         super().__init__(model, optimizer)
         self._model_name = model_name
 
