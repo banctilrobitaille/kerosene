@@ -38,13 +38,14 @@ from kerosene.utils.devices import on_cpu
 class ModelTrainer(ApexModule):
     LOGGER = logging.getLogger("ModelTrainer")
 
-    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric):
+    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric, max_grad_norm):
         super().__init__(model, optimizer)
         self._model_name = model_name
 
         self._criterion = criterion
         self._scheduler = scheduler
         self._metric_computer = metric_computer
+        self._max_grad_norm = max_grad_norm
 
         self._step_train_loss = torch.tensor([0.0])
         self._step_valid_loss = torch.tensor([0.0])
@@ -147,13 +148,15 @@ class ModelTrainer(ApexModule):
         self._step_train_loss = self._criterion(pred, target)
         self._train_loss.update(self._step_train_loss)
 
-        return ApexLoss(self._amp_id, self._step_train_loss, self._optimizer) if self.use_amp else self._step_train_loss
+        return ApexLoss(self._amp_id, self._step_train_loss, self._optimizer,
+                        self._model.parameters(), self._max_grad_norm) if self.use_amp else self._step_train_loss
 
     def compute_valid_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_valid_loss = self._criterion(pred, target)
         self._valid_loss.update(self._step_valid_loss)
 
-        return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
+        return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer,
+                        self._model.parameters(), self._max_grad_norm) if self.use_amp else self._step_valid_loss
 
     def compute_train_metric(self, pred, target):
         self._metric_computer.update((pred, target))
@@ -411,4 +414,5 @@ class ModelTrainerFactory(object):
 
         metric = self._metric_factory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
 
-        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric)
+        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric,
+                            model_trainer_config.max_grad_norm)
