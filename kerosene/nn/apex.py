@@ -59,7 +59,7 @@ class ApexLoss(object):
             self._loss.backward(gradient, retain_graph, create_graph)
 
         if self._max_grad_norm:
-            nn.utils.clip_grad_norm(self._model_parameters, self._max_grad_norm)
+            torch.nn.utils.clip_grad_norm_(self._model_parameters, self._max_grad_norm)
 
     def __add__(self, other):
         if isinstance(other, Tensor):
