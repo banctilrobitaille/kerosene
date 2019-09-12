@@ -40,7 +40,7 @@ class BaseVisdomHandler(EventHandler, ABC):
 
     def should_plot_step_data(self, event, step):
         return (event in [Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_BEGIN,
-                          Event.ON_VALID_BATCH_END]) and (step % self._every == 0)
+                          Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]) and (step % self._every == 0)
 
     def flatten(self, list_of_visdom_data):
         return [item for sublist in list_of_visdom_data for item in sublist]
