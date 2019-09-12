@@ -15,6 +15,12 @@
 # ==============================================================================
 from typing import Union, List, Tuple
 
+import torch
+
+
+def on_cpu(device: torch.device):
+    return str(device) == "cpu"
+
 
 def on_single_device(devices: Union[List, Tuple]):
     return len(devices) == 1

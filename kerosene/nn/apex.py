@@ -21,10 +21,11 @@ from torch import Tensor, nn
 from torch.optim import Optimizer
 
 from kerosene.config.trainers import RunConfiguration
-from kerosene.utils.distributed import on_single_device
+from kerosene.utils.devices import on_single_device
 
 try:
     from apex import amp
+    from apex.parallel import DistributedDataParallel as DDP
 
     APEX_AVAILABLE = True
 except ModuleNotFoundError:
@@ -71,6 +72,14 @@ class ApexLoss(object):
         self._loss = self._loss * value
         return self
 
+    def __truediv__(self, value: Union[int, float]):
+        self._loss = self._loss / value
+        return self
+
+    def __sub__(self, value: Union[int, float]):
+        self._loss = self._loss - value
+        return self
+
     def __eq__(self, other):
         if isinstance(other, Tensor):
             is_equal = torch.all(torch.eq(self._loss, other))
@@ -112,13 +121,10 @@ class ApexModule(ABC, nn.Module):
     def initialize(self, amp_id: int, num_losses: int, run_config: RunConfiguration):
         self._amp_id = amp_id
         self._use_amp = run_config.use_amp
-
-        if on_single_device(run_config.devices):
-            self._model.to(device=run_config.devices[0])
-        else:
-            # TODO implement distributed training
-            raise NotImplementedError("Distributed training is not yet supported")
+        self._model.to(run_config.device)
 
         if APEX_AVAILABLE and self._use_amp:
             self._model, self._optimizer = amp.initialize(
                 self._model, self._optimizer, opt_level=run_config.amp_opt_level, num_losses=num_losses)
+        if not on_single_device(run_config.devices):
+            self._model = DDP(self._model, delay_allreduce=True)

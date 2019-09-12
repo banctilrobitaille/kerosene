@@ -19,7 +19,7 @@ import torch
 
 from kerosene.events import Monitor, MonitorMode
 from kerosene.events.handlers.base_handler import EventHandler
-from kerosene.training.state import TrainerState, ModelTrainerState
+from kerosene.training.trainers import Trainer, ModelTrainer
 
 
 class ModelCheckpoint(EventHandler):
@@ -29,15 +29,15 @@ class ModelCheckpoint(EventHandler):
         self._path = path
         self._model_name = model_name
 
-    def __call__(self, state: TrainerState):
-        model_trainer_states = list(filter(self._filter_by_name, state.model_trainer_states))
+    def __call__(self, trainer: Trainer):
+        model_trainer_states = list(filter(self._filter_by_name, trainer.model_trainers))
 
         for model_trainer_state in model_trainer_states:
             self._save_model(model_trainer_state.name, model_trainer_state.model_state)
             self._save_optimizer(model_trainer_state.name, model_trainer_state.optimizer_state)
 
-    def _filter_by_name(self, model_trainer_state: ModelTrainerState):
-        return True if self._model_name is None else model_trainer_state.name == self._model_name
+    def _filter_by_name(self, model_trainer: ModelTrainer):
+        return True if self._model_name is None else model_trainer.name == self._model_name
 
     def _save_model(self, model_name, model_state):
         torch.save(model_state, os.path.join(self._path, model_name, model_name + self.CHECKPOINT_EXT))
@@ -59,8 +59,8 @@ class ModelCheckpointIfBetter(EventHandler):
 
         self._monitor_values = {}
 
-    def __call__(self, state: TrainerState):
-        model_trainer_states = list(filter(self._filter_by_name, state.model_trainer_states))
+    def __call__(self, trainer: Trainer):
+        model_trainer_states = list(filter(self._filter_by_name, trainer.model_trainers))
 
         for model_trainer_state in model_trainer_states:
             if model_trainer_state.name in self._monitor_values.keys() and self._should_save(model_trainer_state):
@@ -71,8 +71,8 @@ class ModelCheckpointIfBetter(EventHandler):
                 self._save_model(model_trainer_state.name, model_trainer_state.model_state)
                 self._save_optimizer(model_trainer_state.name, model_trainer_state.optimizer_state)
 
-    def _filter_by_name(self, model_trainer_state: ModelTrainerState):
-        return True if self._model_name is None else model_trainer_state.name == self._model_name
+    def _filter_by_name(self, model_trainer: ModelTrainer):
+        return True if self._model_name is None else model_trainer.name == self._model_name
 
     def _save_model(self, model_name, model_state):
         torch.save(model_state, os.path.join(self._path, model_name, model_name + self.CHECKPOINT_EXT))
@@ -81,21 +81,21 @@ class ModelCheckpointIfBetter(EventHandler):
         torch.save(model_state,
                    os.path.join(self._path, model_name, "{}_optimizer{}".format(model_name, self.CHECKPOINT_EXT)))
 
-    def _should_save(self, model_trainer_state: ModelTrainerState):
+    def _should_save(self, model_trainer: ModelTrainer):
         if self._mode is MonitorMode.MIN:
-            return self._get_monitor_value(model_trainer_state) < self._monitor_values[model_trainer_state.name]
+            return self._get_monitor_value(model_trainer) < self._monitor_values[model_trainer.name]
         else:
-            return self._get_monitor_value(model_trainer_state) > self._monitor_values[model_trainer_state.name]
+            return self._get_monitor_value(model_trainer) > self._monitor_values[model_trainer.name]
 
-    def _get_monitor_value(self, model_trainer_state: ModelTrainerState):
+    def _get_monitor_value(self, model_trainer: ModelTrainer):
         if self._monitor is Monitor.TRAINING_LOSS:
-            value = model_trainer_state.train_loss
+            value = model_trainer.train_loss
         elif self._monitor is Monitor.TRAINING_METRIC:
-            value = model_trainer_state.train_metric
+            value = model_trainer.train_metric
         elif self._monitor is Monitor.VALIDATION_LOSS:
-            value = model_trainer_state.valid_loss
+            value = model_trainer.valid_loss
         elif self._monitor is Monitor.VALIDATION_METRIC:
-            value = model_trainer_state.valid_metric
+            value = model_trainer.valid_metric
         else:
             raise NotImplementedError("The provided monitor value is not supported !")
 
