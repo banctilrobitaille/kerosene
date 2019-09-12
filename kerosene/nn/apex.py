@@ -21,7 +21,7 @@ from torch import Tensor, nn
 from torch.optim import Optimizer
 
 from kerosene.config.trainers import RunConfiguration
-from kerosene.utils.distributed import on_single_device
+from kerosene.utils.devices import on_single_device
 
 try:
     from apex import amp

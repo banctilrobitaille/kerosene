@@ -15,8 +15,28 @@
 # ==============================================================================
 from abc import ABC, abstractmethod
 
+from kerosene.events import Event
+
 
 class EventHandler(ABC):
+
+    def __init__(self, every=1):
+        self._every = every
+
+    @property
+    def every(self):
+        return self._every
+
+    def should_handle_epoch_data(self, event, trainer):
+        return (event in [Event.ON_EPOCH_BEGIN, Event.ON_EPOCH_END, Event.ON_TRAIN_EPOCH_BEGIN,
+                          Event.ON_TRAIN_EPOCH_END, Event.ON_VALID_EPOCH_BEGIN, Event.ON_VALID_EPOCH_END]) and (
+                           trainer.epoch % self._every == 0)
+
+    def should_handle_step_data(self, event, trainer):
+        if event in [Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_BATCH_END]:
+            return trainer.current_train_step % self._every == 0
+        elif event in [Event.ON_VALID_BATCH_BEGIN, Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]:
+            return trainer.current_valid_step % self._every == 0
 
     @abstractmethod
     def __call__(self, *inputs):
