@@ -309,8 +309,6 @@ class Trainer(EventGenerator):
                       target] if isinstance(target, list) else target.to(self._run_config.device, non_blocking=True)
 
             self.train_step(inputs, target)
-            if self._current_train_batch % 100 == 0:
-                self.fire(Event.ON_100_TRAIN_STEPS)
             self.fire(Event.ON_TRAIN_BATCH_END)
             self.fire(Event.ON_BATCH_END)
 
@@ -332,6 +330,8 @@ class Trainer(EventGenerator):
                 self.validate_step(inputs, target)
                 self.fire(Event.ON_VALID_BATCH_END)
                 self.fire(Event.ON_BATCH_END)
+
+            self._current_valid_batch = 0
 
     def finalize(self):
         self._status = Status.FINALIZE
