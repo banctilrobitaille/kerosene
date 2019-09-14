@@ -33,14 +33,11 @@ except ModuleNotFoundError:
 
 
 class ApexLoss(object):
-    def __init__(self, loss_id: int, loss: Tensor, optimizer: Optimizer, model_parameters: Tensor,
-                 max_grad_norm: Union[None, float]):
+    def __init__(self, loss_id: int, loss: Tensor, optimizer: Optimizer):
         super().__init__()
         self._loss_id = loss_id
         self._loss = loss
         self._optimizer = optimizer
-        self._model_parameters = model_parameters
-        self._max_grad_norm = max_grad_norm
 
     @property
     def loss_id(self):
@@ -57,9 +54,6 @@ class ApexLoss(object):
                 scaled_loss.backward(gradient, retain_graph, create_graph)
         else:
             self._loss.backward(gradient, retain_graph, create_graph)
-
-        if self._max_grad_norm:
-            torch.nn.utils.clip_grad_norm_(self._model_parameters, self._max_grad_norm)
 
     def __add__(self, other):
         if isinstance(other, Tensor):

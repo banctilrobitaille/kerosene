@@ -30,6 +30,9 @@ class SchedulerType(Enum):
     CyclicLR = "CyclicL"
     CosineAnnealingWarmRestarts = "CosineAnnealingWarmRestarts"
 
+    def __str__(self):
+        return self.value
+
 
 class SchedulerFactory(object):
 

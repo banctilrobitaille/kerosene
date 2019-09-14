@@ -136,6 +136,8 @@ class ModelTrainer(ApexModule):
 
     def step(self):
         if self._status is Status.TRAIN:
+            if self._max_grad_norm:
+                torch.nn.utils.clip_grad_norm_(self._model.parameters(), self._max_grad_norm)
             self._optimizer.step()
 
     def scheduler_step(self):
@@ -149,15 +151,13 @@ class ModelTrainer(ApexModule):
         self._step_train_loss = self._criterion(pred, target)
         self._train_loss.update(self._step_train_loss)
 
-        return ApexLoss(self._amp_id, self._step_train_loss, self._optimizer,
-                        self._model.parameters(), self._max_grad_norm) if self.use_amp else self._step_train_loss
+        return ApexLoss(self._amp_id, self._step_train_loss, self._optimizer) if self.use_amp else self._step_train_loss
 
     def compute_valid_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_valid_loss = self._criterion(pred, target)
         self._valid_loss.update(self._step_valid_loss)
 
-        return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer,
-                        self._model.parameters(), self._max_grad_norm) if self.use_amp else self._step_valid_loss
+        return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
 
     def compute_train_metric(self, pred, target):
         self._metric_computer.update((pred, target))
