@@ -76,7 +76,7 @@ class CriterionFactory(object):
 
     def create(self, criterion_type: Union[str, CriterionType], params):
         return self._criterion[str(criterion_type)](**params) if params is not None else self._criterion[
-            str(criterion_type]()
+            str(criterion_type)]()
 
     def register(self, function: str, creator: _Loss):
         """
