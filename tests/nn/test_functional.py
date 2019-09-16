@@ -13,10 +13,10 @@ class TestJensenShannonDivergence(unittest.TestCase):
         prob_distributions = torch.tensor([[self.PROB_DIST1, self.PROB_DIST2, self.PROB_DIST3]])
         expected_results = torch.tensor([0.378889])
 
-        assert_that(F.jensen_shannon_div(prob_distributions), equal_to(expected_results))
+        assert_that(F.js_div(prob_distributions), equal_to(expected_results))
 
     def test_should_compute_jensen_shannon_divergence_of_same_distribution(self):
         prob_distributions = torch.tensor([[self.PROB_DIST1, self.PROB_DIST1, self.PROB_DIST1]])
         expected_results = torch.tensor([0.0])
 
-        assert_that(F.jensen_shannon_div(prob_distributions), equal_to(expected_results))
+        assert_that(F.js_div(prob_distributions), equal_to(expected_results))

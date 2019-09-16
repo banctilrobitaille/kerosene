@@ -25,6 +25,8 @@ try:
     APEX_AVAILABLE = True
 except ModuleNotFoundError:
     APEX_AVAILABLE = False
+except ImportError as e:
+    print("Unable to import apex optimizer: {}".format(e))
 
 
 class OptimizerType(Enum):
