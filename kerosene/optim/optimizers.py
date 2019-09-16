@@ -26,6 +26,7 @@ try:
 except ModuleNotFoundError:
     APEX_AVAILABLE = False
 except ImportError as e:
+    APEX_AVAILABLE = True
     print("Unable to import apex optimizer: {}".format(e))
 
 
