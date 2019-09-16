@@ -52,31 +52,31 @@ class CriterionFactory(object):
     def __init__(self):
         super(CriterionFactory, self).__init__()
         self._criterion = {
-            CriterionType.DiceLoss: DiceLoss,
-            CriterionType.GeneralizedDiceLoss: GeneralizedDiceLoss,
-            CriterionType.BCELoss: nn.BCELoss,
-            CriterionType.BCEWithLogitsLoss: nn.BCEWithLogitsLoss,
-            CriterionType.PoissonNLLLoss: nn.PoissonNLLLoss,
-            CriterionType.CosineEmbeddingLoss: nn.CosineEmbeddingLoss,
-            CriterionType.CrossEntropyLoss: nn.CrossEntropyLoss,
-            CriterionType.CTCLoss: nn.CTCLoss,
-            CriterionType.HingeEmbeddingLoss: nn.HingeEmbeddingLoss,
-            CriterionType.KLDivLoss: nn.KLDivLoss,
-            CriterionType.L1Loss: nn.L1Loss,
-            CriterionType.MSELoss: nn.MSELoss,
-            CriterionType.MarginRankingLoss: nn.MarginRankingLoss,
-            CriterionType.MultiLabelMarginLoss: nn.MultiLabelMarginLoss,
-            CriterionType.MultiLabelSoftMarginLoss: nn.MultiLabelSoftMarginLoss,
-            CriterionType.MultiMarginLoss: nn.MultiMarginLoss,
-            CriterionType.NLLLoss: nn.NLLLoss,
-            CriterionType.SmoothL1Loss: nn.SmoothL1Loss,
-            CriterionType.SoftMarginLoss: nn.SoftMarginLoss,
-            CriterionType.TripletMarginLoss: nn.TripletMarginLoss,
+            "DiceLoss": DiceLoss,
+            "GeneralizedDiceLoss": GeneralizedDiceLoss,
+            "BCELoss": nn.BCELoss,
+            "BCEWithLogitsLoss": nn.BCEWithLogitsLoss,
+            "PoissonNLLLoss": nn.PoissonNLLLoss,
+            "CosineEmbeddingLoss": nn.CosineEmbeddingLoss,
+            "CrossEntropyLoss": nn.CrossEntropyLoss,
+            "CTCLoss": nn.CTCLoss,
+            "HingeEmbeddingLoss": nn.HingeEmbeddingLoss,
+            "KLDivLoss": nn.KLDivLoss,
+            "L1Loss": nn.L1Loss,
+            "MSELoss": nn.MSELoss,
+            "MarginRankingLoss": nn.MarginRankingLoss,
+            "MultiLabelMarginLoss": nn.MultiLabelMarginLoss,
+            "MultiLabelSoftMarginLoss": nn.MultiLabelSoftMarginLoss,
+            "MultiMarginLoss": nn.MultiMarginLoss,
+            "NLLLoss": nn.NLLLoss,
+            "SmoothL1Loss": nn.SmoothL1Loss,
+            "SoftMarginLoss": nn.SoftMarginLoss,
+            "TripletMarginLoss": nn.TripletMarginLoss,
         }
 
     def create(self, criterion_type: Union[str, CriterionType], params):
         return self._criterion[str(criterion_type)](**params) if params is not None else self._criterion[
-            CriterionType[str(criterion_type)]]()
+            str(criterion_type]()
 
     def register(self, function: str, creator: _Loss):
         """
