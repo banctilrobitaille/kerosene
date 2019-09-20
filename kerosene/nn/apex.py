@@ -55,6 +55,9 @@ class ApexLoss(object):
         else:
             self._loss.backward(gradient, retain_graph, create_graph)
 
+    def mean(self):
+        return torch.mean(self._loss)
+    
     def __add__(self, other):
         if isinstance(other, Tensor):
             self._loss = self._loss + other
@@ -128,6 +131,3 @@ class ApexModule(ABC, nn.Module):
                 self._model, self._optimizer, opt_level=run_config.amp_opt_level, num_losses=num_losses)
         if not on_single_device(run_config.devices):
             self._model = DDP(self._model, delay_allreduce=True)
-
-    def mean(self):
-        return torch.mean(self._loss)
