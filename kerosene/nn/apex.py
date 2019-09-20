@@ -62,7 +62,7 @@ class ApexLoss(object):
         return self
 
     def numpy(self):
-        return self._loss.numpy()
+        return self._loss.cpu().numpy()
     
     def __add__(self, other):
         if isinstance(other, Tensor):
