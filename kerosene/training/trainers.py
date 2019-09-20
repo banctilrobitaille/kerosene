@@ -171,18 +171,24 @@ class ModelTrainer(ApexModule):
     def compute_train_metric(self, pred, target):
         self._metric_computer.update((pred, target))
         self._step_train_metric = self._metric_computer.compute()
-        self._train_metric.update(self._step_train_metric)
         self._metric_computer.reset()
 
         return self._step_train_metric
 
+    def update_train_metric(self, metric):
+        self._step_train_metric = metric
+        self._train_metric.update(self._step_train_metric)
+
     def compute_valid_metric(self, pred, target):
         self._metric_computer.update((pred, target))
         self._step_valid_metric = self._metric_computer.compute()
-        self._valid_metric.update(self._step_valid_metric)
         self._metric_computer.reset()
 
         return self._step_valid_metric
+
+    def update_valid_metric(self, metric):
+        self._step_valid_metric = metric
+        self._valid_metric.update(self._step_valid_metric)
 
     def reset(self):
         self._metric_computer.reset()
