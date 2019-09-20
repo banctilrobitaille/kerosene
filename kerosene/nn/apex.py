@@ -61,6 +61,9 @@ class ApexLoss(object):
         self._loss = torch.mean(self._loss)
         return self
 
+    def numpy(self):
+        return self._loss.numpy()
+    
     def __add__(self, other):
         if isinstance(other, Tensor):
             self._loss = torch.add(self._loss, other)
