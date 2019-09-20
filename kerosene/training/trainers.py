@@ -172,23 +172,16 @@ class ModelTrainer(ApexModule):
         self._step_valid_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
         self._valid_loss.update(self._step_valid_loss)
 
-    def compute_train_metric(self, pred, target):
+    def compute_metric(self, pred, target):
         self._metric_computer.update((pred, target))
-        self._step_train_metric = self._metric_computer.compute()
+        metric = self._metric_computer.compute()
         self._metric_computer.reset()
 
-        return self._step_train_metric
+        return metric
 
     def update_train_metric(self, metric):
         self._step_train_metric = metric
         self._train_metric.update(self._step_train_metric)
-
-    def compute_valid_metric(self, pred, target):
-        self._metric_computer.update((pred, target))
-        self._step_valid_metric = self._metric_computer.compute()
-        self._metric_computer.reset()
-
-        return self._step_valid_metric
 
     def update_valid_metric(self, metric):
         self._step_valid_metric = metric

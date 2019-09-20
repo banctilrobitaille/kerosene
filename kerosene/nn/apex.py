@@ -57,6 +57,10 @@ class ApexLoss(object):
         else:
             self._loss.backward(gradient, retain_graph, create_graph)
 
+    def mean(self):
+        self._loss = torch.mean(self._loss)
+        return self
+
     def __add__(self, other):
         if isinstance(other, Tensor):
             self._loss = torch.add(self._loss, other)
