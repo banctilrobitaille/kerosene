@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+from __future__ import division
+
 from abc import ABC
 from typing import Optional, Union
 
@@ -57,27 +59,69 @@ class ApexLoss(object):
 
     def __add__(self, other):
         if isinstance(other, Tensor):
-            self._loss = self._loss + other
+            self._loss = torch.add(self._loss, other)
         elif isinstance(other, ApexLoss):
-            self._loss = self._loss + other.loss
+            self._loss = torch.add(self._loss, other.loss)
+        elif isinstance(other, int) or isinstance(other, float):
+            self._loss = torch.add(self._loss, other)
         else:
             raise NotImplementedError("Cannot add an element of type: {} to an ApexLoss.".format(str(type(other))))
         return self
 
-    def __mul__(self, value: Union[int, float]):
-        self._loss = self._loss * value
+    def __mul__(self, other):
+        if isinstance(other, Tensor):
+            self._loss = torch.mul(self._loss, other)
+        elif isinstance(other, ApexLoss):
+            self._loss = torch.mul(self._loss, other.loss)
+        elif isinstance(other, int) or isinstance(other, float):
+            self._loss = torch.mul(self._loss, other)
+        else:
+            raise NotImplementedError("Cannot mul an element of type: {} to an ApexLoss.".format(str(type(other))))
         return self
 
-    def __rmul__(self, value: Union[int, float]):
-        self._loss = self._loss * value
+    def __rmul__(self, other):
+        if isinstance(other, Tensor):
+            self._loss = torch.mul(self._loss, other)
+        elif isinstance(other, ApexLoss):
+            self._loss = torch.mul(self._loss, other.loss)
+        elif isinstance(other, int) or isinstance(other, float):
+            self._loss = torch.mul(self._loss, other)
+        else:
+            raise NotImplementedError("Cannot rmul an element of type: {} to an ApexLoss.".format(str(type(other))))
         return self
 
-    def __truediv__(self, value: Union[int, float]):
-        self._loss = self._loss / value
+    def __truediv__(self, other):
+        if isinstance(other, Tensor):
+            self._loss = torch.div(self._loss, other)
+        elif isinstance(other, ApexLoss):
+            self._loss = torch.div(self._loss, other.loss)
+        elif isinstance(other, int) or isinstance(other, float):
+            self._loss = torch.div(self._loss, other)
+        else:
+            raise NotImplementedError("Cannot truediv an element of type: {} to an ApexLoss.".format(str(type(other))))
         return self
 
-    def __sub__(self, value: Union[int, float]):
-        self._loss = self._loss - value
+    def __rtruediv__(self, other):
+        if isinstance(other, Tensor):
+            self._loss = torch.div(self._loss, other)
+        elif isinstance(other, ApexLoss):
+            self._loss = torch.div(self._loss, other.loss)
+        elif isinstance(other, int) or isinstance(other, float):
+            self._loss = torch.div(self._loss, other)
+        else:
+            raise NotImplementedError("Cannot rtruediv an element of type: {} to an ApexLoss.".format(str(type(other))))
+        return self
+
+    def __sub__(self, other):
+        if isinstance(other, Tensor):
+            self._loss = torch.sub(self._loss, other)
+        elif isinstance(other, ApexLoss):
+            self._loss = torch.sub(self._loss, other.loss)
+        elif isinstance(other, int) or isinstance(other, float):
+            self._loss = torch.sub(self._loss, other)
+        else:
+            raise NotImplementedError(
+                "Cannot substract an element of type: {} to an ApexLoss.".format(str(type(other))))
         return self
 
     def __eq__(self, other):

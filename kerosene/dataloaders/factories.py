@@ -23,7 +23,8 @@ class DataloaderFactory(object):
         train_loader = torch.utils.data.DataLoader(dataset=self._train_dataset,
                                                    batch_size=training_config.batch_size,
                                                    shuffle=False if not on_single_device(devices) else True,
-                                                   num_workers=multiprocessing.cpu_count() // len(
+                                                   num_workers=run_config.num_workers if run_config.num_workers is not None else
+                                                   multiprocessing.cpu_count() // len(
                                                        run_config.devices) if not on_single_device(
                                                        devices) else multiprocessing.cpu_count(),
                                                    sampler=train_sampler if not on_single_device(devices) else None,
@@ -33,7 +34,8 @@ class DataloaderFactory(object):
         valid_loader = torch.utils.data.DataLoader(dataset=self._valid_dataset,
                                                    batch_size=training_config.batch_size,
                                                    shuffle=False if not on_single_device(devices) else True,
-                                                   num_workers=multiprocessing.cpu_count() // len(
+                                                   num_workers=run_config.num_workers if run_config.num_workers is not None else
+                                                   multiprocessing.cpu_count() // len(
                                                        run_config.devices) if not on_single_device(
                                                        devices) else multiprocessing.cpu_count(),
                                                    sampler=valid_sampler if not on_single_device(devices) else None,

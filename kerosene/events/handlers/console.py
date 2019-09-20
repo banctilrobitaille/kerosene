@@ -24,6 +24,9 @@ from kerosene.training.trainers import Trainer
 class BaseConsoleLogger(EventHandler, ABC):
     LOGGER = logging.getLogger("ConsoleLogger")
 
+    def __init__(self, every):
+        super(BaseConsoleLogger, self).__init__(every)
+
 
 class PrintTrainingStatus(BaseConsoleLogger):
     SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
