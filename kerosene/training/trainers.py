@@ -147,17 +147,30 @@ class ModelTrainer(ApexModule):
     def zero_grad(self):
         self._optimizer.zero_grad()
 
-    def compute_train_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
+    def compute_and_update_train_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_train_loss = self._criterion(pred, target)
         self._train_loss.update(self._step_train_loss)
 
         return ApexLoss(self._amp_id, self._step_train_loss, self._optimizer) if self.use_amp else self._step_train_loss
 
-    def compute_valid_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
+    def compute_and_update_valid_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_valid_loss = self._criterion(pred, target)
         self._valid_loss.update(self._step_valid_loss)
 
         return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
+
+    def compute_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
+        loss = self._criterion(pred, target)
+
+        return ApexLoss(self._amp_id, loss, self._optimizer) if self.use_amp else loss
+
+    def update_train_loss(self, loss):
+        self._step_train_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
+        self._train_loss.update(self._step_train_loss)
+
+    def update_valid_loss(self, loss):
+        self._step_valid_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
+        self._valid_loss.update(self._step_valid_loss)
 
     def compute_train_metric(self, pred, target):
         self._metric_computer.update((pred, target))
@@ -362,7 +375,7 @@ class SimpleTrainer(Trainer):
 
         pred = model.forward(inputs)
         model.compute_train_metric(pred, target)
-        loss = model.compute_train_loss(pred, target)
+        loss = model.compute_and_update_train_loss(pred, target)
 
         model.zero_grad()
         loss.backward()
@@ -373,7 +386,7 @@ class SimpleTrainer(Trainer):
 
         pred = model.forward(inputs)
         model.compute_valid_metric(pred, target)
-        model.compute_valid_loss(pred, target)
+        model.compute_and_update_valid_loss(pred, target)
 
     def scheduler_step(self):
         self._model_trainers[0].scheduler_step()

@@ -47,19 +47,15 @@ class CriterionType(Enum):
     SoftMarginLoss = "SoftMarginLoss"
     TripletMarginLoss = "TripletMarginLoss"
 
-    def __str__(self):
-        return self.value
-
 
 class CriterionFactory(object):
     def __init__(self):
         super(CriterionFactory, self).__init__()
         self._criterion = {
             "DiceLoss": DiceLoss,
-            "GeneralizeDiceLoss": GeneralizedDiceLoss,
-            "WeightedCrossEntropyLoss": WeightedCrossEntropyLoss,
+            "GeneralizedDiceLoss": GeneralizedDiceLoss,
             "BCELoss": nn.BCELoss,
-            "BCEWithLogtisLoss": nn.BCEWithLogitsLoss,
+            "BCEWithLogitsLoss": nn.BCEWithLogitsLoss,
             "PoissonNLLLoss": nn.PoissonNLLLoss,
             "CosineEmbeddingLoss": nn.CosineEmbeddingLoss,
             "CrossEntropyLoss": nn.CrossEntropyLoss,
