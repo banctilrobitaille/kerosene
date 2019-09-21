@@ -33,12 +33,12 @@ class EventHandler(ABC):
                        trainer.epoch % self._every == 0)
 
     def should_handle_train_step_data(self, event, trainer):
-        if event in [Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_BATCH_END]:
-            return trainer.current_train_step % self._every == 0
+        return (event in [Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_BATCH_END]) and (
+                trainer.current_train_step % self._every == 0)
 
     def should_handle_validation_step_data(self, event, trainer):
-        if event in [Event.ON_VALID_BATCH_BEGIN, Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]:
-            return trainer.current_valid_step % self._every == 0
+        return (event in [Event.ON_VALID_BATCH_BEGIN, Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]) and (
+                trainer.current_valid_step % self._every == 0)
 
     @abstractmethod
     def __call__(self, *inputs):
