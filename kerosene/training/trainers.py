@@ -357,14 +357,14 @@ class Trainer(EventGenerator):
         return self
 
     def _on_epoch_begin(self):
-        self.fire(Event.ON_EPOCH_BEGIN)
         self._reset_model_trainers()
         self.on_epoch_begin()
+        self.fire(Event.ON_EPOCH_BEGIN)
 
     def _on_epoch_end(self):
-        self.fire(Event.ON_EPOCH_END)
         self.scheduler_step()
         self.on_epoch_end()
+        self.fire(Event.ON_EPOCH_END)
 
 
 class SimpleTrainer(Trainer):
