@@ -34,9 +34,13 @@ class BaseVisdomHandler(EventHandler, ABC):
     def should_handle_epoch_data(self, event, epoch):
         return (event in [Event.ON_EPOCH_BEGIN, Event.ON_EPOCH_END]) and (epoch % self._every == 0)
 
-    def should_handle_step_data(self, event, step):
-        return (event in [Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_BEGIN,
-                          Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]) and (step % self._every == 0)
+    def should_handle_train_step_data(self, event, step):
+        return (event in [Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_BATCH_END]) and (
+                    step % self._every == 0)
+
+    def should_handle_validation_step_data(self, event, step):
+        return (event in [Event.ON_VALID_BATCH_BEGIN, Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]) and (
+                    step % self._every == 0)
 
     def flatten(self, list_of_visdom_data):
         return [item for sublist in list_of_visdom_data for item in sublist]
@@ -56,11 +60,11 @@ class PlotAllModelStateVariables(BaseVisdomHandler):
         if self.should_handle_epoch_data(event, trainer.epoch):
             data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
                             trainer.model_trainers))
-        elif self.should_handle_step_data(event, trainer.current_train_step):
+        elif self.should_handle_train_step_data(event, trainer.current_train_step):
             data = list(map(
                 lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
                 trainer.model_trainers))
-        elif self.should_handle_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_validation_step_data(event, trainer.current_valid_step):
             data = list(map(
                 lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                 trainer.model_trainers))
@@ -104,11 +108,11 @@ class PlotLosses(BaseVisdomHandler):
         if self.should_handle_epoch_data(event, trainer.epoch):
             data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
                             trainer.model_trainers))
-        elif self.should_handle_step_data(event, trainer.current_train_step):
+        elif self.should_handle_train_step_data(event, trainer.current_train_step):
             data = list(
                 map(lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
                     trainer.model_trainers))
-        elif self.should_handle_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_validation_step_data(event, trainer.current_valid_step):
             data = list(
                 map(lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                     trainer.model_trainers))
@@ -161,11 +165,11 @@ class PlotMetrics(BaseVisdomHandler):
         if self.should_handle_epoch_data(event, trainer.epoch):
             data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
                             trainer.model_trainers))
-        elif self.should_handle_step_data(event, trainer.current_train_step):
+        elif self.should_handle_train_step_data(event, trainer.current_train_step):
             data = list(
                 map(lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
                     trainer.model_trainers))
-        elif self.should_handle_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_validation_step_data(event, trainer.current_valid_step):
             data = list(
                 map(lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                     trainer.model_trainers))
@@ -222,9 +226,9 @@ class PlotCustomVariables(BaseVisdomHandler):
 
         if self.should_handle_epoch_data(event, trainer.epoch):
             data = self.create_epoch_visdom_data(trainer)
-        elif self.should_handle_step_data(event, trainer.current_train_step):
+        elif self.should_handle_train_step_data(event, trainer.current_train_step):
             data = self.create_train_batch_visdom_data(trainer)
-        elif self.should_handle_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_validation_step_data(event, trainer.current_valid_step):
             data = self.create_valid_batch_visdom_data(trainer)
 
         if data is not None:
@@ -283,7 +287,7 @@ class PlotGradientFlow(BaseVisdomHandler):
             self.SUPPORTED_EVENTS)
         data = None
 
-        if self.should_handle_step_data(event, trainer.current_train_step):
+        if self.should_handle_train_step_data(event, trainer.current_train_step):
             data = list(map(lambda model_trainer: self.create_visdom_data(model_trainer), trainer.model_trainers))
 
         if data is not None:

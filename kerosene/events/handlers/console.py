@@ -34,7 +34,9 @@ class PrintTrainingStatus(BaseConsoleLogger):
 
         if self.should_handle_epoch_data(event, trainer):
             self.print_status(trainer.epoch, trainer.current_train_step, trainer.current_valid_step)
-        elif self.should_handle_step_data(event, trainer):
+        elif self.should_handle_train_step_data(event, trainer):
+            self.print_status(trainer.epoch, trainer.current_train_step, trainer.current_valid_step)
+        elif self.should_handle_validation_step_data(event, trainer):
             self.print_status(trainer.epoch, trainer.current_train_step, trainer.current_valid_step)
 
     def print_status(self, epoch, train_step, valid_step):
@@ -57,7 +59,14 @@ class PrintModelTrainersStatus(BaseConsoleLogger):
                                                     model_trainer.train_metric.item(),
                                                     model_trainer.valid_metric.item()),
                 trainer.model_trainers))))
-        elif self.should_handle_step_data(event, trainer):
+        elif self.should_handle_train_step_data(event, trainer):
+            self.LOGGER.info("".join(list(map(
+                lambda model_trainer: status.format(model_trainer.name, model_trainer.step_train_loss.item(),
+                                                    model_trainer.step_valid_loss.item(),
+                                                    model_trainer.step_train_metric.item(),
+                                                    model_trainer.step_valid_metric.item()),
+                trainer.model_trainers))))
+        elif self.should_handle_validation_step_data(event, trainer):
             self.LOGGER.info("".join(list(map(
                 lambda model_trainer: status.format(model_trainer.name, model_trainer.step_train_loss.item(),
                                                     model_trainer.step_valid_loss.item(),
