@@ -165,11 +165,11 @@ class ModelTrainer(ApexModule):
         return ApexLoss(self._amp_id, loss, self._optimizer) if self.use_amp else loss
 
     def update_train_loss(self, loss):
-        self._step_train_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
+        self._step_train_loss = float(loss) if not isinstance(loss, ApexLoss) else float(loss.loss)
         self._train_loss.update(self._step_train_loss)
 
     def update_valid_loss(self, loss):
-        self._step_valid_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
+        self._step_valid_loss = float(loss) if not isinstance(loss, ApexLoss) else float(loss.loss)
         self._valid_loss.update(self._step_valid_loss)
 
     def compute_metric(self, pred, target):
