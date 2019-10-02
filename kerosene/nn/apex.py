@@ -72,6 +72,9 @@ class ApexLoss(object):
         self._loss = self._loss.cpu()
         return self
 
+    def float(self):
+        return self._loss.float()
+
     def __add__(self, other):
         if isinstance(other, Tensor):
             self._loss = torch.add(self._loss, other)
