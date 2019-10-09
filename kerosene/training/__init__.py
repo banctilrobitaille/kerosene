@@ -5,4 +5,5 @@ class Status(Enum):
     INITIALIZED = "Initialization"
     TRAIN = "Training"
     VALID = "Validating"
+    TEST = "Testing"
     FINALIZE = "Finalizing"

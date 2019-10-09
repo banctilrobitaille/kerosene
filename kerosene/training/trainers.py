@@ -50,13 +50,17 @@ class ModelTrainer(ApexModule):
 
         self._step_train_loss = torch.tensor([0.0])
         self._step_valid_loss = torch.tensor([0.0])
+        self._step_test_loss = torch.tensor([0.0])
         self._step_train_metric = torch.tensor([0.0])
         self._step_valid_metric = torch.tensor([0.0])
+        self._step_test_metric = torch.tensor([9.0])
 
         self._train_loss = AverageGauge()
         self._valid_loss = AverageGauge()
+        self._test_loss = AverageGauge()
         self._train_metric = AverageGauge()
         self._valid_metric = AverageGauge()
+        self._test_metric = AverageGauge()
 
         self._status = Status.INITIALIZED
 
@@ -89,12 +93,20 @@ class ModelTrainer(ApexModule):
         return torch.tensor([self._valid_loss.compute()]).cpu()
 
     @property
+    def test_loss(self):
+        return torch.tensor([self._test_loss.compute()]).cpu()
+
+    @property
     def train_metric(self):
         return torch.tensor([self._train_metric.compute()]).cpu()
 
     @property
     def valid_metric(self):
         return torch.tensor([self._valid_metric.compute()]).cpu()
+
+    @property
+    def test_metric(self):
+        return torch.tensor([self._test_metric.compute()]).cpu()
 
     @property
     def optimizer_state(self):
@@ -126,13 +138,17 @@ class ModelTrainer(ApexModule):
     def forward(self, *input):
         return self._model.forward(*input)
 
+    def train(self, mode=True):
+        self._status = Status.TRAIN
+        self._model.train()
+
     def eval(self):
         self._status = Status.VALID
         self._model.eval()
 
-    def train(self, mode=True):
-        self._status = Status.TRAIN
-        self._model.train()
+    def test(self):
+        self._status = Status.TEST
+        self._model.eval()
 
     def step(self):
         if self._status is Status.TRAIN:
@@ -159,6 +175,12 @@ class ModelTrainer(ApexModule):
 
         return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
 
+    def compute_and_update_test_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
+        self._step_test_loss = self._criterion(pred, target)
+        self._test_loss.update(self._step_test_loss)
+
+        return ApexLoss(self._amp_id, self._step_test_loss, self._optimizer) if self.use_amp else self._step_valid_loss
+
     def compute_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         loss = self._criterion(pred, target)
 
@@ -171,6 +193,10 @@ class ModelTrainer(ApexModule):
     def update_valid_loss(self, loss):
         self._step_valid_loss = float(loss) if not isinstance(loss, ApexLoss) else float(loss.loss)
         self._valid_loss.update(self._step_valid_loss)
+
+    def update_test_loss(self, loss):
+        self._step_test_loss = float(loss) if not isinstance(loss, ApexLoss) else float(loss.loss)
+        self._test_loss.update(self._step_test_loss)
 
     def compute_metric(self, pred, target):
         self._metric_computer.update((pred, target))
@@ -187,12 +213,18 @@ class ModelTrainer(ApexModule):
         self._step_valid_metric = metric
         self._valid_metric.update(self._step_valid_metric)
 
+    def update_test_metric(self, metric):
+        self._step_test_metric = metric
+        self._test_metric.update(self._step_test_metric)
+
     def reset(self):
         self._metric_computer.reset()
         self._train_loss.reset()
         self._valid_loss.reset()
+        self._test_loss.reset()
         self._train_metric.reset()
         self._valid_metric.reset()
+        self._test_metric.reset()
 
     def finalize(self):
         self._status = Status.FINALIZE
@@ -201,17 +233,19 @@ class ModelTrainer(ApexModule):
 class Trainer(EventGenerator):
     LOGGER = logging.getLogger("Trainer")
 
-    def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
-                 model_trainers: Union[List[ModelTrainer], ModelTrainer],
+    def __init__(self, name, train_data_loader: Union[None, DataLoader], valid_data_loader: Union[None, DataLoader],
+                 test_data_loader: Union[None, DataLoader], model_trainers: Union[List[ModelTrainer], ModelTrainer],
                  run_config: RunConfiguration = RunConfiguration()):
         super().__init__()
         self._name = name
         self._train_data_loader = train_data_loader
         self._valid_data_loader = valid_data_loader
+        self._test_data_loader = test_data_loader
         self._model_trainers = model_trainers if isinstance(model_trainers, list) else [model_trainers]
 
         self._current_train_batch = 0
         self._current_valid_batch = 0
+        self._current_test_batch = 0
         self._current_epoch = 0
 
         self._run_config = run_config
@@ -248,6 +282,10 @@ class Trainer(EventGenerator):
         return self._current_epoch * len(self._valid_data_loader) + self._current_valid_batch
 
     @property
+    def current_test_step(self):
+        return self._current_epoch * len(self._test_data_loader) + self._current_test_batch
+
+    @property
     def epoch(self):
         return self._current_epoch
 
@@ -272,6 +310,10 @@ class Trainer(EventGenerator):
         raise NotImplementedError()
 
     @abstractmethod
+    def test_step(self, inputs, target):
+        raise NotImplementedError()
+
+    @abstractmethod
     def scheduler_step(self):
         raise NotImplementedError()
 
@@ -290,24 +332,28 @@ class Trainer(EventGenerator):
         return len(list(filter(lambda model_trainer: model_trainer.is_active(), self._model_trainers))) > 0
 
     def train(self, nb_epoch):
-        self.fire(Event.ON_TRAINING_BEGIN)
+        self._on_training_begin()
 
         for self._current_epoch in range(0, nb_epoch):
             if self._at_least_one_model_is_active():
-                self._on_epoch_begin()
-                self.fire(Event.ON_TRAIN_EPOCH_BEGIN)
-                self._train_epoch()
-                self.fire(Event.ON_TRAIN_EPOCH_END)
-                self.fire(Event.ON_VALID_EPOCH_BEGIN)
-                self._validate_epoch()
-                self.fire(Event.ON_VALID_EPOCH_END)
+                # self._on_epoch_begin()
+                # self.fire(Event.ON_TRAIN_EPOCH_BEGIN)
+                # self._train_epoch()
+                # self.fire(Event.ON_TRAIN_EPOCH_END)
+                # self.fire(Event.ON_VALID_EPOCH_BEGIN)
+                # self._validate_epoch()
+                # self.fire(Event.ON_VALID_EPOCH_END)
+                # self.fire(Event.ON_TEST_EPOCH_BEGIN)
+                self._test_epoch()
+                self.fire(Event.ON_TEST_EPOCH_END)
                 self._on_epoch_end()
             else:
                 self.finalize()
 
-        self.fire(Event.ON_TRAINING_END)
+        self._on_training_end()
 
     def _train_epoch(self):
+
         for model_trainer in self._model_trainers:
             model_trainer.train()
 
@@ -345,6 +391,28 @@ class Trainer(EventGenerator):
 
             self._current_valid_batch = 0
 
+    def _test_epoch(self):
+
+        for model_trainer in self._model_trainers:
+            model_trainer.eval()
+
+        with torch.no_grad():
+            for self._current_test_batch, (inputs, target) in enumerate(self._test_data_loader):
+                self.fire(Event.ON_TEST_BATCH_BEGIN)
+
+                inputs = [single_input.to(self._run_config.device, non_blocking=True) for single_input in
+                          inputs] if isinstance(inputs, list) else inputs.to(self._run_config.device, non_blocking=True)
+
+                target = [single_target.to(self._run_config.device, non_blocking=True) for single_target in
+                          target] if isinstance(target, list) else target.to(self._run_config.device, non_blocking=True)
+
+                self.test_step(inputs, target)
+                self.fire(Event.ON_TEST_BATCH_END)
+                self.fire(Event.ON_BATCH_END)
+
+            self._current_valid_batch = 0
+            self._current_test_batch = 0
+
     def finalize(self):
         self._status = Status.FINALIZE
 
@@ -355,6 +423,14 @@ class Trainer(EventGenerator):
             self._event_handlers[event] = [handler]
 
         return self
+
+    def _on_training_begin(self):
+        self.on_training_begin()
+        self.fire(Event.ON_TRAINING_BEGIN)
+
+    def _on_training_end(self):
+        self.on_training_end()
+        self.fire(Event.ON_TRAINING_END)
 
     def _on_epoch_begin(self):
         self._reset_model_trainers()
@@ -381,6 +457,13 @@ class SimpleTrainer(Trainer):
         model.step()
 
     def validate_step(self, inputs, target):
+        model = self._model_trainers[0]
+
+        pred = model.forward(inputs)
+        model.compute_valid_metric(pred, target)
+        model.compute_and_update_valid_loss(pred, target)
+
+    def test_step(self, inputs, target):
         model = self._model_trainers[0]
 
         pred = model.forward(inputs)

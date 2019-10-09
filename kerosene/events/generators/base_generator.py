@@ -54,3 +54,11 @@ class EventGenerator(ABC):
     @abstractmethod
     def on_epoch_end(self):
         pass
+
+    @abstractmethod
+    def on_training_begin(self):
+        pass
+
+    @abstractmethod
+    def on_training_end(self):
+        pass
