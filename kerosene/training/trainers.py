@@ -53,7 +53,7 @@ class ModelTrainer(ApexModule):
         self._step_test_loss = torch.tensor([0.0])
         self._step_train_metric = torch.tensor([0.0])
         self._step_valid_metric = torch.tensor([0.0])
-        self._step_test_metric = torch.tensor([9.0])
+        self._step_test_metric = torch.tensor([0.0])
 
         self._train_loss = AverageGauge()
         self._valid_loss = AverageGauge()
@@ -336,14 +336,14 @@ class Trainer(EventGenerator):
 
         for self._current_epoch in range(0, nb_epoch):
             if self._at_least_one_model_is_active():
-                # self._on_epoch_begin()
-                # self.fire(Event.ON_TRAIN_EPOCH_BEGIN)
-                # self._train_epoch()
-                # self.fire(Event.ON_TRAIN_EPOCH_END)
-                # self.fire(Event.ON_VALID_EPOCH_BEGIN)
-                # self._validate_epoch()
-                # self.fire(Event.ON_VALID_EPOCH_END)
-                # self.fire(Event.ON_TEST_EPOCH_BEGIN)
+                self._on_epoch_begin()
+                self.fire(Event.ON_TRAIN_EPOCH_BEGIN)
+                self._train_epoch()
+                self.fire(Event.ON_TRAIN_EPOCH_END)
+                self.fire(Event.ON_VALID_EPOCH_BEGIN)
+                self._validate_epoch()
+                self.fire(Event.ON_VALID_EPOCH_END)
+                self.fire(Event.ON_TEST_EPOCH_BEGIN)
                 self._test_epoch()
                 self.fire(Event.ON_TEST_EPOCH_END)
                 self._on_epoch_end()
