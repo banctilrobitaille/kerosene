@@ -14,7 +14,7 @@
 # limitations under the License.
 # ==============================================================================
 from enum import Enum
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 import torch
 from ignite.metrics import Accuracy, Precision, MeanAbsoluteError, MeanPairwiseDistance, MeanSquaredError, Recall, \
@@ -65,7 +65,7 @@ class MetricFactory(object):
 
     def register(self, metric: str, creator: Metric):
         """
-        Add a new activation layer.
+        Add a new metric.
         Args:
            metric (str): Metric's name.
            creator: A torch or ignite module object wrapping the new custom metric function.
@@ -80,7 +80,7 @@ class Dice(Metric):
     SUPPORTED_REDUCTIONS = [None, "mean"]
 
     def __init__(self, num_classes: int, reduction: Union[None, str] = "mean", average: str = None,
-                 ignore_index: int = -100,
+                 weight: List[torch.Tensor] = None, ignore_index: int = -100,
                  output_transform: callable = lambda x: x) -> None:
         """
         Metric initializer.
@@ -104,6 +104,7 @@ class Dice(Metric):
         self._num_classes = num_classes
         self._ignore_index = ignore_index
         self._reduction = reduction
+        self._weight = weight
         self._cm = ConfusionMatrix(num_classes=num_classes, average=average, output_transform=output_transform)
         self._metric = self.create_dice_metric(self._cm)
         super(Dice, self).__init__(output_transform=output_transform)
@@ -158,6 +159,12 @@ class Dice(Metric):
                             self._ignore_index))
 
             dice = MetricsLambda(remove_index, dice)
+
+        if self._weight is not None:
+            def multiply_weights(dice_vector):
+                return self._weight * dice_vector
+
+            dice = MetricsLambda(multiply_weights, dice)
 
         if self._reduction == "mean":
             dice = dice.mean()
