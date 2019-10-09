@@ -58,22 +58,29 @@ class ApexLoss(object):
             self._loss.backward(gradient, retain_graph, create_graph)
 
     def mean(self):
-        self._loss = torch.mean(self._loss)
-        return self
+        loss = torch.mean(self._loss)
+        transformed_loss = ApexLoss(self._loss_id, loss, self._optimizer)
+        return transformed_loss
 
     def detach(self):
-        self._loss = self._loss.detach()
-        return self
+        loss = self._loss.detach()
+        transformed_loss = ApexLoss(self._loss_id, loss, self._optimizer)
+        return transformed_loss
 
     def numpy(self):
-        return self._loss.cpu().numpy()
+        loss = self._loss.cpu().numpy()
+        transformed_loss = ApexLoss(self._loss_id, loss, self._optimizer)
+        return transformed_loss
 
     def cpu(self):
-        self._loss = self._loss.cpu()
-        return self
+        loss = self._loss.cpu()
+        transformed_loss = ApexLoss(self._loss_id, loss, self._optimizer)
+        return transformed_loss
 
     def float(self):
-        return self._loss.float()
+        loss = self._loss.float()
+        transformed_loss = ApexLoss(self._loss_id, loss, self._optimizer)
+        return transformed_loss
 
     def __add__(self, other):
         if isinstance(other, Tensor):
