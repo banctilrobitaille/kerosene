@@ -50,7 +50,7 @@ class PrintTrainingStatus(BaseConsoleLogger):
 
     def print_status(self, status, epoch, train_step, valid_step, test_step):
         self.LOGGER.info(
-            "Training state: {} |  Epoch: {} | Training step: {} | Validation step: {} | Test step: {} \n".format(
+            "Current state: {} |  Epoch: {} | Training step: {} | Validation step: {} | Test step: {} \n".format(
                 status, epoch, train_step, valid_step, test_step))
 
 
@@ -60,26 +60,35 @@ class PrintModelTrainersStatus(BaseConsoleLogger):
     def __call__(self, event: BaseEvent, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
             self.SUPPORTED_EVENTS)
-        status = "Model: {}, Train Loss: {}, Validation Loss: {}, Test Loss: {}, Train Metric: {}, Valid Metric: {}, Test Metric: {}"
+        status = "Model: {}, Train Loss: {}, Validation Loss: {}, Test Loss: {}, Train Metric: {}, Valid Metric: {}, Test Metric: {} \n"
 
         if self.should_handle_epoch_data(event, trainer):
             self.LOGGER.info("".join(list(map(
-                lambda model_trainer: status.format(model_trainer.name, model_trainer.train_loss.item(),
+                lambda model_trainer: status.format(model_trainer.name,
+                                                    model_trainer.train_loss.item(),
                                                     model_trainer.valid_loss.item(),
+                                                    model_trainer.test_loss.item(),
                                                     model_trainer.train_metric.item(),
-                                                    model_trainer.valid_metric.item()),
+                                                    model_trainer.valid_metric.item(),
+                                                    model_trainer.test_metric.item()),
                 trainer.model_trainers))))
         elif self.should_handle_train_step_data(event, trainer):
             self.LOGGER.info("".join(list(map(
-                lambda model_trainer: status.format(model_trainer.name, model_trainer.step_train_loss.item(),
+                lambda model_trainer: status.format(model_trainer.name,
+                                                    model_trainer.step_train_loss.item(),
                                                     model_trainer.step_valid_loss.item(),
+                                                    model_trainer.step_test_loss.item(),
                                                     model_trainer.step_train_metric.item(),
-                                                    model_trainer.step_valid_metric.item()),
+                                                    model_trainer.step_valid_metric.item(),
+                                                    model_trainer.step_test_metric.item()),
                 trainer.model_trainers))))
         elif self.should_handle_validation_step_data(event, trainer):
             self.LOGGER.info("".join(list(map(
-                lambda model_trainer: status.format(model_trainer.name, model_trainer.step_train_loss.item(),
+                lambda model_trainer: status.format(model_trainer.name,
+                                                    model_trainer.step_train_loss.item(),
                                                     model_trainer.step_valid_loss.item(),
+                                                    model_trainer.step_test_loss.item(),
                                                     model_trainer.step_train_metric.item(),
-                                                    model_trainer.step_valid_metric.item()),
+                                                    model_trainer.step_valid_metric.item(),
+                                                    model_trainer.step_test_metric.item()),
                 trainer.model_trainers))))

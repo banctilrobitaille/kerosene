@@ -2,8 +2,10 @@ from enum import Enum
 
 
 class Status(Enum):
-    INITIALIZED = "Initialization"
-    TRAIN = "Training"
-    VALID = "Validating"
-    TEST = "Testing"
-    FINALIZE = "Finalizing"
+    INITIALIZATION = "Initialization"
+    READY = "Ready"
+    TRAINING = "Training"
+    VALIDATING = "Validating"
+    TESTING = "Testing"
+    FINALIZING = "Finalizing"
+    FINALIZED = "Finalize"
