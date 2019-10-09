@@ -20,7 +20,7 @@ import torch
 
 
 class RunConfiguration(object):
-    def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O2', local_rank: int = 0,
+    def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O1', local_rank: int = 0,
                  num_workers: int = multiprocessing.cpu_count()):
         self._use_amp = use_amp
         self._amp_opt_level = amp_opt_level
