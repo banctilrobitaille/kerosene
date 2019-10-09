@@ -11,7 +11,7 @@ from torchvision.transforms import Compose, ToTensor, Normalize
 
 from kerosene.config.parsers import YamlConfigurationParser
 from kerosene.events import Event
-from kerosene.dataloaders.factories import DataloaderFactory
+from kerosene.dataloaders.dataloaders import DataloaderFactory
 from kerosene.events.handlers.console import ConsoleLogger
 from kerosene.events.handlers.visdom.config import VisdomConfiguration
 from kerosene.events.handlers.visdom.visdom import VisdomLogger
