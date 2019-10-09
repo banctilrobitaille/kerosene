@@ -28,6 +28,8 @@ from kerosene.utils.tensors import flatten
 class CriterionType(Enum):
     DiceLoss = "DiceLoss"
     GeneralizedDiceLoss = "GeneralizedDiceLoss"
+    TverskyLoss = "TverskyLoss"
+    FocalTverskyLoss = "FocalTverskyLoss"
     BCELoss = "BCELoss"
     BCEWithLogitsLoss = "BCEWithLogtisLoss"
     PoissonNLLLoss = "PoissonNLLLoss"
@@ -54,6 +56,8 @@ class CriterionFactory(object):
         self._criterion = {
             "DiceLoss": DiceLoss,
             "GeneralizedDiceLoss": GeneralizedDiceLoss,
+            "TverskyLoss": TverskyLoss,
+            "FocalTverskyLoss": FocalTverskyLoss,
             "BCELoss": nn.BCELoss,
             "BCEWithLogitsLoss": nn.BCEWithLogitsLoss,
             "PoissonNLLLoss": nn.PoissonNLLLoss,
@@ -127,16 +131,16 @@ class DiceLoss(_Loss):
         targets = flatten(targets).float()
 
         # Compute per channel Dice Coefficient
-        intersect = (inputs * targets).sum(-1)
+        intersection = (inputs * targets).sum(-1)
 
         if self._weight is not None:
-            intersect = self._weight * intersect
+            intersection = self._weight * intersection
 
-        denominator = (inputs + targets).sum(-1)
+        cardinality = (inputs + targets).sum(-1)
 
         ones = torch.Tensor().new_ones((inputs.size(0),), dtype=torch.float, device=inputs.device)
 
-        dice = ones - (2.0 * intersect / denominator.clamp(min=EPSILON))
+        dice = ones - (2.0 * intersection / cardinality.clamp(min=EPSILON))
 
         if self._ignore_index != -100:
             def ignore_index_fn(dice_vector):
@@ -216,6 +220,139 @@ class GeneralizedDiceLoss(_Loss):
             dice = dice.mean()
 
         return dice
+
+
+class TverskyLoss(_Loss):
+    SUPPORTED_REDUCTIONS = [None, "mean"]
+
+    def __init__(self, reduction: Union[None, str] = "mean", ignore_index: int = -100, weight: torch.Tensor = None,
+                 alpha: float = 0.5, beta: float = 0.5):
+        if reduction not in self.SUPPORTED_REDUCTIONS:
+            raise NotImplementedError("Reduction type not supported.")
+        super(TverskyLoss, self).__init__(reduction=reduction)
+        self._ignore_index = ignore_index
+        self._alpha = alpha
+        self._beta = beta
+        self._weight = weight
+
+    def forward(self, inputs: torch.Tensor, targets: torch.Tensor):
+        """
+           Computes the Tversky loss based on https://arxiv.org/pdf/1706.05721.pdf
+
+           Note that PyTorch optimizers minimize a loss. In this case, we would like to maximize the dice loss so we
+           return the negated dice loss.
+
+           Args:
+               inputs (:obj:`torch.Tensor`) : A tensor of shape (B, C, ..). The model prediction on which the loss has to
+                be computed.
+               targets (:obj:`torch.Tensor`) : A tensor of shape (B, C, ..). The ground truth.
+
+           Returns:
+               :obj:`torch.Tensor`: The Tversky loss for each class or reduced according to reduction method.
+           """
+        if not inputs.size() == targets.size():
+            raise ValueError("'Inputs' and 'Targets' must have the same shape.")
+
+        inputs = flatten(inputs)
+        targets = flatten(targets).float()
+        ones = torch.Tensor().new_ones((inputs.size()), dtype=torch.float, device=inputs.device)
+
+        P_G = (inputs * targets).sum(-1)
+        if self._weight is not None:
+            P_G = self._weight * P_G
+
+        P_NG = (inputs * (ones - targets)).sum(-1)
+        NP_G = ((ones - inputs) * targets).sum(-1)
+
+        ones = torch.Tensor().new_ones((inputs.size(0),), dtype=torch.float, device=inputs.device)
+        tversky = P_G / (P_G + self._alpha * P_NG + self._beta * NP_G + EPSILON)
+
+        tversky_loss = ones - tversky
+
+        if self._ignore_index != -100:
+            def ignore_index_fn(tversky_vector):
+                try:
+                    indices = list(range(len(tversky_vector)))
+                    indices.remove(self._ignore_index)
+                    return tversky_vector[indices]
+                except ValueError as e:
+                    raise IndexError(
+                        "'ignore_index' must be non-negative, and lower than the number of classes in confusion matrix, but {} was given. ".format(
+                            self._ignore_index))
+
+            tversky_loss = MetricsLambda(ignore_index_fn, tversky_loss).compute()
+
+        if self.reduction == "mean":
+            tversky_loss = tversky_loss.mean()
+
+        return tversky_loss
+
+
+class FocalTverskyLoss(_Loss):
+    SUPPORTED_REDUCTIONS = [None, "mean"]
+
+    def __init__(self, reduction: Union[None, str] = "mean", ignore_index: int = -100, weight: torch.Tensor = None,
+                 alpha: float = 0.5, beta: float = 0.5, gamma: float = 1.0):
+        if reduction not in self.SUPPORTED_REDUCTIONS:
+            raise NotImplementedError("Reduction type not supported.")
+        super(FocalTverskyLoss, self).__init__(reduction=reduction)
+        self._ignore_index = ignore_index
+        self._alpha = alpha
+        self._beta = beta
+        self._gamma = gamma
+        self._weight = weight
+
+    def forward(self, inputs: torch.Tensor, targets: torch.Tensor):
+        """
+           Computes the Focal Tversky Loss based on https://arxiv.org/pdf/1708.02002.pdf.
+
+           Note that PyTorch optimizers minimize a loss. In this case, we would like to maximize the dice loss so we
+           return the negated dice loss.
+
+           Args:
+               inputs (:obj:`torch.Tensor`) : A tensor of shape (B, C, ..). The model prediction on which the loss has to
+                be computed.
+               targets (:obj:`torch.Tensor`) : A tensor of shape (B, C, ..). The ground truth.
+
+           Returns:
+               :obj:`torch.Tensor`: The Sørensen–Dice loss for each class or reduced according to reduction method.
+           """
+        if not inputs.size() == targets.size():
+            raise ValueError("'Inputs' and 'Targets' must have the same shape.")
+
+        inputs = flatten(inputs)
+        targets = flatten(targets).float()
+        ones = torch.Tensor().new_ones((inputs.size()), dtype=torch.float, device=inputs.device)
+
+        P_G = (inputs * targets).sum(-1)
+        if self._weight is not None:
+            P_G = self._weight * P_G
+
+        P_NG = (inputs * (ones - targets)).sum(-1)
+        NP_G = ((ones - inputs) * targets).sum(-1)
+
+        ones = torch.Tensor().new_ones((inputs.size(0),), dtype=torch.float, device=inputs.device)
+        tversky = P_G / (P_G + self._alpha * P_NG + self._beta * NP_G + EPSILON)
+
+        tversky = ones - (torch.pow((ones - tversky), 1 / self._gamma))
+
+        if self._ignore_index != -100:
+            def ignore_index_fn(tversky_vector):
+                try:
+                    indices = list(range(len(tversky_vector)))
+                    indices.remove(self._ignore_index)
+                    return tversky_vector[indices]
+                except ValueError as e:
+                    raise IndexError(
+                        "'ignore_index' must be non-negative, and lower than the number of classes in confusion matrix, but {} was given. ".format(
+                            self._ignore_index))
+
+            tversky = MetricsLambda(ignore_index_fn, tversky).compute()
+
+        if self.reduction == "mean":
+            tversky = tversky.mean()
+
+        return tversky
 
 
 class WeightedCrossEntropyLoss(_Loss):
