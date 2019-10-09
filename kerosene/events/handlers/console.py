@@ -50,7 +50,7 @@ class PrintTrainingStatus(BaseConsoleLogger):
 
     def print_status(self, status, epoch, train_step, valid_step, test_step):
         self.LOGGER.info(
-            "\n Current state: {} |  Epoch: {} | Training step: {} | Validation step: {} | Test step: {} \n".format(
+            "\nCurrent state: {} |  Epoch: {} | Training step: {} | Validation step: {} | Test step: {} \n".format(
                 status, epoch, train_step, valid_step, test_step))
 
 
@@ -60,7 +60,7 @@ class PrintModelTrainersStatus(BaseConsoleLogger):
     def __call__(self, event: BaseEvent, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
             self.SUPPORTED_EVENTS)
-        status = "Model: {}, Train Loss: {}, Validation Loss: {}, Test Loss: {}, Train Metric: {}, Valid Metric: {}, Test Metric: {} \n"
+        status = "\nModel: {}, Train Loss: {}, Validation Loss: {}, Test Loss: {}, Train Metric: {}, Valid Metric: {}, Test Metric: {} \n"
 
         if self.should_handle_epoch_data(event, trainer):
             self.LOGGER.info("".join(list(map(
