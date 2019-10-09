@@ -92,3 +92,13 @@ class PrintModelTrainersStatus(BaseConsoleLogger):
                                                     model_trainer.step_valid_metric.item(),
                                                     model_trainer.step_test_metric.item()),
                 trainer.model_trainers))))
+        elif self.should_handle_test_step_data(event, trainer):
+            self.LOGGER.info("".join(list(map(
+                lambda model_trainer: status.format(model_trainer.name,
+                                                    model_trainer.step_train_loss.item(),
+                                                    model_trainer.step_valid_loss.item(),
+                                                    model_trainer.step_test_loss.item(),
+                                                    model_trainer.step_train_metric.item(),
+                                                    model_trainer.step_valid_metric.item(),
+                                                    model_trainer.step_test_metric.item()),
+                trainer.model_trainers))))
