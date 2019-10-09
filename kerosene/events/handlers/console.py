@@ -50,7 +50,7 @@ class PrintTrainingStatus(BaseConsoleLogger):
 
     def print_status(self, status, epoch, train_step, valid_step, test_step):
         self.LOGGER.info(
-            "Current state: {} |  Epoch: {} | Training step: {} | Validation step: {} | Test step: {} \n".format(
+            "\n Current state: {} |  Epoch: {} | Training step: {} | Validation step: {} | Test step: {} \n".format(
                 status, epoch, train_step, valid_step, test_step))
 
 
