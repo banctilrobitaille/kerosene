@@ -179,7 +179,7 @@ class ModelTrainer(ApexModule):
         self._step_test_loss = self._criterion(pred, target)
         self._test_loss.update(self._step_test_loss)
 
-        return ApexLoss(self._amp_id, self._step_test_loss, self._optimizer) if self.use_amp else self._step_valid_loss
+        return ApexLoss(self._amp_id, self._step_test_loss, self._optimizer) if self.use_amp else self._step_test_loss
 
     def compute_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         loss = self._criterion(pred, target)
