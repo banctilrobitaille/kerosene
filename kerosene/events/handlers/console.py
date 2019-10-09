@@ -36,21 +36,22 @@ class PrintTrainingStatus(BaseConsoleLogger):
             self.SUPPORTED_EVENTS)
 
         if self.should_handle_epoch_data(event, trainer):
-            self.print_status(trainer.epoch, trainer.current_train_step, trainer.current_valid_step,
+            self.print_status(trainer.status, trainer.epoch, trainer.current_train_step, trainer.current_valid_step,
                               trainer.current_test_step)
         elif self.should_handle_train_step_data(event, trainer):
-            self.print_status(trainer.epoch, trainer.current_train_step, trainer.current_valid_step,
+            self.print_status(trainer.status, trainer.epoch, trainer.current_train_step, trainer.current_valid_step,
                               trainer.current_test_step)
         elif self.should_handle_validation_step_data(event, trainer):
-            self.print_status(trainer.epoch, trainer.current_train_step, trainer.current_valid_step,
+            self.print_status(trainer.status, trainer.epoch, trainer.current_train_step, trainer.current_valid_step,
                               trainer.current_test_step)
         elif self.should_handle_test_step_data(event, trainer):
-            self.print_status(trainer.epoch, trainer.current_train_step, trainer.current_valid_step,
+            self.print_status(trainer.status, trainer.epoch, trainer.current_train_step, trainer.current_valid_step,
                               trainer.current_test_step)
 
-    def print_status(self, epoch, train_step, valid_step, test_step):
-        self.LOGGER.info("Training state: Epoch: {} | Training step: {} | Validation step: {} \n".format(
-            epoch, train_step, valid_step, test_step))
+    def print_status(self, status, epoch, train_step, valid_step, test_step):
+        self.LOGGER.info(
+            "Training state: {} |  Epoch: {} | Training step: {} | Validation step: {} | Test step: {} \n".format(
+                status, epoch, train_step, valid_step, test_step))
 
 
 class PrintModelTrainersStatus(BaseConsoleLogger):
@@ -59,7 +60,7 @@ class PrintModelTrainersStatus(BaseConsoleLogger):
     def __call__(self, event: BaseEvent, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
             self.SUPPORTED_EVENTS)
-        status = "Model: {}, Train Loss: {}, Validation Loss: {},  Train Metric: {}, Valid Metric: {}"
+        status = "Model: {}, Train Loss: {}, Validation Loss: {}, Test Loss: {}, Train Metric: {}, Valid Metric: {}, Test Metric: {}"
 
         if self.should_handle_epoch_data(event, trainer):
             self.LOGGER.info("".join(list(map(
