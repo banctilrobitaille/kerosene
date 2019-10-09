@@ -27,7 +27,7 @@ class SchedulerType(Enum):
     MultiStepLR = "MultiStepLR"
     ExponentialLR = "ExponentialLR"
     CosineAnnealingLR = "CosineAnnealingLR"
-    CyclicLR = "CyclicL"
+    CyclicLR = "CyclicLR"
     CosineAnnealingWarmRestarts = "CosineAnnealingWarmRestarts"
 
     def __str__(self):
