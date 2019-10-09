@@ -29,7 +29,7 @@ class EventHandler(ABC):
 
     def should_handle_epoch_data(self, event, trainer):
         return (event in [Event.ON_EPOCH_BEGIN, Event.ON_EPOCH_END, Event.ON_TRAIN_EPOCH_BEGIN,
-                          Event.ON_TRAIN_EPOCH_END, Event.ON_VALID_EPOCH_BEGIN, Event.ON_VALID_EPOCH_END]) and (
+                          Event.ON_TRAIN_EPOCH_END, Event.ON_VALID_EPOCH_BEGIN, Event.ON_TEST_EPOCH_END, Event.ON_VALID_EPOCH_END]) and (
                        trainer.epoch % self._every == 0)
 
     def should_handle_train_step_data(self, event, trainer):
@@ -39,6 +39,10 @@ class EventHandler(ABC):
     def should_handle_validation_step_data(self, event, trainer):
         return (event in [Event.ON_VALID_BATCH_BEGIN, Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]) and (
                 trainer.current_valid_step % self._every == 0)
+
+    def should_handle_test_step_data(self, event, trainer):
+        return (event in [Event.ON_VALID_BATCH_BEGIN, Event.ON_TEST_BATCH_END, Event.ON_BATCH_END]) and (
+                trainer.current_test_step % self._every == 0)
 
     @abstractmethod
     def __call__(self, *inputs):
