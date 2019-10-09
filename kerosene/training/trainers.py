@@ -77,12 +77,20 @@ class ModelTrainer(ApexModule):
         return torch.tensor([self._step_valid_loss]).cpu()
 
     @property
+    def step_test_loss(self):
+        return torch.tensor([self._step_test_loss]).cpu()
+
+    @property
     def step_train_metric(self):
         return torch.tensor([self._step_train_metric]).cpu()
 
     @property
     def step_valid_metric(self):
         return torch.tensor([self._step_valid_metric]).cpu()
+
+    @property
+    def step_test_metric(self):
+        return torch.tensor([self._step_test_metric]).cpu()
 
     @property
     def train_loss(self):
