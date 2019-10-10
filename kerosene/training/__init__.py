@@ -9,3 +9,6 @@ class Status(Enum):
     TESTING = "Testing"
     FINALIZING = "Finalizing"
     FINALIZED = "Finalized"
+
+    def __str__(self):
+        return self.value

@@ -15,10 +15,12 @@
 # ==============================================================================
 import logging
 from abc import ABC
+from enum import Enum
 
 from kerosene.events import BaseEvent, Event
 from kerosene.events.handlers.base_handler import EventHandler
 from kerosene.training.trainers import Trainer
+from kerosene.training import Status
 
 
 class BaseConsoleLogger(EventHandler, ABC):
@@ -26,6 +28,17 @@ class BaseConsoleLogger(EventHandler, ABC):
 
     def __init__(self, every):
         super(BaseConsoleLogger, self).__init__(every)
+
+
+class ConsoleColors(object):
+    PURPLE = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 
 class PrintTrainingStatus(BaseConsoleLogger):
@@ -49,6 +62,12 @@ class PrintTrainingStatus(BaseConsoleLogger):
                               trainer.current_test_step)
 
     def print_status(self, status, epoch, train_step, valid_step, test_step):
+        if status == Status.TRAINING:
+            status = ConsoleColors.GREEN + str(status) + ConsoleColors.ENDC
+        elif status == Status.VALIDATING:
+            status = ConsoleColors.BLUE + str(status) + ConsoleColors.ENDC
+        elif status == Status.TESTING:
+            status = ConsoleColors.YELLOW + str(status) + ConsoleColors.ENDC
         self.LOGGER.info(
             "\nCurrent state: {} |  Epoch: {} | Training step: {} | Validation step: {} | Test step: {} \n".format(
                 status, epoch, train_step, valid_step, test_step))
