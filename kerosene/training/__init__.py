@@ -8,4 +8,4 @@ class Status(Enum):
     VALIDATING = "Validating"
     TESTING = "Testing"
     FINALIZING = "Finalizing"
-    FINALIZED = "Finalize"
+    FINALIZED = "Finalized"
