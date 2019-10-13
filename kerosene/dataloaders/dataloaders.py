@@ -20,6 +20,7 @@ class DataloaderFactory(object):
             torch.distributed.init_process_group(backend='nccl', init_method='env://', rank=run_config.local_rank)
             train_sampler = torch.utils.data.distributed.DistributedSampler(self._train_dataset)
             valid_sampler = torch.utils.data.distributed.DistributedSampler(self._valid_dataset)
+            test_sampler = torch.utils.data.distributed.DistributedSampler(self._test_dataset)
 
         train_loader = torch.utils.data.DataLoader(dataset=self._train_dataset,
                                                    batch_size=training_config.batch_size,
@@ -42,6 +43,7 @@ class DataloaderFactory(object):
                                                    sampler=valid_sampler if not on_single_device(devices) else None,
                                                    collate_fn=collate_fn,
                                                    pin_memory=torch.cuda.is_available())
+
         test_loader = torch.utils.data.DataLoader(dataset=self._test_dataset,
                                                   batch_size=training_config.batch_size,
                                                   shuffle=False if not on_single_device(devices) else True,
@@ -49,7 +51,7 @@ class DataloaderFactory(object):
                                                   multiprocessing.cpu_count() // len(
                                                       run_config.devices) if not on_single_device(
                                                       devices) else multiprocessing.cpu_count(),
-                                                  sampler=valid_sampler if not on_single_device(devices) else None,
+                                                  sampler=test_sampler if not on_single_device(devices) else None,
                                                   collate_fn=collate_fn,
                                                   pin_memory=torch.cuda.is_available())
 
