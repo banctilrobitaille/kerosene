@@ -55,7 +55,7 @@ class ModelCheckpointIfBetter(EventHandler):
     CHECKPOINT_EXT = ".tar"
     SUPPORTED_EVENTS = [Event.ON_EPOCH_END]
 
-    def __init__(self, path, monitor: Monitor = Monitor.VALIDATION_LOSS, mode: MonitorMode = MonitorMode.MIN,
+    def __init__(self, path, monitor: Monitor = Monitor.VALID_LOSS, mode: MonitorMode = MonitorMode.MIN,
                  model_name=None, every=1):
         super(ModelCheckpointIfBetter, self).__init__(every)
         self._path = path
@@ -101,9 +101,9 @@ class ModelCheckpointIfBetter(EventHandler):
             value = model_trainer.train_loss
         elif self._monitor is Monitor.TRAINING_METRIC:
             value = model_trainer.train_metric
-        elif self._monitor is Monitor.VALIDATION_LOSS:
+        elif self._monitor is Monitor.VALID_LOSS:
             value = model_trainer.valid_loss
-        elif self._monitor is Monitor.VALIDATION_METRIC:
+        elif self._monitor is Monitor.VALID_METRIC:
             value = model_trainer.valid_metric
         else:
             raise NotImplementedError("The provided monitor value is not supported !")

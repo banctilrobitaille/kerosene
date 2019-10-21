@@ -48,11 +48,11 @@ class EventGenerator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def _on_validation_epoch_begin(self):
+    def _on_valid_epoch_begin(self):
         raise NotImplementedError()
 
     @abstractmethod
-    def _on_validation_epoch_end(self):
+    def _on_valid_epoch_end(self):
         raise NotImplementedError()
 
     @abstractmethod
@@ -88,11 +88,11 @@ class EventGenerator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def _on_validation_batch_begin(self):
+    def _on_valid_batch_begin(self):
         raise NotImplementedError()
 
     @abstractmethod
-    def _on_validation_batch_end(self):
+    def _on_valid_batch_end(self):
         raise NotImplementedError()
 
     @abstractmethod

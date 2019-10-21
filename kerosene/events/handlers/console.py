@@ -42,7 +42,7 @@ class ConsoleColors(object):
 
 
 class PrintTrainingStatus(BaseConsoleLogger):
-    SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALIDATION_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
@@ -54,7 +54,7 @@ class PrintTrainingStatus(BaseConsoleLogger):
         elif self.should_handle_train_step_data(event, trainer):
             self.print_status(trainer.status, trainer.epoch, trainer.current_train_step, trainer.current_valid_step,
                               trainer.current_test_step)
-        elif self.should_handle_validation_step_data(event, trainer):
+        elif self.should_handle_valid_step_data(event, trainer):
             self.print_status(trainer.status, trainer.epoch, trainer.current_train_step, trainer.current_valid_step,
                               trainer.current_test_step)
         elif self.should_handle_test_step_data(event, trainer):
@@ -101,7 +101,7 @@ class PrintModelTrainersStatus(BaseConsoleLogger):
                                                     model_trainer.step_valid_metric.item(),
                                                     model_trainer.step_test_metric.item()),
                 trainer.model_trainers))))
-        elif self.should_handle_validation_step_data(event, trainer):
+        elif self.should_handle_valid_step_data(event, trainer):
             self.LOGGER.info("".join(list(map(
                 lambda model_trainer: status.format(model_trainer.name,
                                                     model_trainer.step_train_loss.item(),

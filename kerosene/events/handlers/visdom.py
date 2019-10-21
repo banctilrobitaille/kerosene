@@ -38,8 +38,8 @@ class BaseVisdomHandler(EventHandler, ABC):
         return (event in [Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_BATCH_END]) and (
                 step % self._every == 0)
 
-    def should_handle_validation_step_data(self, event, step):
-        return (event in [Event.ON_VALIDATION_BATCH_BEGIN, Event.ON_VALIDATION_BATCH_END, Event.ON_BATCH_END]) and (
+    def should_handle_valid_step_data(self, event, step):
+        return (event in [Event.ON_VALID_BATCH_BEGIN, Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]) and (
                 step % self._every == 0)
 
     def should_handle_test_step_data(self, event, step):
@@ -51,7 +51,7 @@ class BaseVisdomHandler(EventHandler, ABC):
 
 
 class PlotAllModelStateVariables(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALIDATION_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(visdom_logger, every)
@@ -68,7 +68,7 @@ class PlotAllModelStateVariables(BaseVisdomHandler):
             data = list(map(
                 lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
                 trainer.model_trainers))
-        elif self.should_handle_validation_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_valid_step_data(event, trainer.current_valid_step):
             data = list(map(
                 lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                 trainer.model_trainers))
@@ -110,7 +110,7 @@ class PlotAllModelStateVariables(BaseVisdomHandler):
 
 
 class PlotLosses(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALIDATION_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(visdom_logger, every)
@@ -127,7 +127,7 @@ class PlotLosses(BaseVisdomHandler):
             data = list(
                 map(lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
                     trainer.model_trainers))
-        elif self.should_handle_validation_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_valid_step_data(event, trainer.current_valid_step):
             data = list(
                 map(lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                     trainer.model_trainers))
@@ -182,7 +182,7 @@ class PlotLosses(BaseVisdomHandler):
 
 
 class PlotMetrics(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALIDATION_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(visdom_logger, every)
@@ -199,7 +199,7 @@ class PlotMetrics(BaseVisdomHandler):
             data = list(
                 map(lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
                     trainer.model_trainers))
-        elif self.should_handle_validation_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_valid_step_data(event, trainer.current_valid_step):
             data = list(
                 map(lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                     trainer.model_trainers))
@@ -256,7 +256,7 @@ class PlotMetrics(BaseVisdomHandler):
 
 
 class PlotCustomVariables(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALIDATION_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, variable_name, plot_type: PlotType, params, every=1):
         super().__init__(visdom_logger, every)
@@ -273,7 +273,7 @@ class PlotCustomVariables(BaseVisdomHandler):
             data = self.create_epoch_visdom_data(trainer)
         elif self.should_handle_train_step_data(event, trainer.current_train_step):
             data = self.create_train_batch_visdom_data(trainer)
-        elif self.should_handle_validation_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_valid_step_data(event, trainer.current_valid_step):
             data = self.create_valid_batch_visdom_data(trainer)
         elif self.should_handle_test_step_data(event, trainer.current_valid_step):
             data = self.create_test_batch_visdom_data(trainer)

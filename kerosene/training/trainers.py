@@ -336,9 +336,9 @@ class Trainer(EventGenerator):
                 self._on_train_epoch_begin()
                 self._train_epoch()
                 self._on_train_epoch_end()
-                self._on_validation_epoch_begin()
+                self._on_valid_epoch_begin()
                 self._validate_epoch()
-                self._on_validation_epoch_end()
+                self._on_valid_epoch_end()
                 self._on_test_epoch_begin()
                 self._test_epoch()
                 self._on_test_epoch_end()
@@ -375,7 +375,7 @@ class Trainer(EventGenerator):
 
         with torch.no_grad():
             for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
-                self._on_validation_batch_begin()
+                self._on_valid_batch_begin()
 
                 inputs = [single_input.to(self._run_config.device, non_blocking=True) for single_input in
                           inputs] if isinstance(inputs, list) else inputs.to(self._run_config.device, non_blocking=True)
@@ -384,7 +384,7 @@ class Trainer(EventGenerator):
                           target] if isinstance(target, list) else target.to(self._run_config.device, non_blocking=True)
 
                 self.validate_step(inputs, target)
-                self._on_validation_batch_end()
+                self._on_valid_batch_end()
                 self._on_batch_end()
 
             self._current_valid_batch = 0
@@ -455,13 +455,13 @@ class Trainer(EventGenerator):
         self.on_train_batch_end()
         self.fire(Event.ON_TRAIN_BATCH_END)
 
-    def _on_validation_batch_begin(self):
-        self.on_validation_batch_begin()
-        self.fire(Event.ON_VALIDATION_BATCH_BEGIN)
+    def _on_valid_batch_begin(self):
+        self.on_valid_batch_begin()
+        self.fire(Event.ON_VALID_BATCH_BEGIN)
 
-    def _on_validation_batch_end(self):
-        self.on_validation_batch_begin()
-        self.fire(Event.ON_VALIDATION_BATCH_END)
+    def _on_valid_batch_end(self):
+        self.on_valid_batch_begin()
+        self.fire(Event.ON_VALID_BATCH_END)
 
     def _on_test_batch_begin(self):
         self.on_test_batch_begin()
@@ -479,14 +479,14 @@ class Trainer(EventGenerator):
         self.on_batch_end()
         self.fire(Event.ON_BATCH_END)
 
-    def _on_validation_epoch_begin(self):
+    def _on_valid_epoch_begin(self):
         self._status = Status.VALIDATING
-        self.on_validation_epoch_begin()
-        self.fire(Event.ON_VALIDATION_EPOCH_BEGIN)
+        self.on_valid_epoch_begin()
+        self.fire(Event.ON_VALID_EPOCH_BEGIN)
 
-    def _on_validation_epoch_end(self):
-        self.on_validation_epoch_end()
-        self.fire(Event.ON_VALIDATION_EPOCH_END)
+    def _on_valid_epoch_end(self):
+        self.on_valid_epoch_end()
+        self.fire(Event.ON_VALID_EPOCH_END)
 
     def _on_test_epoch_begin(self):
         self._status = Status.TESTING
@@ -535,11 +535,11 @@ class Trainer(EventGenerator):
         raise NotImplementedError()
 
     @abstractmethod
-    def on_validation_epoch_begin(self):
+    def on_valid_epoch_begin(self):
         raise NotImplementedError()
 
     @abstractmethod
-    def on_validation_epoch_end(self):
+    def on_valid_epoch_end(self):
         raise NotImplementedError()
 
     @abstractmethod
@@ -559,11 +559,11 @@ class Trainer(EventGenerator):
         raise NotImplementedError()
 
     @abstractmethod
-    def on_validation_batch_begin(self):
+    def on_valid_batch_begin(self):
         raise NotImplementedError()
 
     @abstractmethod
-    def on_validation_batch_end(self):
+    def on_valid_batch_end(self):
         raise NotImplementedError()
 
     @abstractmethod

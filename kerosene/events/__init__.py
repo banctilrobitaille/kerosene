@@ -25,15 +25,15 @@ class Event(BaseEvent):
     ON_EPOCH_BEGIN = "epoch_begin"
     ON_TRAIN_EPOCH_BEGIN = "train_epoch_begin"
     ON_TRAIN_EPOCH_END = "train_epoch_end"
-    ON_VALIDATION_EPOCH_BEGIN = "validation_epoch_begin"
-    ON_VALIDATION_EPOCH_END = "validation_epoch_end"
+    ON_VALID_EPOCH_BEGIN = "valid_epoch_begin"
+    ON_VALID_EPOCH_END = "valid_epoch_end"
     ON_TEST_EPOCH_BEGIN = "test_epoch_begin"
     ON_TEST_EPOCH_END = "test_epoch_end"
     ON_EPOCH_END = "epoch_end"
     ON_TRAIN_BATCH_BEGIN = "train_batch_begin"
     ON_TRAIN_BATCH_END = "train_batch_end"
-    ON_VALIDATION_BATCH_BEGIN = "validation_batch_begin"
-    ON_VALIDATION_BATCH_END = "validation_batch_end"
+    ON_VALID_BATCH_BEGIN = "valid_batch_begin"
+    ON_VALID_BATCH_END = "valid_batch_end"
     ON_TEST_BATCH_BEGIN = "test_batch_begin"
     ON_TEST_BATCH_END = "test_batch_end"
     ON_BATCH_BEGIN = "batch_begin"
@@ -43,8 +43,10 @@ class Event(BaseEvent):
 class Monitor(BaseVariable):
     TRAINING_LOSS = "train_loss"
     TRAINING_METRIC = "train_metric"
-    VALIDATION_LOSS = "valid_loss"
-    VALIDATION_METRIC = "valid_metric"
+    VALID_LOSS = "valid_loss"
+    VALID_METRIC = "valid_metric"
+    TEST_LOSS = "test_loss"
+    TEST_METRIC = "test_metric"
 
     def is_loss(self):
         return "loss" in self.value
