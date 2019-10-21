@@ -80,7 +80,7 @@ class Dice(Metric):
     SUPPORTED_REDUCTIONS = [None, "mean"]
 
     def __init__(self, num_classes: int, reduction: Union[None, str] = "mean", average: str = None,
-                 weight: List[torch.Tensor] = None, ignore_index: int = -100,
+                 weight: torch.Tensor = None, ignore_index: int = -100,
                  output_transform: callable = lambda x: x) -> None:
         """
         Metric initializer.
