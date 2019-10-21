@@ -66,8 +66,8 @@ class MNISTTrainer(Trainer):
             torch.distributed.all_reduce(param.grad.data, op=torch.distributed.ReduceOp.SUM)
             param.grad.data /= size
 
-    def on_epoch_begin(self):
+    def _on_epoch_begin(self):
         pass
 
-    def on_epoch_end(self):
+    def _on_epoch_end(self):
         pass

@@ -91,8 +91,8 @@ class TrainerConfiguration(object):
 
 class ModelTrainerConfiguration(object):
 
-    def __init__(self, model_name, model_type, model_params, optimizer_type, max_grad_norm, optimizer_params,
-                 scheduler_type, scheduler_params, criterion_type, criterion_params, metric_type, metric_params):
+    def __init__(self, model_name, model_type, model_params, optimizer_type, optimizer_params, scheduler_type,
+                 scheduler_params, criterion_type, criterion_params, metric_type, metric_params, max_grad_norm):
         self._model_name = model_name
         self._model_type = model_type
         self._model_params = model_params
@@ -161,10 +161,10 @@ class ModelTrainerConfiguration(object):
     @classmethod
     def from_dict(cls, model_name, config_dict):
         return cls(model_name, config_dict["type"], config_dict["params"], config_dict["optimizer"]["type"],
-                   config_dict["optimizer"]["max_grad_norm"], config_dict["optimizer"]["params"],
-                   config_dict["scheduler"]["type"], config_dict["scheduler"]["params"],
-                   config_dict["criterion"]["type"], config_dict["criterion"]["params"], config_dict["metric"]["type"],
-                   config_dict["metric"]["params"])
+                   config_dict["optimizer"]["params"], config_dict["scheduler"]["type"],
+                   config_dict["scheduler"]["params"], config_dict["criterion"]["type"],
+                   config_dict["criterion"]["params"], config_dict["metric"]["type"],
+                   config_dict["metric"]["params"], config_dict["optimizer"]["max_grad_norm"])
 
     def to_html(self):
         configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())

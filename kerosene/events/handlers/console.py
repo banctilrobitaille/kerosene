@@ -42,7 +42,7 @@ class ConsoleColors(object):
 
 
 class PrintTrainingStatus(BaseConsoleLogger):
-    SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALIDATION_BATCH_END]
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(

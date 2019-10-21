@@ -13,4 +13,4 @@ class EarlyStopping(MonitorWatcher):
                 value = getattr(model_trainer, str(self._monitor))
                 self.watch(model_trainer.name, value)
             except MonitorPatienceExceeded as e:
-                model_trainer.finalize()
+                model_trainer._finalize()

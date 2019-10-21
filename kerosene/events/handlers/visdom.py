@@ -39,7 +39,7 @@ class BaseVisdomHandler(EventHandler, ABC):
                 step % self._every == 0)
 
     def should_handle_validation_step_data(self, event, step):
-        return (event in [Event.ON_VALID_BATCH_BEGIN, Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]) and (
+        return (event in [Event.ON_VALIDATION_BATCH_BEGIN, Event.ON_VALIDATION_BATCH_END, Event.ON_BATCH_END]) and (
                 step % self._every == 0)
 
     def should_handle_test_step_data(self, event, step):
@@ -51,7 +51,7 @@ class BaseVisdomHandler(EventHandler, ABC):
 
 
 class PlotAllModelStateVariables(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALIDATION_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(visdom_logger, every)
@@ -110,7 +110,7 @@ class PlotAllModelStateVariables(BaseVisdomHandler):
 
 
 class PlotLosses(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALIDATION_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(visdom_logger, every)
@@ -182,7 +182,7 @@ class PlotLosses(BaseVisdomHandler):
 
 
 class PlotMetrics(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALIDATION_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(visdom_logger, every)
@@ -256,7 +256,7 @@ class PlotMetrics(BaseVisdomHandler):
 
 
 class PlotCustomVariables(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALIDATION_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, variable_name, plot_type: PlotType, params, every=1):
         super().__init__(visdom_logger, every)
