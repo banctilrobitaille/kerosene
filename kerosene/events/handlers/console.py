@@ -15,12 +15,12 @@
 # ==============================================================================
 import logging
 from abc import ABC
-from enum import Enum
 
 from kerosene.events import BaseEvent, Event
 from kerosene.events.handlers.base_handler import EventHandler
-from kerosene.training.trainers import Trainer
+from kerosene.exceptions.events import UnsupportedEventException
 from kerosene.training import Status
+from kerosene.training.trainers import Trainer
 
 
 class BaseConsoleLogger(EventHandler, ABC):
@@ -45,8 +45,8 @@ class PrintTrainingStatus(BaseConsoleLogger):
     SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
+        if event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
 
         if self.should_handle_epoch_data(event, trainer):
             self.print_status(trainer.status, trainer.epoch, trainer.current_train_step, trainer.current_valid_step,
@@ -77,8 +77,8 @@ class PrintModelTrainersStatus(BaseConsoleLogger):
     SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END]
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
+        if event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
         status = "\nModel: {}, Train Loss: {}, Validation Loss: {}, Test Loss: {}, Train Metric: {}, Valid Metric: {}, Test Metric: {} \n"
 
         if self.should_handle_epoch_data(event, trainer):

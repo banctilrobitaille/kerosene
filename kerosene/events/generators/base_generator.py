@@ -76,7 +76,7 @@ class EventGenerator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def on_train_epoch_end(self):
+    def _on_train_epoch_end(self):
         raise NotImplementedError()
 
     @abstractmethod

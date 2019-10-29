@@ -562,10 +562,7 @@ class SimpleTrainer(Trainer):
     def scheduler_step(self):
         self._model_trainers[0].scheduler_step()
 
-    def _on_epoch_begin(self):
-        pass
-
-    def _on_epoch_end(self):
+    def finalize(self):
         pass
 
 

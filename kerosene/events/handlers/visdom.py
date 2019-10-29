@@ -17,6 +17,7 @@ from abc import ABC
 
 from kerosene.events import BaseEvent, Event
 from kerosene.events.handlers.base_handler import EventHandler
+from kerosene.exceptions.events import UnsupportedEventException
 from kerosene.loggers.visdom import PlotFrequency, PlotType
 from kerosene.loggers.visdom.visdom import VisdomLogger, VisdomData
 from kerosene.training.trainers import Trainer, ModelTrainer
@@ -57,8 +58,9 @@ class PlotAllModelStateVariables(BaseVisdomHandler):
         super().__init__(visdom_logger, every)
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
+        if event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
+
         data = None
 
         if self.should_handle_epoch_data(event, trainer.epoch):
@@ -116,8 +118,9 @@ class PlotLosses(BaseVisdomHandler):
         super().__init__(visdom_logger, every)
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
+        if event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
+
         data = None
 
         if self.should_handle_epoch_data(event, trainer.epoch):
@@ -188,8 +191,9 @@ class PlotMetrics(BaseVisdomHandler):
         super().__init__(visdom_logger, every)
 
     def __call__(self, event: Event, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
+        if event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
+
         data = None
 
         if self.should_handle_epoch_data(event, trainer.epoch):
@@ -265,8 +269,9 @@ class PlotCustomVariables(BaseVisdomHandler):
         self._params = params
 
     def __call__(self, event: Event, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
+        if event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
+
         data = None
 
         if self.should_handle_epoch_data(event, trainer.epoch):
@@ -305,8 +310,9 @@ class PlotLR(BaseVisdomHandler):
         super().__init__(visdom_logger, every)
 
     def __call__(self, event: Event, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
+        if event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
+
         data = None
 
         if self.should_handle_epoch_data(event, trainer.epoch):
@@ -334,8 +340,9 @@ class PlotGradientFlow(BaseVisdomHandler):
         super().__init__(visdom_logger, every)
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
+        if event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
+
         data = None
 
         if self.should_handle_train_step_data(event, trainer.current_train_step):

@@ -20,6 +20,7 @@ import torch
 from kerosene.events import Monitor, MonitorMode, Event
 from kerosene.events.handlers.base_handler import EventHandler
 from kerosene.training.trainers import Trainer, ModelTrainer
+from kerosene.exceptions.events import UnsupportedEventException
 
 
 class ModelCheckpoint(EventHandler):
@@ -32,8 +33,9 @@ class ModelCheckpoint(EventHandler):
         self._model_name = model_name
 
     def __call__(self, event: Event, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
+        if event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
+
         model_trainer_states = list(filter(self._filter_by_name, trainer.model_trainers))
 
         for model_trainer_state in model_trainer_states:
@@ -66,8 +68,8 @@ class ModelCheckpointIfBetter(EventHandler):
         self._monitor_values = {}
 
     def __call__(self, event: Event, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
+        if event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
 
         model_trainer_states = list(filter(self._filter_by_name, trainer.model_trainers))
 
