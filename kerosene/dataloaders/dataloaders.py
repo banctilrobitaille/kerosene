@@ -16,43 +16,34 @@ class DataloaderFactory(object):
 
     def create(self, run_config: RunConfiguration, training_config: TrainerConfiguration, collate_fn: Callable = None):
         devices = run_config.devices
+        train_sampler = None
+        valid_sampler = None
+        test_sampler = None
+
         if not on_single_device(devices):
             torch.distributed.init_process_group(backend='nccl', init_method='env://', rank=run_config.local_rank)
-            train_sampler = torch.utils.data.distributed.DistributedSampler(self._train_dataset)
-            valid_sampler = torch.utils.data.distributed.DistributedSampler(self._valid_dataset)
-            test_sampler = torch.utils.data.distributed.DistributedSampler(self._test_dataset)
+            train_sampler = self._create_sampler(self._train_dataset)
+            valid_sampler = self._create_sampler(self._valid_dataset)
+            test_sampler = self._create_sampler(self._test_dataset)
 
-        train_loader = torch.utils.data.DataLoader(dataset=self._train_dataset,
-                                                   batch_size=training_config.batch_size,
-                                                   shuffle=False if not on_single_device(devices) else True,
-                                                   num_workers=run_config.num_workers if run_config.num_workers is not None else
-                                                   multiprocessing.cpu_count() // len(
-                                                       run_config.devices) if not on_single_device(
-                                                       devices) else multiprocessing.cpu_count(),
-                                                   sampler=train_sampler if not on_single_device(devices) else None,
-                                                   collate_fn=collate_fn,
-                                                   pin_memory=torch.cuda.is_available())
-
-        valid_loader = torch.utils.data.DataLoader(dataset=self._valid_dataset,
-                                                   batch_size=training_config.batch_size,
-                                                   shuffle=False if not on_single_device(devices) else True,
-                                                   num_workers=run_config.num_workers if run_config.num_workers is not None else
-                                                   multiprocessing.cpu_count() // len(
-                                                       run_config.devices) if not on_single_device(
-                                                       devices) else multiprocessing.cpu_count(),
-                                                   sampler=valid_sampler if not on_single_device(devices) else None,
-                                                   collate_fn=collate_fn,
-                                                   pin_memory=torch.cuda.is_available())
-
-        test_loader = torch.utils.data.DataLoader(dataset=self._test_dataset,
-                                                  batch_size=training_config.batch_size,
-                                                  shuffle=False if not on_single_device(devices) else True,
-                                                  num_workers=run_config.num_workers if run_config.num_workers is not None else
-                                                  multiprocessing.cpu_count() // len(
-                                                      run_config.devices) if not on_single_device(
-                                                      devices) else multiprocessing.cpu_count(),
-                                                  sampler=test_sampler if not on_single_device(devices) else None,
-                                                  collate_fn=collate_fn,
-                                                  pin_memory=torch.cuda.is_available())
+        train_loader = self._create_dataloader(train_sampler, run_config, training_config, devices, collate_fn)
+        valid_loader = self._create_dataloader(valid_sampler, run_config, training_config, devices, collate_fn)
+        test_loader = self._create_dataloader(test_sampler, run_config, training_config, devices, collate_fn)
 
         return train_loader, valid_loader, test_loader
+
+    @staticmethod
+    def _create_sampler(dataset):
+        return torch.utils.data.distributed.DistributedSampler(dataset)
+
+    def _create_dataloader(self, sampler, run_config, training_config, devices, collate_fn):
+        return torch.utils.data.DataLoader(dataset=self._train_dataset,
+                                           batch_size=training_config.batch_size,
+                                           shuffle=False if not on_single_device(devices) else True,
+                                           num_workers=run_config.num_workers if run_config.num_workers is not None else
+                                           multiprocessing.cpu_count() // len(
+                                               run_config.devices) if not on_single_device(
+                                               devices) else multiprocessing.cpu_count(),
+                                           sampler=sampler if not on_single_device(devices) else None,
+                                           collate_fn=collate_fn,
+                                           pin_memory=torch.cuda.is_available())

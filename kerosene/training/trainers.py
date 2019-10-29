@@ -33,6 +33,7 @@ from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training import Status
 from kerosene.utils.devices import on_cpu
+from kerosene.training.trainer_event_mixin import EventMixin, EpochEventMixin, BatchEventMixin
 
 
 class ModelTrainer(ApexModule):
@@ -171,6 +172,14 @@ class ModelTrainer(ApexModule):
     def zero_grad(self):
         self._optimizer.zero_grad()
 
+    def freeze(self):
+        for param in self.parameters():
+            param.requires_grad = False
+
+    def unfreeze(self):
+        for param in self.parameters():
+            param.requires_grad = True
+
     def compute_and_update_train_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_train_loss = self._criterion(pred, target)
         self._train_loss.update(self._step_train_loss)
@@ -238,7 +247,7 @@ class ModelTrainer(ApexModule):
         self._status = Status.FINALIZING
 
 
-class Trainer(EventGenerator):
+class Trainer(EventGenerator, EventMixin, EpochEventMixin, BatchEventMixin):
     LOGGER = logging.getLogger("Trainer")
 
     def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
@@ -501,78 +510,6 @@ class Trainer(EventGenerator):
         self._status = Status.FINALIZING
         self.finalize()
         self._status = Status.FINALIZED
-
-    @abstractmethod
-    def on_training_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_training_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_epoch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_epoch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_batch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_batch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_train_epoch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_train_epoch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_valid_epoch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_valid_epoch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_test_epoch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_test_epoch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_train_batch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_train_batch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_valid_batch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_valid_batch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_test_batch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def on_test_batch_end(self):
-        raise NotImplementedError()
 
     @abstractmethod
     def finalize(self):

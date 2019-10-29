@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from hamcrest import *
 
-from kerosene.nn.criterions import DiceLoss, GeneralizedDiceLoss, WeightedCrossEntropyLoss
+from kerosene.nn.criterions import DiceLoss, GeneralizedDiceLoss, WeightedCrossEntropyLoss, TverskyLoss
 from kerosene.utils.tensors import to_onehot
 
 
@@ -183,3 +183,51 @@ class TestWeightedCrossEntropy(unittest.TestCase):
         weighted_cross_entropy_loss = WeightedCrossEntropyLoss()
         loss = weighted_cross_entropy_loss.forward(self.y_logits, self.y_true_tensor)
         np.testing.assert_almost_equal(loss.numpy(), self.WEIGHTED_CROSS_ENTROPY_LOSS_TRUTH)
+
+
+class TestTverskyLoss(unittest.TestCase):
+    INVALID_VALUE_1 = -1
+    INVALID_VALUE_2 = "STEVE JOBS"
+    INVALID_VALUE_3 = 10
+    INVALID_VALUE_4 = 11
+
+    def setUp(self):
+        self.y_true, self.y_pred = get_y_true_y_pred()
+        self.y_true_tensor, self.y_logits = compute_tensor_y_true_y_logits(self.y_true, self.y_pred)
+        self.dice = compute_dice_truth(self.y_true, self.y_pred)
+        self.mean_dice_loss = np.subtract(1.0, np.mean(self.dice))
+
+    def test_should_raise_exception_with_bad_values(self):
+        tversky_loss = TverskyLoss()
+        assert_that(calling(tversky_loss.forward).with_args(inputs=None, targets=None),
+                    raises(AttributeError))
+        assert_that(calling(tversky_loss.forward).with_args(inputs=self.y_logits, targets=None),
+                    raises(AttributeError))
+        assert_that(calling(tversky_loss.forward).with_args(inputs=None, targets=self.y_true_tensor),
+                    raises(AttributeError))
+
+    def test_should_compute_tversky_index(self):
+        tversky_loss = TverskyLoss(reduction=None)
+        loss = tversky_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3))
+
+        np.testing.assert_almost_equal(loss.numpy(), np.subtract(1.0, self.dice))
+
+    def test_should_compute_dice_for_multiclass_with_ignored_index(self):
+        for ignore_index in range(3):
+            tversky_loss = TverskyLoss(reduction=None, ignore_index=ignore_index)
+            res = tversky_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3))
+            true_res = np.subtract(1.0, self.dice[:ignore_index] + self.dice[ignore_index + 1:])
+            np.testing.assert_almost_equal(res.numpy(), true_res), "{}: {} vs {}".format(ignore_index, res, true_res)
+
+    def test_should_compute_mean_dice(self):
+        tversky_loss = TverskyLoss(reduction="mean")
+        loss = tversky_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3))
+
+        np.testing.assert_almost_equal(loss.numpy(), self.mean_dice_loss)
+
+    def test_should_compute_mean_dice_for_multiclass_with_ignored_index(self):
+        for ignore_index in range(3):
+            tversky_loss = TverskyLoss(ignore_index=ignore_index)
+            res = tversky_loss.forward(self.y_logits, to_onehot(self.y_true_tensor, num_classes=3))
+            true_res = np.subtract(1.0, self.dice[:ignore_index] + self.dice[ignore_index + 1:]).mean()
+            np.testing.assert_almost_equal(res.numpy(), true_res), "{}: {} vs {}".format(ignore_index, res, true_res)

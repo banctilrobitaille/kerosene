@@ -164,7 +164,7 @@ class ModelTrainerConfiguration(object):
                    config_dict["optimizer"]["params"], config_dict["scheduler"]["type"],
                    config_dict["scheduler"]["params"], config_dict["criterion"]["type"],
                    config_dict["criterion"]["params"], config_dict["metric"]["type"],
-                   config_dict["metric"]["params"], config_dict["optimizer"]["max_grad_norm"])
+                   config_dict["metric"]["params"], config_dict["gradients"]["max_norm"])
 
     def to_html(self):
         configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
