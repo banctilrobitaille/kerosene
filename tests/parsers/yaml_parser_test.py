@@ -3,14 +3,14 @@ import unittest
 import torch
 from hamcrest import *
 
-from kerosene.parsers.yaml_parser import YamlParser
+from kerosene.parsers.yaml_parser import CustomYamlParser
 
 
 class YamlParserTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self._path = "test_yaml.yml"
-        self._parser = YamlParser()
+        self._parser = CustomYamlParser()
 
     def test_should_parse_file_and_create_tensor(self):
         with open(self._path) as file:
