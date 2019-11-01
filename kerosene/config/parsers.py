@@ -18,6 +18,7 @@ import logging
 import yaml
 
 from kerosene.config.trainers import ModelTrainerConfiguration, TrainerConfiguration
+from kerosene.parsers.yaml_parser import CustomYamlParser
 
 
 class YamlConfigurationParser(object):
@@ -27,7 +28,7 @@ class YamlConfigurationParser(object):
     def parse(config_file_path):
         with open(config_file_path, 'r') as config_file:
             try:
-                config = yaml.load(config_file, Loader=yaml.FullLoader)
+                config = CustomYamlParser.safe_load(config_file)
 
                 model_trainer_configs = list(
                     map(lambda model_name: ModelTrainerConfiguration.from_dict(model_name,
