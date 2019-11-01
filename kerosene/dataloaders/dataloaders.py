@@ -21,20 +21,15 @@ class DataloaderFactory(object):
         test_sampler = None
 
         if not on_single_device(devices):
-            torch.distributed.init_process_group(backend='nccl', init_method='env://', rank=run_config.local_rank)
-            train_sampler = self._create_sampler(self._train_dataset)
-            valid_sampler = self._create_sampler(self._valid_dataset)
-            test_sampler = self._create_sampler(self._test_dataset)
+            train_sampler = torch.utils.data.distributed.DistributedSampler(self._train_dataset)
+            valid_sampler = torch.utils.data.distributed.DistributedSampler(self._valid_dataset)
+            test_sampler = torch.utils.data.distributed.DistributedSampler(self._test_dataset)
 
         train_loader = self._create_dataloader(train_sampler, run_config, training_config, devices, collate_fn)
         valid_loader = self._create_dataloader(valid_sampler, run_config, training_config, devices, collate_fn)
         test_loader = self._create_dataloader(test_sampler, run_config, training_config, devices, collate_fn)
 
         return train_loader, valid_loader, test_loader
-
-    @staticmethod
-    def _create_sampler(dataset):
-        return torch.utils.data.distributed.DistributedSampler(dataset)
 
     def _create_dataloader(self, sampler, run_config, training_config, devices, collate_fn):
         return torch.utils.data.DataLoader(dataset=self._train_dataset,

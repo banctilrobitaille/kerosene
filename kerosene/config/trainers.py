@@ -84,6 +84,10 @@ class TrainerConfiguration(object):
         for key in config_dict:
             setattr(self, key, config_dict[key])
 
+    @classmethod
+    def from_dict(cls, config_dict):
+        return cls(config_dict)
+
     def to_html(self):
         configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
         return "<h2>Training Configuration</h2> \n {}".format(configuration_values)
