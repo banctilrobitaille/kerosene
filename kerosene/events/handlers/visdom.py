@@ -280,7 +280,7 @@ class PlotCustomVariables(BaseVisdomHandler):
             data = self.create_train_batch_visdom_data(trainer)
         elif self.should_handle_valid_step_data(event, trainer.current_valid_step):
             data = self.create_valid_batch_visdom_data(trainer)
-        elif self.should_handle_test_step_data(event, trainer.current_valid_step):
+        elif self.should_handle_test_step_data(event, trainer.current_test_step):
             data = self.create_test_batch_visdom_data(trainer)
 
         if data is not None:
