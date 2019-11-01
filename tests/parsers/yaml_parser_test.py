@@ -17,5 +17,4 @@ class YamlParserTest(unittest.TestCase):
             config = self._parser.safe_load(file)
 
         assert_that(config["weights"], instance_of(torch.Tensor))
-        assert_that(config["list"], instance_of(list))
         assert_that(config["tuple"], instance_of(tuple))

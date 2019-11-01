@@ -1,3 +1,2 @@
 weights: !torch/tensor [1, 1, 1, 1, 1, 1]
-list:  [0.1,0.2]
 tuple: !python/tuple [0.1,0.2]
