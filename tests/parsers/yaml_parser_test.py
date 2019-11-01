@@ -18,16 +18,16 @@ class TestYamlParser(unittest.TestCase):
         file = open(self._path)
         data = yaml.safe_load(file)
 
-        assert_that(data["weights"].tensor, instance_of(torch.Tensor))
+        assert_that(data["weights"].list, instance_of(torch.Tensor))
 
 
-class TestKeroseneParser(unittest.TestCase):
+class YamlParserTest(unittest.TestCase):
     def setUp(self) -> None:
         self._path = "parsers/test_yaml.yml"
         self._parser = YamlParser()
 
     def test_should_parse_file(self):
         with open(self._path) as file:
-            config = self._parser.load(file)
+            config = self._parser.safe_load(file)
         assert_that(config, instance_of(dict))
-        assert_that(config["weights"].tensor, instance_of(torch.Tensor))
+        assert_that(config["weights"].list, instance_of(torch.Tensor))

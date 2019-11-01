@@ -28,7 +28,7 @@ class Tuple(yaml.YAMLObject):
         self._tuple = tuple_
 
     @property
-    def tensor(self):
+    def tuple(self):
         return self._tuple
 
     @classmethod
@@ -46,7 +46,7 @@ class List(yaml.YAMLObject):
         self._list = list_
 
     @property
-    def tensor(self):
+    def list(self):
         return self._list
 
     @classmethod
@@ -66,5 +66,5 @@ class YamlParser(object):
         yaml.add_constructor(u"!python/tuple", Tuple.from_yaml, Loader=yaml.SafeLoader)
 
     @staticmethod
-    def load(file):
+    def safe_load(file):
         return yaml.safe_load(file)
