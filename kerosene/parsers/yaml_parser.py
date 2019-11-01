@@ -17,7 +17,7 @@ class Tensor(yaml.YAMLObject):
     def from_yaml(cls, loader, node):
         value = loader.construct_sequence(node, deep=True)
         tensor = torch.Tensor().new_tensor(value)
-        return cls(tensor)
+        return tensor
 
 
 class Tuple(yaml.YAMLObject):
@@ -28,14 +28,14 @@ class Tuple(yaml.YAMLObject):
         self._tuple = tuple_
 
     @property
-    def tensor(self):
+    def tuple(self):
         return self._tuple
 
     @classmethod
     def from_yaml(cls, loader, node):
         value = loader.construct_sequence(node, deep=True)
         tuple_ = tuple(value)
-        return cls(tuple_)
+        return tuple_
 
 
 class List(yaml.YAMLObject):
@@ -46,14 +46,14 @@ class List(yaml.YAMLObject):
         self._list = list_
 
     @property
-    def tensor(self):
+    def list(self):
         return self._list
 
     @classmethod
     def from_yaml(cls, loader, node):
         value = loader.construct_sequence(node, deep=True)
         list_ = list(value)
-        return cls(list_)
+        return list_
 
 
 class YamlParser(object):
@@ -64,6 +64,9 @@ class YamlParser(object):
 
         yaml.SafeLoader.add_constructor(u"!python/tuple", Tuple.from_yaml)
         yaml.add_constructor(u"!python/tuple", Tuple.from_yaml, Loader=yaml.SafeLoader)
+
+        yaml.SafeLoader.add_constructor(u"!python/list", Tuple.from_yaml)
+        yaml.add_constructor(u"!python/list", Tuple.from_yaml, Loader=yaml.SafeLoader)
 
     @staticmethod
     def safe_load(file):
