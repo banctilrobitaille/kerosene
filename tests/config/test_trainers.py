@@ -2,12 +2,15 @@ import unittest
 
 from hamcrest import *
 
+from kerosene.config.exceptions import InvalidConfigurationError
 from kerosene.config.parsers import YamlConfigurationParser
 from kerosene.config.trainers import ModelTrainerConfiguration
 
 
 class TestGeneralizedDiceMetric(unittest.TestCase):
     VALID_CONFIG_FILE_PATH = "valid_config.yml"
+    INVALID_CONFIG_FILE_PATH = "invalid_config.yml"
+
     MODELS_CONFIG_YML_TAG = "models"
 
     SIMPLE_NET_NAME = "SimpleNet"
@@ -44,3 +47,10 @@ class TestGeneralizedDiceMetric(unittest.TestCase):
         assert_that(model_trainer_config.criterion_params, equal_to(None))
         assert_that(model_trainer_config.metric_type, equal_to(self.SIMPLE_NET_METRIC_TYPE))
         assert_that(model_trainer_config.metric_params, equal_to(None))
+
+    def test_should_throw_on_invalid_model_trainer_config(self):
+        config_dict = YamlConfigurationParser.parse_section(self.INVALID_CONFIG_FILE_PATH, self.MODELS_CONFIG_YML_TAG)
+
+        assert_that(calling(ModelTrainerConfiguration.from_dict).with_args(self.SIMPLE_NET_NAME,
+                                                                           config_dict[self.SIMPLE_NET_NAME]),
+                    raises(InvalidConfigurationError))

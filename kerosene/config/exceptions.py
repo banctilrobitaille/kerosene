@@ -1,0 +1,2 @@
+class InvalidConfigurationError(Exception):
+    pass

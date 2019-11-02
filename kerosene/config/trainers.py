@@ -17,6 +17,8 @@ from typing import Union, Iterable
 
 import torch
 
+from kerosene.config.exceptions import InvalidConfigurationError
+
 
 class RunConfiguration(object):
     def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O2', local_rank: int = 0):
@@ -79,7 +81,6 @@ class TrainerConfiguration(object):
 
 
 class ModelTrainerConfiguration(object):
-
     def __init__(self, model_name, model_type, model_params, optimizer_type, optimizer_params, scheduler_type,
                  scheduler_params, criterion_type, criterion_params, metric_type, metric_params):
         self._model_name = model_name
@@ -144,11 +145,15 @@ class ModelTrainerConfiguration(object):
 
     @classmethod
     def from_dict(cls, model_name, config_dict):
-        return cls(model_name, config_dict["type"], config_dict.get("params"), config_dict["optimizer"]["type"],
-                   config_dict["optimizer"].get("params"), config_dict["scheduler"]["type"],
-                   config_dict["scheduler"].get("params"), config_dict["criterion"]["type"],
-                   config_dict["criterion"].get("params"), config_dict["metric"]["type"],
-                   config_dict["metric"].get("params"))
+        try:
+            return cls(model_name, config_dict["type"], config_dict.get("params"), config_dict["optimizer"]["type"],
+                       config_dict["optimizer"].get("params"), config_dict["scheduler"]["type"],
+                       config_dict["scheduler"].get("params"), config_dict["criterion"]["type"],
+                       config_dict["criterion"].get("params"), config_dict["metric"]["type"],
+                       config_dict["metric"].get("params"))
+        except KeyError as e:
+            raise InvalidConfigurationError(
+                "The provided model configuration is invalid. The section {} is missing.".format(e))
 
     def to_html(self):
         configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
