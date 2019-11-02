@@ -3,7 +3,7 @@ import unittest
 import torch
 from hamcrest import *
 
-from kerosene.parsers.yaml_parser import CustomYamlParser
+from kerosene.parsers.yaml import CustomYamlParser
 
 
 class YamlParserTest(unittest.TestCase):
