@@ -64,9 +64,7 @@ class ApexLoss(object):
         return ApexLoss(self._loss_id, self._loss.detach(), self._optimizer)
 
     def float(self):
-        loss = self._loss.float()
-        transformed_loss = ApexLoss(self._loss_id, loss, self._optimizer)
-        return transformed_loss
+        return ApexLoss(self._loss_id, self._loss.float(), self._optimizer)
 
     def numpy(self):
         return self._loss.numpy()
