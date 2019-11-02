@@ -16,7 +16,7 @@
 from __future__ import division
 
 from abc import ABC
-from typing import Optional, Union
+from typing import Optional
 
 import torch
 from torch import Tensor, nn
@@ -57,97 +57,81 @@ class ApexLoss(object):
         else:
             self._loss.backward(gradient, retain_graph, create_graph)
 
-    def mean(self):
-        loss = torch.mean(self._loss)
-        transformed_loss = ApexLoss(self._loss_id, loss, self._optimizer)
-        return transformed_loss
+    def cpu(self):
+        return ApexLoss(self._loss_id, self._loss.cpu(), self._optimizer)
 
     def detach(self):
-        loss = self._loss.detach()
-        transformed_loss = ApexLoss(self._loss_id, loss, self._optimizer)
-        return transformed_loss
-
-    def numpy(self):
-        loss = self._loss.cpu().numpy()
-        transformed_loss = ApexLoss(self._loss_id, loss, self._optimizer)
-        return transformed_loss
-
-    def cpu(self):
-        loss = self._loss.cpu()
-        transformed_loss = ApexLoss(self._loss_id, loss, self._optimizer)
-        return transformed_loss
+        return ApexLoss(self._loss_id, self._loss.detach(), self._optimizer)
 
     def float(self):
         loss = self._loss.float()
         transformed_loss = ApexLoss(self._loss_id, loss, self._optimizer)
         return transformed_loss
 
+    def numpy(self):
+        return self._loss.numpy()
+
+    def mean(self):
+        return ApexLoss(self._loss_id, torch.mean(self._loss), self._optimizer)
+
     def __add__(self, other):
-        if isinstance(other, Tensor):
-            self._loss = torch.add(self._loss, other)
+        if isinstance(other, (Tensor, int, float)):
+            loss = ApexLoss(self._loss_id, torch.add(self._loss, other), self._optimizer)
         elif isinstance(other, ApexLoss):
-            self._loss = torch.add(self._loss, other.loss)
-        elif isinstance(other, int) or isinstance(other, float):
-            self._loss = torch.add(self._loss, other)
+            loss = ApexLoss(self._loss_id, torch.add(self._loss, other.loss), self._optimizer)
         else:
             raise NotImplementedError("Cannot add an element of type: {} to an ApexLoss.".format(str(type(other))))
-        return self
+        return loss
 
     def __mul__(self, other):
-        if isinstance(other, Tensor):
-            self._loss = torch.mul(self._loss, other)
+        if isinstance(other, (Tensor, int, float)):
+            loss = ApexLoss(self._loss_id, torch.mul(self._loss, other), self._optimizer)
         elif isinstance(other, ApexLoss):
-            self._loss = torch.mul(self._loss, other.loss)
-        elif isinstance(other, int) or isinstance(other, float):
-            self._loss = torch.mul(self._loss, other)
+            loss = ApexLoss(self._loss_id, torch.mul(self._loss, other.loss), self._optimizer)
         else:
             raise NotImplementedError("Cannot mul an element of type: {} to an ApexLoss.".format(str(type(other))))
-        return self
+        return loss
 
     def __rmul__(self, other):
-        if isinstance(other, Tensor):
-            self._loss = torch.mul(self._loss, other)
-        elif isinstance(other, ApexLoss):
-            self._loss = torch.mul(self._loss, other.loss)
-        elif isinstance(other, int) or isinstance(other, float):
-            self._loss = torch.mul(self._loss, other)
+        if isinstance(other, (Tensor, int, float)):
+            loss = ApexLoss(self._loss_id, torch.mul(self._loss, other), self._optimizer)
         else:
             raise NotImplementedError("Cannot rmul an element of type: {} to an ApexLoss.".format(str(type(other))))
-        return self
+        return loss
 
     def __truediv__(self, other):
-        if isinstance(other, Tensor):
-            self._loss = torch.div(self._loss, other)
+        if isinstance(other, (Tensor, int, float)):
+            loss = ApexLoss(self._loss_id, torch.div(self._loss, other), self._optimizer)
         elif isinstance(other, ApexLoss):
-            self._loss = torch.div(self._loss, other.loss)
-        elif isinstance(other, int) or isinstance(other, float):
-            self._loss = torch.div(self._loss, other)
+            loss = ApexLoss(self._loss_id, torch.div(self._loss, other.loss), self._optimizer)
         else:
             raise NotImplementedError("Cannot truediv an element of type: {} to an ApexLoss.".format(str(type(other))))
-        return self
+        return loss
 
     def __rtruediv__(self, other):
-        if isinstance(other, Tensor):
-            self._loss = torch.div(self._loss, other)
-        elif isinstance(other, ApexLoss):
-            self._loss = torch.div(self._loss, other.loss)
-        elif isinstance(other, int) or isinstance(other, float):
-            self._loss = torch.div(self._loss, other)
+        if isinstance(other, (Tensor, int, float)):
+            loss = ApexLoss(self._loss_id, torch.div(other, self._loss), self._optimizer)
         else:
             raise NotImplementedError("Cannot rtruediv an element of type: {} to an ApexLoss.".format(str(type(other))))
-        return self
+        return loss
 
     def __sub__(self, other):
-        if isinstance(other, Tensor):
-            self._loss = torch.sub(self._loss, other)
+        if isinstance(other, (Tensor, int, float)):
+            loss = ApexLoss(self._loss_id, torch.sub(self._loss, other), self._optimizer)
         elif isinstance(other, ApexLoss):
-            self._loss = torch.sub(self._loss, other.loss)
-        elif isinstance(other, int) or isinstance(other, float):
-            self._loss = torch.sub(self._loss, other)
+            loss = ApexLoss(self._loss_id, torch.sub(self._loss, other.loss), self._optimizer)
         else:
             raise NotImplementedError(
                 "Cannot substract an element of type: {} to an ApexLoss.".format(str(type(other))))
-        return self
+        return loss
+
+    def __rsub__(self, other):
+        if isinstance(other, (Tensor, int, float)):
+            loss = ApexLoss(self._loss_id, torch.sub(other, self._loss), self._optimizer)
+        else:
+            raise NotImplementedError(
+                "Cannot substract an element of type: {} to an ApexLoss.".format(str(type(other))))
+        return loss
 
     def __eq__(self, other):
         if isinstance(other, Tensor):
