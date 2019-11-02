@@ -18,7 +18,7 @@ import logging
 import yaml
 
 from kerosene.config.trainers import ModelTrainerConfiguration, TrainerConfiguration
-from kerosene.parsers.yaml_parser import CustomYamlParser
+from kerosene.parsers.yaml import CustomYamlParser
 
 
 class YamlConfigurationParser(object):
