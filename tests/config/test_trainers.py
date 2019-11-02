@@ -7,7 +7,7 @@ from kerosene.config.parsers import YamlConfigurationParser
 from kerosene.config.trainers import ModelTrainerConfiguration
 
 
-class TestGeneralizedDiceMetric(unittest.TestCase):
+class TestModelTrainerConfiguration(unittest.TestCase):
     VALID_CONFIG_FILE_PATH = "valid_config.yml"
     INVALID_CONFIG_FILE_PATH = "invalid_config.yml"
 
