@@ -13,4 +13,5 @@ class UnsupportedEventException(Exception):
 
     def __str__(self):
         return "Unsupported event provided ({}). Only {} are permitted".format(str(self.unsupported_event),
-            [str(event) for event in self._supported_events])
+                                                                               [str(event) for event in
+                                                                                self._supported_events])
