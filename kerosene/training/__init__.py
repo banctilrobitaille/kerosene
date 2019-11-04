@@ -6,3 +6,6 @@ class Status(Enum):
     TRAIN = "Training"
     VALID = "Validating"
     FINALIZE = "Finalizing"
+
+    def __str__(self):
+        return self.value
