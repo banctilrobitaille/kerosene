@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import multiprocessing
 from typing import Union, Iterable
 
 import torch
@@ -21,13 +22,15 @@ from kerosene.config.exceptions import InvalidConfigurationError
 
 
 class RunConfiguration(object):
-    def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O2', local_rank: int = 0):
+    def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O2', local_rank: int = 0,
+                 num_workers: int = multiprocessing.cpu_count()):
         self._use_amp = use_amp
         self._amp_opt_level = amp_opt_level
         self._devices = ([torch.device("cuda:{}".format(device_id)) for device_id in
                           range(torch.cuda.device_count())]) if torch.cuda.is_available() else [torch.device("cpu")]
         self._local_rank = local_rank
         self._device = self._devices[self._local_rank]
+        self._num_workers = num_workers
 
     @property
     def use_amp(self):
@@ -49,25 +52,9 @@ class RunConfiguration(object):
     def device(self):
         return self._device
 
-    def with_amp_opt_level(self, amp_opt_level: str):
-        self._amp_opt_level = amp_opt_level
-        return self
-
-    def with_use_amp(self, use_amp):
-        self._use_amp = use_amp
-        return self
-
-    def with_devices(self, devices: Union[Iterable[torch.device]]):
-        self._devices = devices
-        return self
-
-    def with_local_rank(self, local_rank: int):
-        self._local_rank = local_rank
-        return self
-
-    def with_device(self, device: torch.device):
-        self._device = device
-        return self
+    @property
+    def num_workers(self):
+        return self._num_workers
 
 
 class TrainerConfiguration(object):
