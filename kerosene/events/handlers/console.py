@@ -19,7 +19,7 @@ from enum import Enum
 from typing import Dict
 
 from kerosene.events import BaseEvent, Event
-from kerosene.events.exceptions.exceptions import UnsupportedEventException
+from kerosene.events.exceptions import UnsupportedEventException
 from kerosene.events.handlers.base_handler import EventHandler
 from kerosene.training import Status
 from kerosene.training.trainers import Trainer
