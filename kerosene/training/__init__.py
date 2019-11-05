@@ -2,7 +2,14 @@ from enum import Enum
 
 
 class Status(Enum):
-    INITIALIZED = "Initialization"
-    TRAIN = "Training"
-    VALID = "Validating"
-    FINALIZE = "Finalizing"
+    INITIALIZING = "Initializing"
+    INITIALIZED = "Initialized"
+    READY = "Ready"
+    TRAINING = "Training"
+    VALIDATING = "Validating"
+    TESTING = "Testing"
+    FINALIZING = "Finalizing"
+    FINALIZED = "Finalized"
+
+    def __str__(self):
+        return self.value
