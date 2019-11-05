@@ -17,19 +17,25 @@ import os
 
 import torch
 
-from kerosene.events import Monitor, MonitorMode
+from kerosene.events import Monitor, MonitorMode, Event
 from kerosene.events.handlers.base_handler import EventHandler
 from kerosene.training.trainers import Trainer, ModelTrainer
+from kerosene.events.exceptions import UnsupportedEventException
 
 
 class ModelCheckpoint(EventHandler):
     CHECKPOINT_EXT = ".tar"
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END]
 
-    def __init__(self, path, model_name=None):
+    def __init__(self, path, model_name=None, every=1):
+        super(ModelCheckpoint, self).__init__(every)
         self._path = path
         self._model_name = model_name
 
-    def __call__(self, trainer: Trainer):
+    def __call__(self, event: Event, trainer: Trainer):
+        if event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
+
         model_trainer_states = list(filter(self._filter_by_name, trainer.model_trainers))
 
         for model_trainer_state in model_trainer_states:
@@ -49,9 +55,11 @@ class ModelCheckpoint(EventHandler):
 
 class ModelCheckpointIfBetter(EventHandler):
     CHECKPOINT_EXT = ".tar"
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END]
 
-    def __init__(self, path, monitor: Monitor = Monitor.VALIDATION_LOSS, mode: MonitorMode = MonitorMode.MIN,
-                 model_name=None):
+    def __init__(self, path, monitor: Monitor = Monitor.VALID_LOSS, mode: MonitorMode = MonitorMode.MIN,
+                 model_name=None, every=1):
+        super(ModelCheckpointIfBetter, self).__init__(every)
         self._path = path
         self._monitor = monitor
         self._mode = mode
@@ -59,7 +67,10 @@ class ModelCheckpointIfBetter(EventHandler):
 
         self._monitor_values = {}
 
-    def __call__(self, trainer: Trainer):
+    def __call__(self, event: Event, trainer: Trainer):
+        if event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
+
         model_trainer_states = list(filter(self._filter_by_name, trainer.model_trainers))
 
         for model_trainer_state in model_trainer_states:
@@ -92,9 +103,9 @@ class ModelCheckpointIfBetter(EventHandler):
             value = model_trainer.train_loss
         elif self._monitor is Monitor.TRAINING_METRIC:
             value = model_trainer.train_metric
-        elif self._monitor is Monitor.VALIDATION_LOSS:
+        elif self._monitor is Monitor.VALID_LOSS:
             value = model_trainer.valid_loss
-        elif self._monitor is Monitor.VALIDATION_METRIC:
+        elif self._monitor is Monitor.VALID_METRIC:
             value = model_trainer.valid_metric
         else:
             raise NotImplementedError("The provided monitor value is not supported !")
