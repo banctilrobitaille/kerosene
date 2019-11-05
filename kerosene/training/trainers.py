@@ -32,19 +32,23 @@ from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training import Status
+from kerosene.training.gradient_clipping_mixin import GradientClippingMixin
 from kerosene.utils.devices import on_cpu
 
 
-class ModelTrainer(ApexModule):
+class ModelTrainer(ApexModule, GradientClippingMixin):
     LOGGER = logging.getLogger("ModelTrainer")
 
-    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric):
-        super().__init__(model, optimizer)
+    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric,
+                 gradient_clipping_func, gradient_clipping_params):
+        super(ModelTrainer, self).__init__(model, optimizer)
         self._model_name = model_name
 
         self._criterion = criterion
         self._scheduler = scheduler
         self._metric_computer = metric_computer
+        self._gradient_clipping_func = gradient_clipping_func
+        self._gradient_clipping_params = gradient_clipping_params
 
         self._step_train_loss = torch.tensor([0.0])
         self._step_valid_loss = torch.tensor([0.0])
@@ -134,6 +138,7 @@ class ModelTrainer(ApexModule):
 
     def step(self):
         if self._status is Status.TRAIN:
+            self.clip_gradients(self._model.parameters(), self._gradient_clipping_func, self._gradient_clipping_params)
             self._optimizer.step()
 
     def scheduler_step(self):
@@ -423,4 +428,5 @@ class ModelTrainerFactory(object):
 
         metric = self._metric_factory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
 
-        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric)
+        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric,
+                            model_trainer_config.gradient_clipping_func, model_trainer_config.gradient_clipping_params)
