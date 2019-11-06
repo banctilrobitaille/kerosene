@@ -23,7 +23,7 @@ def get_y_true_y_pred():
 
 def compute_tensor_y_true_y_logits(y_true, y_pred):
     # Create torch.tensor from numpy
-    y_true_tensor = torch.from_numpy(y_true).unsqueeze(0)
+    y_true_tensor = torch.from_numpy(y_true).unsqueeze(0).type(torch.long)
     # Create logits torch.tensor:
     num_classes = max(np.max(y_true), np.max(y_pred)) + 1
     y_probas = np.ones((num_classes,) + y_true.shape) * 0.0
