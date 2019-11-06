@@ -34,7 +34,7 @@ class ModelCheckpoint(EventHandler):
 
     def __call__(self, event: Event, trainer: Trainer):
         if event not in self.SUPPORTED_EVENTS:
-            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
+            raise UnsupportedEventException(event, self.SUPPORTED_EVENTS)
 
         model_trainer_states = list(filter(self._filter_by_name, trainer.model_trainers))
 
@@ -69,7 +69,7 @@ class ModelCheckpointIfBetter(EventHandler):
 
     def __call__(self, event: Event, trainer: Trainer):
         if event not in self.SUPPORTED_EVENTS:
-            raise UnsupportedEventException(self.SUPPORTED_EVENTS)
+            raise UnsupportedEventException(event, self.SUPPORTED_EVENTS)
 
         model_trainer_states = list(filter(self._filter_by_name, trainer.model_trainers))
 
@@ -86,6 +86,8 @@ class ModelCheckpointIfBetter(EventHandler):
         return True if self._model_name is None else model_trainer.name == self._model_name
 
     def _save_model(self, model_name, model_state):
+        if not os.path.exists(os.path.join(self._path, model_name)):
+            os.makedirs(os.path.join(self._path, model_name))
         torch.save(model_state, os.path.join(self._path, model_name, model_name + self.CHECKPOINT_EXT))
 
     def _save_optimizer(self, model_name, model_state):

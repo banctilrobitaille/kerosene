@@ -36,8 +36,10 @@ class Event(BaseEvent):
 class Monitor(BaseVariable):
     TRAINING_LOSS = "train_loss"
     TRAINING_METRIC = "train_metric"
-    VALIDATION_LOSS = "valid_loss"
-    VALIDATION_METRIC = "valid_metric"
+    VALID_LOSS = "valid_loss"
+    VALID_METRIC = "valid_metric"
+    TEST_LOSS = "test_loss"
+    TEST_METRIC = "test_metric"
 
     def is_loss(self):
         return "loss" in self.value
