@@ -19,7 +19,7 @@ from typing import Union
 import torch
 from ignite.metrics import MetricsLambda
 from torch import nn
-from torch.nn.modules.loss import _Loss
+from torch.nn.modules.loss import _Loss, _WeightedLoss
 
 from kerosene.utils.constants import EPSILON
 from kerosene.utils.tensors import flatten
@@ -92,7 +92,7 @@ class CriterionFactory(object):
         self._criterion[function] = creator
 
 
-class DiceLoss(_Loss):
+class DiceLoss(_WeightedLoss):
     """
     The Sørensen-Dice Loss.
     """
@@ -101,13 +101,12 @@ class DiceLoss(_Loss):
     def __init__(self, reduction: Union[None, str] = "mean", ignore_index: int = -100, weight: torch.Tensor = None):
         if reduction not in self.SUPPORTED_REDUCTIONS:
             raise NotImplementedError("Reduction type not supported.")
-        super(DiceLoss, self).__init__(reduction=reduction)
+        super(DiceLoss, self).__init__(weight=weight, reduction=reduction)
         self._ignore_index = ignore_index
-        self._weight = weight
 
-        if self._weight is not None:
-            if self._weight.requires_grad is not False:
-                self._weight.requires_grad = False
+        if self.weight is not None:
+            if self.weight.requires_grad is not False:
+                self.weight.requires_grad = False
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor):
         """
@@ -130,8 +129,8 @@ class DiceLoss(_Loss):
         # Compute per channel Dice Coefficient
         intersection = (inputs * targets).sum(-1)
 
-        if self._weight is not None:
-            intersection = self._weight * intersection
+        if self.weight is not None:
+            intersection = self.weight * intersection
 
         cardinality = (inputs + targets).sum(-1)
 
@@ -216,18 +215,17 @@ class GeneralizedDiceLoss(_Loss):
         return dice
 
 
-class TverskyLoss(_Loss):
+class TverskyLoss(_WeightedLoss):
     SUPPORTED_REDUCTIONS = [None, "mean"]
 
     def __init__(self, reduction: Union[None, str] = "mean", ignore_index: int = -100, weight: torch.Tensor = None,
                  alpha: float = 0.5, beta: float = 0.5):
         if reduction not in self.SUPPORTED_REDUCTIONS:
             raise NotImplementedError("Reduction type not supported.")
-        super(TverskyLoss, self).__init__(reduction=reduction)
+        super(TverskyLoss, self).__init__(weight=weight, reduction=reduction)
         self._ignore_index = ignore_index
         self._alpha = alpha
         self._beta = beta
-        self._weight = weight
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor):
         """
@@ -249,8 +247,8 @@ class TverskyLoss(_Loss):
         ones = torch.Tensor().new_ones((inputs.size()), dtype=torch.float, device=inputs.device)
 
         P_G = (inputs * targets).sum(-1)
-        if self._weight is not None:
-            P_G = self._weight * P_G
+        if self.weight is not None:
+            P_G = self.weight * P_G
 
         P_NG = (inputs * (ones - targets)).sum(-1)
         NP_G = ((ones - inputs) * targets).sum(-1)
@@ -279,19 +277,18 @@ class TverskyLoss(_Loss):
         return tversky_loss
 
 
-class FocalTverskyLoss(_Loss):
+class FocalTverskyLoss(_WeightedLoss):
     SUPPORTED_REDUCTIONS = [None, "mean"]
 
     def __init__(self, reduction: Union[None, str] = "mean", ignore_index: int = -100, weight: torch.Tensor = None,
                  alpha: float = 0.5, beta: float = 0.5, gamma: float = 1.0):
         if reduction not in self.SUPPORTED_REDUCTIONS:
             raise NotImplementedError("Reduction type not supported.")
-        super(FocalTverskyLoss, self).__init__(reduction=reduction)
+        super(FocalTverskyLoss, self).__init__(weight=weight, reduction=reduction)
         self._ignore_index = ignore_index
         self._alpha = alpha
         self._beta = beta
         self._gamma = gamma
-        self._weight = weight
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor):
         """
@@ -313,8 +310,8 @@ class FocalTverskyLoss(_Loss):
         ones = torch.Tensor().new_ones((inputs.size()), dtype=torch.float, device=inputs.device)
 
         P_G = (inputs * targets).sum(-1)
-        if self._weight is not None:
-            P_G = self._weight * P_G
+        if self.weight is not None:
+            P_G = self.weight * P_G
 
         P_NG = (inputs * (ones - targets)).sum(-1)
         NP_G = ((ones - inputs) * targets).sum(-1)
