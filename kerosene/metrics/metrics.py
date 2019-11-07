@@ -14,7 +14,7 @@
 # limitations under the License.
 # ==============================================================================
 from enum import Enum
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 import torch
 from ignite.metrics import Accuracy, Precision, MeanAbsoluteError, MeanPairwiseDistance, MeanSquaredError, Recall, \
@@ -65,7 +65,7 @@ class MetricFactory(object):
 
     def register(self, metric: str, creator: Metric):
         """
-        Add a new activation layer.
+        Add a new metric.
         Args:
            metric (str): Metric's name.
            creator: A torch or ignite module object wrapping the new custom metric function.
@@ -80,11 +80,10 @@ class Dice(Metric):
     SUPPORTED_REDUCTIONS = [None, "mean"]
 
     def __init__(self, num_classes: int, reduction: Union[None, str] = "mean", average: str = None,
-                 ignore_index: int = -100,
+                 weight: torch.Tensor = None, ignore_index: int = -100,
                  output_transform: callable = lambda x: x) -> None:
         """
         Metric initializer.
-
         Args:
             num_classes (int): The number of classes in the problem. In case of images, num_classes should also count the background index 0.
             average (str, optional): Confusion matrix values averaging schema: None, "samples", "recall", "precision".
@@ -104,6 +103,7 @@ class Dice(Metric):
         self._num_classes = num_classes
         self._ignore_index = ignore_index
         self._reduction = reduction
+        self._weight = weight
         self._cm = ConfusionMatrix(num_classes=num_classes, average=average, output_transform=output_transform)
         self._metric = self.create_dice_metric(self._cm)
         super(Dice, self).__init__(output_transform=output_transform)
@@ -117,7 +117,6 @@ class Dice(Metric):
     def compute(self) -> torch.Tensor:
         """
         Compute the metric.
-
         Returns:
             :obj:`torch.Tensor`: The dice coefficient for each class.
         """
@@ -126,7 +125,6 @@ class Dice(Metric):
     def update(self, output: Tuple[torch.Tensor, torch.Tensor]) -> None:
         """
         Update the confusion matrix with output values.
-
         Args:
             output (tuple of :obj:`torch.Tensor`): A tuple containing predictions and ground truth of the form `(y_pred, y)`.
         """
@@ -135,10 +133,8 @@ class Dice(Metric):
     def create_dice_metric(self, cm: ConfusionMatrix):
         """
         Computes the Sørensen–Dice Coefficient (https://en.wikipedia.org/wiki/Sørensen–Dice_coefficient)
-
         Args:
             cm (:obj:`ignite.metrics.ConfusionMatrix`): A confusion matrix representing the classification of data.
-
         Returns:
             array or float: The Sørensen–Dice Coefficient for each class or the mean Sørensen–Dice Coefficient.
         """
@@ -159,6 +155,12 @@ class Dice(Metric):
 
             dice = MetricsLambda(remove_index, dice)
 
+        if self._weight is not None:
+            def multiply_weights(dice_vector):
+                return self._weight * dice_vector
+
+            dice = MetricsLambda(multiply_weights, dice)
+
         if self._reduction == "mean":
             dice = dice.mean()
 
@@ -175,7 +177,6 @@ class GeneralizedDice(Metric):
                  ignore_index: int = -100, output_transform: callable = lambda x: x) -> None:
         """
         Metric initializer.
-
         Args:
             num_classes (int): The number of classes in the problem. In case of images, num_classes should also count the background index 0.
             average (str, optional): Confusion matrix values averaging schema: None, "samples", "recall", "precision".
@@ -210,7 +211,6 @@ class GeneralizedDice(Metric):
     def compute(self) -> torch.Tensor:
         """
         Compute the metric.
-
         Returns:
             :obj:`torch.Tensor`: The dice coefficient for each class.
         """
@@ -219,7 +219,6 @@ class GeneralizedDice(Metric):
     def update(self, output: Tuple[torch.Tensor, torch.Tensor]) -> None:
         """
         Update the confusion matrix with output values.
-
         Args:
             output (tuple of :obj:`torch.Tensor`): A tuple containing predictions and ground truth of the form `(y_pred, y)`.
         """
@@ -241,11 +240,9 @@ class GeneralizedDice(Metric):
     def create_generalized_dice_metric(self, cm: ConfusionMatrix, weight: torch.Tensor):
         """
         Computes the Sørensen–Dice Coefficient (https://en.wikipedia.org/wiki/Sørensen–Dice_coefficient)
-
         Args:
             cm (:obj:`ignite.metrics.ConfusionMatrix`): A confusion matrix representing the classification of data.
             weight (:obj:`torch.Tensor`): A weight vector which length equals to the number of classes.
-
         Returns:
             ignite.Metric: The Generalized Dice Coefficient Metric object.
         """
