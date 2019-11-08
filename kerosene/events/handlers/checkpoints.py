@@ -75,10 +75,10 @@ class ModelCheckpointIfBetter(EventHandler):
 
         for model_trainer_state in model_trainer_states:
             if model_trainer_state.name in self._monitor_values.keys() and self._should_save(model_trainer_state):
-                self._monitor_values[model_trainer_state.name] = self._get_monitor_value(model_trainer_state)
                 self._save_model(model_trainer_state.name, model_trainer_state.model_state)
                 self._save_optimizer(model_trainer_state.name, model_trainer_state.optimizer_state)
-            else:
+            elif model_trainer_state.name not in self._monitor_values.keys():
+                self._monitor_values[model_trainer_state.name] = self._get_monitor_value(model_trainer_state)
                 self._save_model(model_trainer_state.name, model_trainer_state.model_state)
                 self._save_optimizer(model_trainer_state.name, model_trainer_state.optimizer_state)
 
