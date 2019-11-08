@@ -22,9 +22,9 @@ from ignite.metrics import Metric
 from torch.utils.data import DataLoader
 
 from kerosene.config.trainers import ModelTrainerConfiguration, RunConfiguration
-from kerosene.events import Event, BaseEvent
+from kerosene.events import BaseEvent
 from kerosene.events.generators.base_generator import EventGenerator
-from kerosene.events.mixins.event_mixins import BatchEventMixin, EpochEventMixin, PhaseEventMixin
+from kerosene.events.event_mixins import BatchEventMixin, EpochEventMixin, PhaseEventMixin
 from kerosene.metrics.gauges import AverageGauge
 from kerosene.metrics.metrics import MetricFactory
 from kerosene.models.models import ModelFactory
