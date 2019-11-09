@@ -38,11 +38,11 @@ class ConsoleColors(Enum):
         return self.value
 
 
-class StatusConsoleColorPalette(Enum):
+class StatusConsoleColorPalette(Dict[Status, ConsoleColors]):
     DEFAULT = {
         Status.TRAIN: ConsoleColors.GREEN,
         Status.VALID: ConsoleColors.BLUE,
-        Status.TEST: ConsoleColors.YELLOW
+        Status.TEST: ConsoleColors.PURPLE
     }
 
 
@@ -55,7 +55,7 @@ class BaseConsoleLogger(EventHandler, ABC):
 
 class ColoredConsoleLogger(BaseConsoleLogger, ABC):
 
-    def __init__(self, every=1, colors: Dict = None):
+    def __init__(self, every=1, colors: Dict[object, ConsoleColors] = None):
         super().__init__(every)
         self._colors = colors if colors is not None else {}
 
@@ -66,9 +66,8 @@ class ColoredConsoleLogger(BaseConsoleLogger, ABC):
 class PrintTrainingStatus(ColoredConsoleLogger):
     SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
 
-    def __init__(self, every=1,
-                 status_colors: Union[Dict[BaseStatus, ConsoleColors], StatusConsoleColorPalette] = None):
-        super().__init__(every, status_colors)
+    def __init__(self, every=1, colors: Union[Dict[BaseStatus, ConsoleColors], StatusConsoleColorPalette] = None):
+        super().__init__(every, colors)
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
         if event not in self.SUPPORTED_EVENTS:
