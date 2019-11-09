@@ -16,12 +16,12 @@
 import logging
 from abc import ABC
 from enum import Enum
-from typing import Dict
+from typing import Dict, Union
 
 from kerosene.events import BaseEvent, Event
 from kerosene.events.exceptions import UnsupportedEventException
 from kerosene.events.handlers.base_handler import EventHandler
-from kerosene.training import Status
+from kerosene.training import Status, BaseStatus
 from kerosene.training.trainers import Trainer
 
 
@@ -32,45 +32,43 @@ class ConsoleColors(Enum):
     YELLOW = '\033[93m'
     RED = '\033[91m'
     ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    DEFAULT = ""
+    NONE = ""
 
     def __str__(self):
         return self.value
 
 
+class StatusConsoleColorPalette(Enum):
+    DEFAULT = {
+        Status.TRAIN: ConsoleColors.GREEN,
+        Status.VALID: ConsoleColors.BLUE,
+        Status.TEST: ConsoleColors.YELLOW
+    }
+
+
 class BaseConsoleLogger(EventHandler, ABC):
     LOGGER = logging.getLogger("ConsoleLogger")
 
-    COLOR = {
-        Status.TRAIN: ConsoleColors.GREEN,
-        Status.VALID: ConsoleColors.BLUE,
-    }
-
-    MONOCHROME = {
-        Status.TRAIN: ConsoleColors.DEFAULT,
-        Status.VALID: ConsoleColors.DEFAULT
-    }
-
-    def __init__(self, every, colors: Dict[Status, ConsoleColors] = None, is_colored: bool = True):
+    def __init__(self, every=1):
         super(BaseConsoleLogger, self).__init__(every)
-        if colors is None:
-            colors = self.COLOR
-        self._colors = colors if is_colored else self.MONOCHROME
-        self._is_colored = is_colored
-
-    @property
-    def colors(self):
-        return self._colors
-
-    @property
-    def is_colored(self):
-        return self._is_colored
 
 
-class PrintTrainingStatus(BaseConsoleLogger):
+class ColoredConsoleLogger(BaseConsoleLogger, ABC):
+
+    def __init__(self, every=1, colors: Dict = None):
+        super().__init__(every)
+        self._colors = colors if colors is not None else {}
+
+    def color(self, text, color_key):
+        return str(self._colors.get(color_key, ConsoleColors.NONE)) + str(text) + str(ConsoleColors.ENDC)
+
+
+class PrintTrainingStatus(ColoredConsoleLogger):
     SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
+
+    def __init__(self, every=1,
+                 status_colors: Union[Dict[BaseStatus, ConsoleColors], StatusConsoleColorPalette] = None):
+        super().__init__(every, status_colors)
 
     def __call__(self, event: BaseEvent, trainer: Trainer):
         if event not in self.SUPPORTED_EVENTS:
@@ -86,7 +84,7 @@ class PrintTrainingStatus(BaseConsoleLogger):
     def print_status(self, status, epoch, train_step, valid_step):
         self.LOGGER.info(
             "\nCurrent state: {} |  Epoch: {} | Training step: {} | Validation step: {} \n".format(
-                str(self.colors[status]) + str(status) + str(ConsoleColors.ENDC), epoch, train_step, valid_step))
+                self.color(status, color_key=status), epoch, train_step, valid_step))
 
 
 class PrintModelTrainersStatus(BaseConsoleLogger):

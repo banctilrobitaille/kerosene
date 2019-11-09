@@ -5,15 +5,10 @@ class BaseEvent(Enum):
     def __str__(self):
         return self.value
 
-
-class BaseVariable(Enum):
-    def __str__(self):
-        return self.value
-
     def __eq__(self, other):
         if isinstance(other, str):
             return self.value == other
-        elif isinstance(other, BaseVariable):
+        elif isinstance(other, BaseEvent):
             return self.value == other.value
 
 
@@ -42,6 +37,17 @@ class Event(BaseEvent):
     TRAIN_BATCH_EVENTS = [ON_BATCH_BEGIN, ON_TRAIN_BATCH_BEGIN, ON_TRAIN_BATCH_END, ON_BATCH_END]
     VALID_BATCH_EVENTS = [ON_BATCH_BEGIN, ON_VALID_BATCH_BEGIN, ON_VALID_BATCH_END, ON_BATCH_END]
     TEST_BATCH_EVENTS = [ON_BATCH_BEGIN, ON_TEST_BATCH_BEGIN, ON_TEST_BATCH_END, ON_BATCH_END]
+
+
+class BaseVariable(Enum):
+    def __str__(self):
+        return self.value
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self.value == other
+        elif isinstance(other, BaseVariable):
+            return self.value == other.value
 
 
 class Monitor(BaseVariable):
