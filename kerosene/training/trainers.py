@@ -356,6 +356,10 @@ class Trainer(BatchEventMixin, EpochEventMixin, PhaseEventMixin, EventGenerator)
     def finalize(self):
         raise NotImplementedError()
 
+    @property
+    def status(self):
+        return self._status
+
     def is_active(self):
         return self._status is not Status.FINALIZED
 

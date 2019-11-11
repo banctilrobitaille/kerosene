@@ -8,8 +8,8 @@ from kerosene.config.trainers import ModelTrainerConfiguration
 
 
 class TestModelTrainerConfiguration(unittest.TestCase):
-    VALID_CONFIG_FILE_PATH = "valid_config.yml"
-    INVALID_CONFIG_FILE_PATH = "invalid_config.yml"
+    VALID_CONFIG_FILE_PATH = "tests/config/valid_config.yml"
+    INVALID_CONFIG_FILE_PATH = "tests/config/invalid_config.yml"
 
     MODELS_CONFIG_YML_TAG = "models"
 
