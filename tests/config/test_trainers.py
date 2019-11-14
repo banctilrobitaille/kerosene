@@ -4,7 +4,7 @@ from hamcrest import *
 
 from kerosene.config.exceptions import InvalidConfigurationError
 from kerosene.config.parsers import YamlConfigurationParser
-from kerosene.config.trainers import ModelTrainerConfiguration
+from kerosene.config.configs import ModelTrainerConfiguration
 
 
 class TestModelTrainerConfiguration(unittest.TestCase):

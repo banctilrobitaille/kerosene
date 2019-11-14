@@ -22,12 +22,12 @@ import torch
 from torch import Tensor, nn
 from torch.optim import Optimizer
 
-from kerosene.config.trainers import RunConfiguration
-from kerosene.utils.devices import on_single_device
+from kerosene.utils.devices import on_multiple_gpus, get_devices, on_multiple_devices
+from torch.nn.parallel.distributed import DistributedDataParallel as DDP
 
 try:
     from apex import amp
-    from apex.parallel import DistributedDataParallel as DDP
+    from apex.parallel import DistributedDataParallel as Apex_DDP
 
     APEX_AVAILABLE = True
 except ModuleNotFoundError:
@@ -169,13 +169,14 @@ class ApexModule(ABC, nn.Module):
     def use_amp(self):
         return self._use_amp
 
-    def initialize(self, amp_id: int, num_losses: int, run_config: RunConfiguration):
+    def initialize(self, amp_id: int, num_losses: int, use_amp: bool, amp_opt_level: str, device: torch.device):
         self._amp_id = amp_id
-        self._use_amp = run_config.use_amp
-        self._model.to(run_config.device)
+        self._use_amp = use_amp
 
         if APEX_AVAILABLE and self._use_amp:
             self._model, self._optimizer = amp.initialize(
-                self._model, self._optimizer, opt_level=run_config.amp_opt_level, num_losses=num_losses)
-        if not on_single_device(run_config.devices):
-            self._model = DDP(self._model, delay_allreduce=True)
+                self._model, self._optimizer, opt_level=amp_opt_level, num_losses=num_losses)
+            if on_multiple_gpus(get_devices()):
+                self._model = Apex_DDP(self._model, delay_allreduce=True)
+        if not APEX_AVAILABLE and on_multiple_gpus(get_devices()):
+            self._model = DDP(self._model, device_ids=[device])

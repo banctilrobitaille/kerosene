@@ -3,7 +3,7 @@ import os
 import sys
 from argparse import ArgumentParser
 
-from kerosene.config.trainers import RunConfiguration
+from kerosene.config.configs import RunConfiguration
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + '/../../../')
 import torchvision

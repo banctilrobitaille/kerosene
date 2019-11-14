@@ -21,7 +21,7 @@ import torch
 from ignite.metrics import Metric
 from torch.utils.data import DataLoader
 
-from kerosene.config.trainers import ModelTrainerConfiguration, RunConfiguration
+from kerosene.config.configs import ModelTrainerConfiguration
 from kerosene.events import Event, BaseEvent
 from kerosene.events.generators.base_generator import EventGenerator
 from kerosene.metrics.gauges import AverageGauge
@@ -32,7 +32,7 @@ from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training import Status
-from kerosene.utils.devices import on_cpu
+from kerosene.utils.devices import on_gpu
 
 
 class ModelTrainer(ApexModule):
@@ -198,24 +198,30 @@ class Trainer(EventGenerator):
     LOGGER = logging.getLogger("Trainer")
 
     def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
-                 model_trainers: Union[List[ModelTrainer], ModelTrainer],
-                 run_config: RunConfiguration = RunConfiguration()):
+                 model_trainers: Union[List[ModelTrainer], ModelTrainer], use_amp: bool, amp_opt_level: str,
+                 device: torch.device):
         super().__init__()
         self._name = name
         self._train_data_loader = train_data_loader
         self._valid_data_loader = valid_data_loader
         self._model_trainers = model_trainers if isinstance(model_trainers, list) else [model_trainers]
+        self._device = device
 
         self._current_train_batch = 0
         self._current_valid_batch = 0
         self._current_epoch = 0
 
-        self._run_config = run_config
-
         self._custom_variables = {}
 
-        for amp_id, model_trainer in enumerate(self._model_trainers):
-            model_trainer.initialize(amp_id, len(self._model_trainers), self._run_config)
+        if on_gpu(self._device):
+            torch.cuda.set_device(self._device)
+
+            for model in self._model_trainers:
+                model.criterion.to(self._device)
+                model.model.to(self._device)
+
+        for amp_id, model in enumerate(self._model_trainers):
+            model.initialize(amp_id, len(self._model_trainers), use_amp, amp_opt_level, self._device)
 
         self._status = Status.INITIALIZED
 
@@ -310,11 +316,11 @@ class Trainer(EventGenerator):
         for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
             self.fire(Event.ON_TRAIN_BATCH_BEGIN)
 
-            inputs = [single_input.to(self._run_config.device, non_blocking=True) for single_input in
-                      inputs] if isinstance(inputs, list) else inputs.to(self._run_config.device, non_blocking=True)
+            inputs = [single_input.to(self._device, non_blocking=True) for single_input in
+                      inputs] if isinstance(inputs, list) else inputs.to(self._device, non_blocking=True)
 
-            target = [single_target.to(self._run_config.device, non_blocking=True) for single_target in
-                      target] if isinstance(target, list) else target.to(self._run_config.device, non_blocking=True)
+            target = [single_target.to(self._device, non_blocking=True) for single_target in
+                      target] if isinstance(target, list) else target.to(self._device, non_blocking=True)
 
             self.train_step(inputs, target)
             self.fire(Event.ON_TRAIN_BATCH_END)
@@ -329,11 +335,11 @@ class Trainer(EventGenerator):
             for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
                 self.fire(Event.ON_VALID_BATCH_BEGIN)
 
-                inputs = [single_input.to(self._run_config.device, non_blocking=True) for single_input in
-                          inputs] if isinstance(inputs, list) else inputs.to(self._run_config.device, non_blocking=True)
+                inputs = [single_input.to(self._device, non_blocking=True) for single_input in
+                          inputs] if isinstance(inputs, list) else inputs.to(self._device, non_blocking=True)
 
-                target = [single_target.to(self._run_config.device, non_blocking=True) for single_target in
-                          target] if isinstance(target, list) else target.to(self._run_config.device, non_blocking=True)
+                target = [single_target.to(self._device, non_blocking=True) for single_target in
+                          target] if isinstance(target, list) else target.to(self._device, non_blocking=True)
 
                 self.validate_step(inputs, target)
                 self.fire(Event.ON_VALID_BATCH_END)
@@ -407,10 +413,7 @@ class ModelTrainerFactory(object):
         assert (self._model is not None) or (
                 self._model_factory is not None), "A model or a model factory must be provided !"
 
-    def create(self, model_trainer_config: ModelTrainerConfiguration, run_config):
-        if not on_cpu(run_config.device):
-            torch.cuda.set_device(run_config.device)
-
+    def create(self, model_trainer_config: ModelTrainerConfiguration):
         model = self._model if self._model is not None else self._model_factory.create(model_trainer_config.model_type,
                                                                                        model_trainer_config.model_params)
         optimizer = self._optimizer_factory.create(model_trainer_config.optimizer_type,
@@ -419,7 +422,7 @@ class ModelTrainerFactory(object):
         scheduler = self._scheduler_factory.create(model_trainer_config.scheduler_type, optimizer,
                                                    model_trainer_config.scheduler_params)
         criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
-                                                   model_trainer_config.criterion_params).to(run_config.device)
+                                                   model_trainer_config.criterion_params)
 
         metric = self._metric_factory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
 

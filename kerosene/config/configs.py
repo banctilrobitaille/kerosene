@@ -13,74 +13,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from typing import Union, Iterable
+import abc
+import os
 
 import torch
 
+from socket import socket
+
+from torch.distributed import is_nccl_available
+
 from kerosene.config.exceptions import InvalidConfigurationError
+from kerosene.utils.devices import get_devices, on_multiple_gpus, num_gpus
 
 
-class RunConfiguration(object):
-    def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O2', local_rank: int = 0):
-        self._use_amp = use_amp
-        self._amp_opt_level = amp_opt_level
-        self._devices = ([torch.device("cuda:{}".format(device_id)) for device_id in
-                          range(torch.cuda.device_count())]) if torch.cuda.is_available() else [torch.device("cpu")]
-        self._local_rank = local_rank
-        self._device = self._devices[self._local_rank]
+class Configuration(object):
 
-    @property
-    def use_amp(self):
-        return self._use_amp
-
-    @property
-    def amp_opt_level(self):
-        return self._amp_opt_level
-
-    @property
-    def devices(self):
-        return self._devices
-
-    @property
-    def local_rank(self):
-        return self._local_rank
-
-    @property
-    def device(self):
-        return self._device
-
-    def with_amp_opt_level(self, amp_opt_level: str):
-        self._amp_opt_level = amp_opt_level
-        return self
-
-    def with_use_amp(self, use_amp):
-        self._use_amp = use_amp
-        return self
-
-    def with_devices(self, devices: Union[Iterable[torch.device]]):
-        self._devices = devices
-        return self
-
-    def with_local_rank(self, local_rank: int):
-        self._local_rank = local_rank
-        return self
-
-    def with_device(self, device: torch.device):
-        self._device = device
-        return self
+    @abc.abstractmethod
+    def to_html(self):
+        raise NotImplementedError()
 
 
-class TrainerConfiguration(object):
+class DatasetConfiguration(Configuration):
     def __init__(self, config_dict):
         for key in config_dict:
             setattr(self, key, config_dict[key])
 
     def to_html(self):
         configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
-        return "<h2>Training Configuration</h2> \n {}".format(configuration_values)
+        return "<h2>Dataset Configuration</h2> \n {}".format(configuration_values)
 
 
-class ModelTrainerConfiguration(object):
+class ModelTrainerConfiguration(Configuration):
     def __init__(self, model_name, model_type, model_params, optimizer_type, optimizer_params, scheduler_type,
                  scheduler_params, criterion_type, criterion_params, metric_type, metric_params):
         self._model_name = model_name
@@ -157,4 +120,77 @@ class ModelTrainerConfiguration(object):
 
     def to_html(self):
         configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
-        return "<h4>{}</h4> \n {}".format(self._model_name, configuration_values)
+        return "<h2>Model Configuration \n </h2><h4>{}</h4> \n {}".format(self._model_name, configuration_values)
+
+
+class RunConfiguration(Configuration):
+
+    def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O1', local_rank: int = 0,
+                 world_size: int = num_gpus()):
+        self._use_amp = use_amp
+        self._amp_opt_level = amp_opt_level
+        self._local_rank = local_rank
+        self._world_size = world_size
+
+        self._devices = get_devices()
+        self._current_device = self._devices[self._local_rank]
+
+        self._initialize_ddp_process_group()
+
+    def _initialize_ddp_process_group(self):
+        if on_multiple_gpus(self._devices):
+            if is_nccl_available():
+                if os.environ.get("MASTER_ADDR") is None:
+                    os.environ["MASTER_ADDR"] = "127.0.0.1"
+                if os.environ.get("MASTER_PORT") is None:
+                    os.environ["MASTER_PORT"] = str(self._get_random_free_port)
+                if os.environ.get("WORLD_SIZE") is None:
+                    os.environ["WORLD_SIZE"] = str(self._world_size)
+                torch.distributed.init_process_group(backend='nccl', init_method='env://',
+                                                     world_size=os.environ["WORLD_SIZE"], rank=self._local_rank)
+            else:
+                raise Exception("NCCL not available and required for multi-GPU training.")
+
+    @staticmethod
+    def _get_random_free_port():
+        with socket() as s:
+            s.bind(("", 0))
+            return s.getsockname()[1]
+
+    @property
+    def use_amp(self):
+        return self._use_amp
+
+    @property
+    def amp_opt_level(self):
+        return self._amp_opt_level
+
+    @property
+    def devices(self):
+        return self._devices
+
+    @property
+    def local_rank(self):
+        return self._local_rank
+
+    @property
+    def current_device(self):
+        return self._current_device
+
+    @current_device.setter
+    def current_device(self, device):
+        self._current_device = device
+
+    def to_html(self):
+        configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
+        return "<h2>Run Configuration</h2> \n {}".format(configuration_values)
+
+
+class TrainerConfiguration(Configuration):
+    def __init__(self, config_dict):
+        for key in config_dict:
+            setattr(self, key, config_dict[key])
+
+    def to_html(self):
+        configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
+        return "<h2>Training Configuration</h2> \n {}".format(configuration_values)

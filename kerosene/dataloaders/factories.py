@@ -4,7 +4,7 @@ from typing import Callable
 import torch
 from torch.utils.data import Dataset
 
-from kerosene.config.trainers import RunConfiguration, TrainerConfiguration
+from kerosene.config.configs import RunConfiguration, TrainerConfiguration
 from kerosene.utils.devices import on_single_device
 
 
