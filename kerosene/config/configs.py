@@ -151,12 +151,6 @@ class RunConfiguration(Configuration):
             else:
                 raise Exception("NCCL not available and required for multi-GPU training.")
 
-    @staticmethod
-    def _get_random_free_port():
-        with socket() as s:
-            s.bind(("", 0))
-            return s.getsockname()[1]
-
     @property
     def use_amp(self):
         return self._use_amp
@@ -180,6 +174,12 @@ class RunConfiguration(Configuration):
     @current_device.setter
     def current_device(self, device):
         self._current_device = device
+
+    @staticmethod
+    def _get_random_free_port():
+        with socket() as s:
+            s.bind(("", 0))
+            return s.getsockname()[1]
 
     def to_html(self):
         configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
