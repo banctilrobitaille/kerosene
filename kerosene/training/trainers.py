@@ -281,6 +281,10 @@ class Trainer(EventGenerator):
     def state(self):
         return self
 
+    @property
+    def status(self):
+        return self._status
+
     def is_active(self):
         return self._status is not Status.FINALIZE
 
