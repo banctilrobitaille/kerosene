@@ -35,6 +35,7 @@ class Event(BaseEvent):
     ON_TEST_BATCH_BEGIN = "test_batch_begin"
     ON_TEST_BATCH_END = "test_batch_end"
     ON_BATCH_END = "batch_end"
+    ON_FINALIZE = "finalizing"
 
     EPOCH_EVENTS = [ON_EPOCH_BEGIN, ON_TRAIN_EPOCH_BEGIN, ON_TRAIN_EPOCH_END, ON_VALID_EPOCH_BEGIN, ON_VALID_EPOCH_END,
                     ON_EPOCH_END, ON_TEST_EPOCH_BEGIN, ON_TEST_BATCH_BEGIN, ON_TEST_BATCH_END]

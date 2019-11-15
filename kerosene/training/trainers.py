@@ -23,8 +23,8 @@ from torch.utils.data import DataLoader
 
 from kerosene.config.trainers import ModelTrainerConfiguration, RunConfiguration
 from kerosene.events import BaseEvent
-from kerosene.events.generators.base_generator import EventGenerator
 from kerosene.events.event_mixins import BatchEventMixin, EpochEventMixin, PhaseEventMixin
+from kerosene.events.generators.base_generator import EventGenerator
 from kerosene.metrics.gauges import AverageGauge
 from kerosene.metrics.metrics import MetricFactory
 from kerosene.models.models import ModelFactory
@@ -352,14 +352,6 @@ class Trainer(BatchEventMixin, EpochEventMixin, PhaseEventMixin, EventGenerator)
     def scheduler_step(self):
         raise NotImplementedError()
 
-    @abstractmethod
-    def finalize(self):
-        raise NotImplementedError()
-
-    @property
-    def status(self):
-        return self._status
-
     def is_active(self):
         return self._status is not Status.FINALIZED
 
@@ -506,9 +498,6 @@ class SimpleTrainer(Trainer):
 
     def scheduler_step(self):
         self._model_trainers[0].scheduler_step()
-
-    def finalize(self):
-        pass
 
 
 class ModelTrainerFactory(object):

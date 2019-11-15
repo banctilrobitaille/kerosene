@@ -39,114 +39,28 @@ class EventGenerator(ABC):
             for handler in self._event_handlers[event]:
                 handler(event, state)
 
-    @abstractmethod
-    def _on_training_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_training_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_valid_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_valid_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_test_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_test_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_epoch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_epoch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_train_epoch_begin(self):
-        raise NotImplementedError
-
-    @abstractmethod
-    def _on_train_epoch_end(self):
-        raise NotImplementedError
-
-    @abstractmethod
-    def _on_valid_epoch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_valid_epoch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_test_epoch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_test_epoch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_batch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_batch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_train_batch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_train_batch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_valid_batch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_valid_batch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_test_batch_begin(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_test_batch_end(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _finalize(self):
-        raise NotImplementedError()
-
-    def on_training_begin(self):
+    def on_batch_begin(self):
         pass
 
-    def on_training_end(self):
+    def on_batch_end(self):
         pass
 
-    def on_valid_begin(self):
+    def on_train_batch_begin(self):
         pass
 
-    def on_valid_end(self):
+    def on_train_batch_end(self):
         pass
 
-    def on_test_begin(self):
+    def on_valid_batch_begin(self):
         pass
 
-    def on_test_end(self):
+    def on_valid_batch_end(self):
+        pass
+
+    def on_test_batch_begin(self):
+        pass
+
+    def on_test_batch_end(self):
         pass
 
     def on_epoch_begin(self):
@@ -173,26 +87,23 @@ class EventGenerator(ABC):
     def on_test_epoch_end(self):
         pass
 
-    def on_batch_begin(self):
+    def on_training_begin(self):
         pass
 
-    def on_batch_end(self):
+    def on_training_end(self):
         pass
 
-    def on_train_batch_begin(self):
+    def on_valid_begin(self):
         pass
 
-    def on_train_batch_end(self):
+    def on_valid_end(self):
         pass
 
-    def on_valid_batch_begin(self):
+    def on_test_begin(self):
         pass
 
-    def on_valid_batch_end(self):
+    def on_test_end(self):
         pass
 
-    def on_test_batch_begin(self):
-        pass
-
-    def on_test_batch_end(self):
+    def finalize(self):
         pass
