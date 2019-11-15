@@ -52,7 +52,6 @@ class CriterionType(Enum):
 
 class CriterionFactory(object):
     def __init__(self):
-        super(CriterionFactory, self).__init__()
         self._criterion = {
             "DiceLoss": DiceLoss,
             "GeneralizedDiceLoss": GeneralizedDiceLoss,

@@ -1,0 +1,2 @@
+class IncorrectSamplerTypeException(Exception):
+    pass

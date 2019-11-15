@@ -1,56 +1,33 @@
-import multiprocessing
-from typing import Callable
-
 import torch
-from torch.utils.data import Dataset
+from enum import Enum
+from torch.utils.data import Dataset, DistributedSampler
 
-from kerosene.utils.devices import on_single_device
+from kerosene.exceptions.exceptions import IncorrectSamplerTypeException
+from kerosene.utils.devices import is_on_multiple_devices
 
 
-class DataloaderFactory(object):
-    def __init__(self, train_dataset: Dataset, valid_dataset: Dataset):
-        self._train_dataset = train_dataset
-        self._valid_dataset = valid_dataset
-        self._train_sampler = None
-        self._valid_sampler = None
+class DataloaderType(Enum):
+    DataLoader = "DataLoader"
 
-        self._samplers = {
-            "default": torch.utils.data.Sampler,
-            "sequentialSampler": torch.utils.data.SequentialSampler,
-            "randomSampler": torch.utils.data.RandomSampler,
-            "subsetRandomSampler": torch.utils.data.SubsetRandomSampler,
-            "weightedRandomSampler": torch.utils.data.WeightedRandomSampler,
-            "batchSampler": torch.utils.data.BatchSampler,
-            "distributedSampler": torch.utils.data.DistributedSampler
+    def __str__(self):
+        return self.value
+
+
+class DataLoaderFactory(object):
+    def __init__(self):
+        self._dataloader = {
+            "DataLoader": torch.utils.data.DataLoader
         }
 
-    def create(self, devices, num_workers, local_rank, batch_size, sampler_fn: str = "default",
-               sampler_params: dict = None, shuffle: bool = True, collate_fn: Callable = None):
-        if not on_single_device(devices):
-            torch.distributed.init_process_group(backend='nccl', init_method='env://', rank=local_rank,
-                                                 world_size=len(devices))
-            self._train_sampler = self._samplers["distributedSampler"](self._train_dataset)
-            self._valid_sampler = self._samplers["distributedSampler"](self._valid_dataset)
-        else:
-            self._train_sampler = self._samplers[sampler_fn](self._train_dataset, **sampler_params)
-            self._valid_sampler = self._samplers[sampler_fn](self._valid_sampler, **sampler_params)
+    def create(self, dataset, sampler: torch.utils.data.sampler.Sampler = None, params=None):
+        if is_on_multiple_devices():
+            assert sampler is not None, "'sampler' argument must not be None when using multiple devices."
 
-        train_loader = self._create_dataloader(self._train_dataset, self._train_sampler, num_workers, batch_size,
-                                               devices, shuffle, collate_fn)
-        valid_loader = self._create_dataloader(self._valid_dataset, self._valid_sampler, num_workers, batch_size,
-                                               devices, shuffle, collate_fn)
+            if not isinstance(sampler, DistributedSampler):
+                raise IncorrectSamplerTypeException(
+                    "'sampler' argument must be an instance of {} if using multiple devices, but got {}".format(
+                        str(DistributedSampler), str(sampler.__class__)))
 
-        return train_loader, valid_loader
-
-    @staticmethod
-    def _create_dataloader(dataset, sampler, num_workers, batch_size, devices, shuffle, collate_fn):
-        return torch.utils.data.DataLoader(dataset=dataset,
-                                           batch_size=batch_size,
-                                           shuffle=False if sampler is not None else shuffle,
-                                           sampler=sampler if not on_single_device(devices) else None,
-                                           num_workers=num_workers if num_workers is not None else
-                                           multiprocessing.cpu_count() // len(
-                                               devices) if not on_single_device(
-                                               devices) else multiprocessing.cpu_count(),
-                                           collate_fn=collate_fn,
-                                           pin_memory=torch.cuda.is_available())
+        return self._dataloader[str(DataloaderType.DataLoader)](dataset, sampler,
+                                                                **params) if params is not None else \
+            self._dataloader[str(DataloaderType.DataLoader)](dataset)

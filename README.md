@@ -21,7 +21,7 @@ if __name__ == "__main__":
     visdom_logger = VisdomLogger(VisdomConfiguration.from_yml(CONFIG_FILE_PATH))
 
     # Initialize the model trainers
-    model_trainer = ModelTrainerFactory(model=SimpleNet()).create(model_trainer_config, RunConfiguration(use_amp=False))
+    model_trainer = ModelTrainerFactory(model=SimpleNet()).create(RunConfiguration(use_amp=False),model_trainer_config)
 
     # Train with the training strategy
     trainer = SimpleTrainer("MNIST Trainer", train_loader, test_loader, model_trainer) \

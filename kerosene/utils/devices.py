@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from typing import Union, List, Tuple
+from typing import List
 
 import torch
 
@@ -22,5 +22,62 @@ def on_cpu(device: torch.device):
     return str(device) == "cpu"
 
 
-def on_single_device(devices: Union[List, Tuple]):
+def on_gpu(device: torch.device):
+    return device.type == "cuda"
+
+
+def is_on_gpu():
+    return all([device.type == "cuda" for device in get_devices()]) and num_gpus() == 1
+
+
+def on_gpus(devices: List[torch.device]):
+    return all([device.type == "cuda" for device in devices])
+
+
+def is_on_gpus():
+    return all([device.type == "cuda" for device in get_devices()]) and num_gpus() > 1
+
+
+def on_single_device(devices: List[torch.device]):
     return len(devices) == 1
+
+
+def is_on_single_device():
+    return num_devices() == 1
+
+
+def on_multiple_devices(devices: List[torch.device]):
+    return len(devices) > 1
+
+
+def is_on_multiple_devices():
+    return num_devices() > 1
+
+
+def on_single_gpu(devices: List[torch.device]):
+    return on_single_device(devices) and on_gpus(devices)
+
+
+def is_on_single_gpu():
+    return num_gpus() == 1
+
+
+def on_multiple_gpus(devices: List[torch.device]):
+    return on_multiple_devices(devices) and on_gpus(devices)
+
+
+def is_on_multiple_gpus():
+    return num_gpus() > 1
+
+
+def get_devices():
+    return [torch.device("cuda:{}".format(device_id)) for device_id in
+            range(torch.cuda.device_count())] if torch.cuda.is_available() else [torch.device("cpu")]
+
+
+def num_gpus():
+    return len(list(([device.type == "cuda" for device in get_devices()])))
+
+
+def num_devices():
+    return len(get_devices())

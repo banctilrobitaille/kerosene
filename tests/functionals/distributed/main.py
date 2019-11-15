@@ -11,7 +11,7 @@ from torchvision.transforms import Compose, ToTensor, Normalize
 
 from kerosene.config.parsers import YamlConfigurationParser
 from kerosene.events import Event
-from kerosene.dataloaders.dataloaders import DataloaderFactory
+from kerosene.dataloaders.dataloaders import DataLoaderFactory
 from kerosene.events.handlers.console import ConsoleLogger
 from kerosene.events.handlers.visdom.config import VisdomConfiguration
 from kerosene.events.handlers.visdom.visdom import VisdomLogger
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         [ToTensor(), Normalize((0.1307,), (0.3081,))]))
 
     # Initialize loaders.
-    train_loader, valid_loader = DataloaderFactory(train_dataset, test_dataset).create(run_config, training_config)
+    train_loader, valid_loader = DataLoaderFactory(train_dataset, test_dataset).create(training_config, run_config)
 
     # Initialize the loggers.
     if run_config.local_rank == 0:
