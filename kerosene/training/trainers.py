@@ -21,6 +21,7 @@ import torch
 from ignite.metrics import Metric
 from torch.utils.data import DataLoader
 
+from kerosene.config.configs import CheckpointConfiguration
 from kerosene.config.trainers import ModelTrainerConfiguration, RunConfiguration
 from kerosene.events import Event, BaseEvent
 from kerosene.events.generators.base_generator import EventGenerator
@@ -95,6 +96,10 @@ class ModelTrainer(ApexModule):
         return torch.tensor([self._valid_metric.compute()]).cpu()
 
     @property
+    def model_state(self):
+        return self._model.state_dict()
+
+    @property
     def optimizer_state(self):
         return self._optimizer.state_dict()
 
@@ -102,10 +107,6 @@ class ModelTrainer(ApexModule):
     def optimizer_lr(self):
         for param_group in self._optimizer.param_groups:
             return torch.tensor([param_group["lr"]])
-
-    @property
-    def model_state(self):
-        return self._model.state_dict()
 
     @property
     def criterion(self):
@@ -247,6 +248,10 @@ class Trainer(EventGenerator):
     def epoch(self):
         return self._current_epoch
 
+    @epoch.setter
+    def epoch(self, epoch):
+        self._current_epoch = epoch
+
     @property
     def custom_variables(self):
         return self._custom_variables
@@ -347,6 +352,16 @@ class Trainer(EventGenerator):
 
     def finalize(self):
         self._status = Status.FINALIZE
+
+    def load(self, configs: List[CheckpointConfiguration]):
+        for config in configs:
+            model_trainer = \
+                (list(filter(lambda model_trainer: model_trainer.name == config.model_name, self._model_trainers)))[0]
+            checkpoint = torch.load(config.model_path)
+            optimizer_checkpoint = torch.load(config.optimizer_path)
+            model_trainer.model.load_state_dict(checkpoint["model_state_dict"])
+            model_trainer.optimizer.load_state_dict(optimizer_checkpoint["optimizer_state_dict"])
+            self.epoch = checkpoint["epoch_num"]
 
     def with_event_handler(self, handler, event: BaseEvent):
         if event in self._event_handlers.keys():

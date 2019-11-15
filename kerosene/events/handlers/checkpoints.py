@@ -65,20 +65,21 @@ class ModelCheckpointIfBetter(EventHandler):
         for model_trainer_state in model_trainer_states:
             if model_trainer_state.name in self._monitor_values.keys() and self._should_save(model_trainer_state):
                 self._monitor_values[model_trainer_state.name] = self._get_monitor_value(model_trainer_state)
-                self._save_model(model_trainer_state.name, model_trainer_state.model_state)
+                self._save_model(model_trainer_state.name, model_trainer_state.model_state, trainer.epoch)
                 self._save_optimizer(model_trainer_state.name, model_trainer_state.optimizer_state)
             else:
-                self._save_model(model_trainer_state.name, model_trainer_state.model_state)
+                self._save_model(model_trainer_state.name, model_trainer_state.model_state, trainer.epoch)
                 self._save_optimizer(model_trainer_state.name, model_trainer_state.optimizer_state)
 
     def _filter_by_name(self, model_trainer: ModelTrainer):
         return True if self._model_name is None else model_trainer.name == self._model_name
 
-    def _save_model(self, model_name, model_state):
-        torch.save(model_state, os.path.join(self._path, model_name, model_name + self.CHECKPOINT_EXT))
+    def _save_model(self, model_name, model_state, epoch):
+        torch.save({"model_state_dict": model_state, "epoch_num": epoch},
+                   os.path.join(self._path, model_name, model_name + self.CHECKPOINT_EXT))
 
-    def _save_optimizer(self, model_name, model_state):
-        torch.save(model_state,
+    def _save_optimizer(self, model_name, optimizer_state):
+        torch.save({"optimizer_state_dict": optimizer_state},
                    os.path.join(self._path, model_name, "{}_optimizer{}".format(model_name, self.CHECKPOINT_EXT)))
 
     def _should_save(self, model_trainer: ModelTrainer):
