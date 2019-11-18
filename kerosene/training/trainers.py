@@ -40,7 +40,7 @@ class ModelTrainer(ApexModule, GradientClippingMixin):
     LOGGER = logging.getLogger("ModelTrainer")
 
     def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric,
-                 gradient_clipping_func, gradient_clipping_params):
+                 gradient_clipping_func=None, gradient_clipping_params=None):
         super(ModelTrainer, self).__init__(model, optimizer)
         self._model_name = model_name
 
@@ -138,7 +138,8 @@ class ModelTrainer(ApexModule, GradientClippingMixin):
 
     def step(self):
         if self._status is Status.TRAIN:
-            self.clip_gradients(self._model.parameters(), self._gradient_clipping_func, self._gradient_clipping_params)
+            if self._should_clip_gradients():
+                self.clip_gradients()
             self._optimizer.step()
 
     def scheduler_step(self):
@@ -197,6 +198,9 @@ class ModelTrainer(ApexModule, GradientClippingMixin):
 
     def finalize(self):
         self._status = Status.FINALIZE
+
+    def _should_clip_gradients(self):
+        return self._gradient_clipping_func is not None
 
 
 class Trainer(EventGenerator):
