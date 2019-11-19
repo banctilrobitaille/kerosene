@@ -32,19 +32,22 @@ from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training import Status
+from kerosene.nn.utils.gradients import GradientClippingStrategy
 from kerosene.utils.devices import on_cpu
 
 
 class ModelTrainer(ApexModule):
     LOGGER = logging.getLogger("ModelTrainer")
 
-    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric):
-        super().__init__(model, optimizer)
+    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric,
+                 gradient_clipping_strategy: Union[None, GradientClippingStrategy]):
+        super(ModelTrainer, self).__init__(model, optimizer)
         self._model_name = model_name
 
         self._criterion = criterion
         self._scheduler = scheduler
         self._metric_computer = metric_computer
+        self._gradient_clipping_strategy = gradient_clipping_strategy
 
         self._step_train_loss = torch.tensor([0.0])
         self._step_valid_loss = torch.tensor([0.0])
@@ -134,6 +137,8 @@ class ModelTrainer(ApexModule):
 
     def step(self):
         if self._status is Status.TRAIN:
+            if self._should_clip_gradients():
+                self._gradient_clipping_strategy.clip()
             self._optimizer.step()
 
     def scheduler_step(self):
@@ -192,6 +197,9 @@ class ModelTrainer(ApexModule):
 
     def finalize(self):
         self._status = Status.FINALIZE
+
+    def _should_clip_gradients(self):
+        return self._gradient_clipping_strategy is not None
 
 
 class Trainer(EventGenerator):
@@ -427,4 +435,5 @@ class ModelTrainerFactory(object):
 
         metric = self._metric_factory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
 
-        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric)
+        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric,
+                            model_trainer_config.gradient_clipping_func, model_trainer_config.gradient_clipping_params)
