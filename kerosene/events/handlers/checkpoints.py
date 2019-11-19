@@ -91,11 +91,11 @@ class ModelCheckpointIfBetter(EventHandler):
         if self._monitor is Monitor.TRAINING_LOSS:
             value = model_trainer.train_loss
         elif self._monitor is Monitor.TRAINING_METRIC:
-            value = model_trainer.train_metric
+            value = model_trainer.train_metrics
         elif self._monitor is Monitor.VALIDATION_LOSS:
             value = model_trainer.valid_loss
         elif self._monitor is Monitor.VALIDATION_METRIC:
-            value = model_trainer.valid_metric
+            value = model_trainer.valid_metrics
         else:
             raise NotImplementedError("The provided monitor value is not supported !")
 

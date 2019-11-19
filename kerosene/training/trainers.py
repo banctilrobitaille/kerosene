@@ -15,7 +15,7 @@
 # ==============================================================================
 import logging
 from abc import abstractmethod
-from typing import Union, List
+from typing import Union, List, Dict
 
 import torch
 from ignite.metrics import Metric
@@ -38,8 +38,8 @@ from kerosene.utils.devices import on_cpu
 class ModelTrainer(ApexModule):
     LOGGER = logging.getLogger("ModelTrainer")
 
-    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computers: List[Metric]):
-        super().__init__(model, optimizer)
+    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computers: Dict[str, Metric]):
+        super(ModelTrainer, self).__init__(model, optimizer)
         self._model_name = model_name
 
         self._criterion = criterion
@@ -48,13 +48,15 @@ class ModelTrainer(ApexModule):
 
         self._step_train_loss = torch.tensor([0.0])
         self._step_valid_loss = torch.tensor([0.0])
-        self._step_train_metric = torch.tensor([0.0])
-        self._step_valid_metric = torch.tensor([0.0])
+        self._step_train_metrics = {metric_name: torch.Tensor().new_zeros((1,), dtype=torch.float32, device="cpu") for
+                                    metric_name in metric_computers.keys()}
+        self._step_valid_metrics = {metric_name: torch.Tensor().new_zeros((1,), dtype=torch.float32, device="cpu") for
+                                    metric_name in metric_computers.keys()}
 
         self._train_loss = AverageGauge()
         self._valid_loss = AverageGauge()
-        self._train_metric = AverageGauge()
-        self._valid_metric = AverageGauge()
+        self._train_metrics = {metric_name: AverageGauge() for metric_name in metric_computers.keys()}
+        self._valid_metrics = {metric_name: AverageGauge() for metric_name in metric_computers.keys()}
 
         self._status = Status.INITIALIZED
 
@@ -71,12 +73,14 @@ class ModelTrainer(ApexModule):
         return torch.tensor([self._step_valid_loss]).cpu()
 
     @property
-    def step_train_metric(self):
-        return torch.tensor([self._step_train_metric]).cpu()
+    def step_train_metrics(self):
+        return {metric_name: torch.tensor([step_train_metric]).cpu() for metric_name, step_train_metric in
+                self._step_train_metrics.items()}
 
     @property
-    def step_valid_metric(self):
-        return torch.tensor([self._step_valid_metric]).cpu()
+    def step_valid_metrics(self):
+        return {metric_name: torch.tensor([step_valid_metric]).cpu() for metric_name, step_valid_metric in
+                self._step_valid_metrics.items()}
 
     @property
     def train_loss(self):
@@ -87,12 +91,14 @@ class ModelTrainer(ApexModule):
         return torch.tensor([self._valid_loss.compute()]).cpu()
 
     @property
-    def train_metric(self):
-        return torch.tensor([self._train_metric.compute()]).cpu()
+    def train_metrics(self):
+        return {metric_name: torch.tensor([train_metric.compute()]).cpu() for metric_name, train_metric in
+                self._train_metrics.items()}
 
     @property
-    def valid_metric(self):
-        return torch.tensor([self._valid_metric.compute()]).cpu()
+    def valid_metrics(self):
+        return {metric_name: torch.tensor([valid_metric.compute()]).cpu() for metric_name, valid_metric in
+                self._valid_metrics.items()}
 
     @property
     def optimizer_state(self):
@@ -168,29 +174,34 @@ class ModelTrainer(ApexModule):
         self._step_valid_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
         self._valid_loss.update(self._step_valid_loss)
 
-    def compute_metric(self, pred, target):
-        for metric_computer in self._metric_computers:
+    def compute_metrics(self, pred, target):
+        metrics = dict()
+        for metric_name, metric_computer in self._metric_computers.items():
+            metric_computer.update((pred, target))
+            metric = metric_computer.compute()
+            metric_computer.reset()
+            metrics[metric_name] = metric
 
-        self._metric_computers.update((pred, target))
-        metric = self._metric_computers.compute()
-        self._metric_computers.reset()
+        return metrics
 
-        return metric
+    def update_train_metrics(self, metrics: dict):
+        self._step_train_metrics = metrics
+        for train_metric, step_train_metric in zip(list(self._train_metrics.values()),
+                                                   list(self._step_train_metrics.values())):
+            train_metric.update(step_train_metric)
 
-    def update_train_metric(self, metric):
-        self._step_train_metric = metric
-        self._train_metric.update(self._step_train_metric)
-
-    def update_valid_metric(self, metric):
-        self._step_valid_metric = metric
-        self._valid_metric.update(self._step_valid_metric)
+    def update_valid_metrics(self, metric):
+        self._step_valid_metrics = metric
+        for valid_metric, step_valid_metric in zip(list(self._valid_metrics.values()),
+                                                   list(self._step_valid_metrics.values())):
+            valid_metric.update(step_valid_metric)
 
     def reset(self):
-        self._metric_computers.reset()
+        [metric_computer.reset() for metric_computer in self._metric_computers]
+        [train_metric.reset() for train_metric in self._train_metrics]
+        [valid_metric.reset() for valid_metric in self._valid_metrics]
         self._train_loss.reset()
         self._valid_loss.reset()
-        self._train_metric.reset()
-        self._valid_metric.reset()
 
     def finalize(self):
         self._status = Status.FINALIZE
@@ -427,6 +438,8 @@ class ModelTrainerFactory(object):
         criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
                                                    model_trainer_config.criterion_params).to(run_config.device)
 
-        metric = self._metric_factory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
+        metrics = {metric_type: self._metric_factory.create(model_trainer_config.metric_types[i],
+                                                           model_trainer_config.metric_params[i]) for i, metric_type in
+                  enumerate(model_trainer_config.metric_types)}
 
-        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric)
+        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metrics)

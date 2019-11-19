@@ -100,22 +100,22 @@ class PrintModelTrainersStatus(BaseConsoleLogger):
                 lambda model_trainer: status.format(model_trainer.name,
                                                     model_trainer.train_loss.item(),
                                                     model_trainer.valid_loss.item(),
-                                                    model_trainer.train_metric.item(),
-                                                    model_trainer.valid_metric.item()),
+                                                    model_trainer.train_metrics.item(),
+                                                    model_trainer.valid_metrics.item()),
                 trainer.model_trainers))))
         elif self.should_handle_train_step_data(event, trainer):
             self.LOGGER.info("".join(list(map(
                 lambda model_trainer: status.format(model_trainer.name,
                                                     model_trainer.step_train_loss.item(),
                                                     model_trainer.step_valid_loss.item(),
-                                                    model_trainer.step_train_metric.item(),
-                                                    model_trainer.step_valid_metric.item()),
+                                                    model_trainer.step_train_metrics.item(),
+                                                    model_trainer.step_valid_metrics.item()),
                 trainer.model_trainers))))
         elif self.should_handle_valid_step_data(event, trainer):
             self.LOGGER.info("".join(list(map(
                 lambda model_trainer: status.format(model_trainer.name,
                                                     model_trainer.step_train_loss.item(),
                                                     model_trainer.step_valid_loss.item(),
-                                                    model_trainer.step_train_metric.item(),
-                                                    model_trainer.step_valid_metric.item()),
+                                                    model_trainer.step_train_metrics.item(),
+                                                    model_trainer.step_valid_metrics.item()),
                 trainer.model_trainers))))
