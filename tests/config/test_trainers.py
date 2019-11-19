@@ -30,7 +30,7 @@ class TestModelTrainerConfiguration(unittest.TestCase):
 
     SIMPLE_NET_METRIC_TYPE_2 = "Accuracy"
 
-    SIMPLE_NET_GRADIENT_CLIPPING = {"clipping_strategy": None}
+    SIMPLE_NET_GRADIENT_CLIPPING = {"clipping_strategy": "norm", "params": {"max_norm": 1.0}}
 
     def test_should_parse_valid_model_trainer_config(self):
         expected_config_dict = {self.SIMPLE_NET_NAME: {'type': self.SIMPLE_NET_TYPE,

@@ -30,4 +30,6 @@ models:
           weight: !!null
       - type: Accuracy
     gradients:
-      clipping_strategy: !!null
+      clipping_strategy: 'norm'
+      params:
+        max_norm: 1.0
