@@ -38,13 +38,13 @@ from kerosene.utils.devices import on_cpu
 class ModelTrainer(ApexModule):
     LOGGER = logging.getLogger("ModelTrainer")
 
-    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric):
+    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computers: List[Metric]):
         super().__init__(model, optimizer)
         self._model_name = model_name
 
         self._criterion = criterion
         self._scheduler = scheduler
-        self._metric_computer = metric_computer
+        self._metric_computers = metric_computers
 
         self._step_train_loss = torch.tensor([0.0])
         self._step_valid_loss = torch.tensor([0.0])
@@ -169,9 +169,11 @@ class ModelTrainer(ApexModule):
         self._valid_loss.update(self._step_valid_loss)
 
     def compute_metric(self, pred, target):
-        self._metric_computer.update((pred, target))
-        metric = self._metric_computer.compute()
-        self._metric_computer.reset()
+        for metric_computer in self._metric_computers:
+
+        self._metric_computers.update((pred, target))
+        metric = self._metric_computers.compute()
+        self._metric_computers.reset()
 
         return metric
 
@@ -184,7 +186,7 @@ class ModelTrainer(ApexModule):
         self._valid_metric.update(self._step_valid_metric)
 
     def reset(self):
-        self._metric_computer.reset()
+        self._metric_computers.reset()
         self._train_loss.reset()
         self._valid_loss.reset()
         self._train_metric.reset()
