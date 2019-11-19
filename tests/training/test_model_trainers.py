@@ -22,10 +22,11 @@ class ModelTrainerTest(unittest.TestCase):
         self._optimizer_mock = mock(Optimizer)
         self._scheduler_mock = mock(lr_scheduler)
         self._metric_computer_mock = spy(Accuracy())
+        self._gradient_clipping_strategy = None
 
         self._model_trainer = ModelTrainer(self.MODEL_NAME, self._model_mock, self._criterion_mock,
                                            self._optimizer_mock, self._scheduler_mock,
-                                           {"Accuracy": self._metric_computer_mock})
+                                           {"Accuracy": self._metric_computer_mock}, self._gradient_clipping_strategy)
 
     def tearDown(self) -> None:
         super().tearDown()

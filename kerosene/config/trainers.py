@@ -82,7 +82,8 @@ class TrainerConfiguration(object):
 
 class ModelTrainerConfiguration(object):
     def __init__(self, model_name, model_type, model_params, optimizer_type, optimizer_params, scheduler_type,
-                 scheduler_params, criterion_type, criterion_params, metric_types, metric_params):
+                 scheduler_params, criterion_type, criterion_params, metric_types, metric_params,
+                 gradient_clipping_strategy, gradient_clipping_params):
         self._model_name = model_name
         self._model_type = model_type
         self._model_params = model_params
@@ -98,6 +99,9 @@ class ModelTrainerConfiguration(object):
 
         self._metric_types = metric_types
         self._metric_params = metric_params
+
+        self._gradient_clipping_strategy = gradient_clipping_strategy
+        self._gradient_clipping_params = gradient_clipping_params
 
     @property
     def model_name(self):
@@ -143,15 +147,25 @@ class ModelTrainerConfiguration(object):
     def metric_params(self):
         return self._metric_params
 
+    @property
+    def gradient_clipping_func(self):
+        return self._gradient_clipping_strategy
+
+    @property
+    def gradient_clipping_params(self):
+        return self._gradient_clipping_params
+
     @classmethod
     def from_dict(cls, model_name, config_dict):
         try:
-            return cls(model_name, config_dict["type"], config_dict.get("params"), config_dict["optimizer"]["type"],
-                       config_dict["optimizer"].get("params"), config_dict["scheduler"]["type"],
-                       config_dict["scheduler"].get("params"), config_dict["criterion"]["type"],
-                       config_dict["criterion"].get("params"),
+            return cls(model_name, config_dict["type"], config_dict.get("params"),
+                       config_dict["optimizer"]["type"], config_dict["optimizer"].get("params"),
+                       config_dict["scheduler"]["type"], config_dict["scheduler"].get("params"),
+                       config_dict["criterion"]["type"], config_dict["criterion"].get("params"),
                        [config_dict["metrics"][i]["type"] for i in range(len(config_dict["metrics"]))],
-                       [config_dict["metrics"][i].get("params") for i in range(len(config_dict["metrics"]))])
+                       [config_dict["metrics"][i].get("params") for i in range(len(config_dict["metrics"]))],
+                       config_dict["gradients"].get("clipping_strategy"), config_dict["gradients"].get("params"))
+
         except KeyError as e:
             raise InvalidConfigurationError(
                 "The provided model configuration is invalid. The section {} is missing.".format(e))

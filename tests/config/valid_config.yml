@@ -29,3 +29,5 @@ models:
           average: !!null
           weight: !!null
       - type: Accuracy
+    gradients:
+      clipping_strategy: !!null

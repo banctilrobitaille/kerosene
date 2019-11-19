@@ -25,9 +25,12 @@ class TestModelTrainerConfiguration(unittest.TestCase):
     SIMPLE_NET_CRITERION_TYPE = "CrossEntropyLoss"
 
     SIMPLE_NET_METRIC_TYPE_1 = "Dice"
-    SIMPLE_NET_METRIC_PARAMS_1 = {"num_classes": 4, "reduction": None, "ignore_index": 0, "average": None, "weight": None}
+    SIMPLE_NET_METRIC_PARAMS_1 = {"num_classes": 4, "reduction": None, "ignore_index": 0, "average": None,
+                                  "weight": None}
 
     SIMPLE_NET_METRIC_TYPE_2 = "Accuracy"
+
+    SIMPLE_NET_GRADIENT_CLIPPING = {"clipping_strategy": None}
 
     def test_should_parse_valid_model_trainer_config(self):
         expected_config_dict = {self.SIMPLE_NET_NAME: {'type': self.SIMPLE_NET_TYPE,
@@ -37,8 +40,9 @@ class TestModelTrainerConfiguration(unittest.TestCase):
                                                                      'params': self.SIMPLE_NET_SCHEDULER_PARAMS},
                                                        'criterion': {'type': self.SIMPLE_NET_CRITERION_TYPE},
                                                        'metrics': [{'type': self.SIMPLE_NET_METRIC_TYPE_1,
-                                                                  'params': self.SIMPLE_NET_METRIC_PARAMS_1},
-                                                                   {'type': self.SIMPLE_NET_METRIC_TYPE_2}]}}
+                                                                    'params': self.SIMPLE_NET_METRIC_PARAMS_1},
+                                                                   {'type': self.SIMPLE_NET_METRIC_TYPE_2}],
+                                                       'gradients': self.SIMPLE_NET_GRADIENT_CLIPPING}}
         config_dict = YamlConfigurationParser.parse_section(self.VALID_CONFIG_FILE_PATH, self.MODELS_CONFIG_YML_TAG)
         model_trainer_config = ModelTrainerConfiguration.from_dict(self.SIMPLE_NET_NAME,
                                                                    config_dict[self.SIMPLE_NET_NAME])

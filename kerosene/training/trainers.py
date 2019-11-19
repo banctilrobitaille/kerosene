@@ -32,19 +32,22 @@ from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training import Status
+from kerosene.nn.utils.gradients import GradientClippingStrategy, GradientClippingStrategyFactory
 from kerosene.utils.devices import on_cpu
 
 
 class ModelTrainer(ApexModule):
     LOGGER = logging.getLogger("ModelTrainer")
 
-    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computers: Dict[str, Metric]):
+    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computers: Dict[str, Metric],
+                 gradient_clipping_strategy: Union[None, GradientClippingStrategy]):
         super(ModelTrainer, self).__init__(model, optimizer)
         self._model_name = model_name
 
         self._criterion = criterion
         self._scheduler = scheduler
         self._metric_computers = metric_computers
+        self._gradient_clipping_strategy = gradient_clipping_strategy
 
         self._step_train_loss = torch.tensor([0.0])
         self._step_valid_loss = torch.tensor([0.0])
@@ -140,6 +143,8 @@ class ModelTrainer(ApexModule):
 
     def step(self):
         if self._status is Status.TRAIN:
+            if self._should_clip_gradients():
+                self._gradient_clipping_strategy.clip()
             self._optimizer.step()
 
     def scheduler_step(self):
@@ -205,6 +210,9 @@ class ModelTrainer(ApexModule):
 
     def finalize(self):
         self._status = Status.FINALIZE
+
+    def _should_clip_gradients(self):
+        return self._gradient_clipping_strategy is not None
 
 
 class Trainer(EventGenerator):
@@ -413,13 +421,14 @@ class SimpleTrainer(Trainer):
 class ModelTrainerFactory(object):
     def __init__(self, model=None, model_factory: ModelFactory = None, optimizer_factory=OptimizerFactory(),
                  scheduler_factory=SchedulerFactory(), criterion_factory=CriterionFactory(),
-                 metric_factory=MetricFactory()):
+                 metric_factory=MetricFactory(), gradient_clipping_factory=GradientClippingStrategyFactory()):
         self._model = model
         self._model_factory = model_factory
         self._optimizer_factory = optimizer_factory
         self._scheduler_factory = scheduler_factory
         self._criterion_factory = criterion_factory
         self._metric_factory = metric_factory
+        self._gradient_clipping_factory = gradient_clipping_factory
 
         assert (self._model is not None) or (
                 self._model_factory is not None), "A model or a model factory must be provided !"
@@ -439,7 +448,11 @@ class ModelTrainerFactory(object):
                                                    model_trainer_config.criterion_params).to(run_config.device)
 
         metrics = {metric_type: self._metric_factory.create(model_trainer_config.metric_types[i],
-                                                           model_trainer_config.metric_params[i]) for i, metric_type in
-                  enumerate(model_trainer_config.metric_types)}
+                                                            model_trainer_config.metric_params[i]) for i, metric_type in
+                   enumerate(model_trainer_config.metric_types)}
 
-        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metrics)
+        gradient_clipping_strategy = self._gradient_clipping_factory.create(model_trainer_config.gradient_clipping_func,
+                                                                            model_trainer_config.gradient_clipping_params)
+
+        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metrics,
+                            gradient_clipping_strategy)
