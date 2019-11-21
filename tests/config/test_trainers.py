@@ -25,6 +25,8 @@ class TestModelTrainerConfiguration(unittest.TestCase):
     SIMPLE_NET_CRITERION_TYPE = "CrossEntropyLoss"
     SIMPLE_NET_METRIC_TYPE = "Accuracy"
 
+    SIMPLE_NET_GRADIENT_CLIPPING = {"clipping_strategy": "norm", "params": {"max_norm": 1.0}}
+
     def test_should_parse_valid_model_trainer_config(self):
         expected_config_dict = {self.SIMPLE_NET_NAME: {'type': self.SIMPLE_NET_TYPE,
                                                        'optimizer': {'type': self.SIMPLE_NET_OPTIMIZER_TYPE,
@@ -32,7 +34,8 @@ class TestModelTrainerConfiguration(unittest.TestCase):
                                                        'scheduler': {'type': self.SIMPLE_NET_SCHEDULER_TYPE,
                                                                      'params': self.SIMPLE_NET_SCHEDULER_PARAMS},
                                                        'criterion': {'type': self.SIMPLE_NET_CRITERION_TYPE},
-                                                       'metric': {'type': self.SIMPLE_NET_METRIC_TYPE}}}
+                                                       'metric': {'type': self.SIMPLE_NET_METRIC_TYPE},
+                                                       'gradients': self.SIMPLE_NET_GRADIENT_CLIPPING}}
         config_dict = YamlConfigurationParser.parse_section(self.VALID_CONFIG_FILE_PATH, self.MODELS_CONFIG_YML_TAG)
         model_trainer_config = ModelTrainerConfiguration.from_dict(self.SIMPLE_NET_NAME,
                                                                    config_dict[self.SIMPLE_NET_NAME])

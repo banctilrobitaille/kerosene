@@ -7,6 +7,7 @@ from torch import nn
 from torch.optim import Optimizer, lr_scheduler
 
 from kerosene.training.trainers import ModelTrainer
+from kerosene.nn.utils.gradients import GradientClippingStrategy
 from tests.constants import *
 
 
@@ -20,9 +21,11 @@ class ModelTrainerTest(unittest.TestCase):
         self._optimizer_mock = mock(Optimizer)
         self._scheduler_mock = mock(lr_scheduler)
         self._metric_computer_mock = spy(Accuracy())
+        self._gradient_clipping_strategy = mock(GradientClippingStrategy)
 
         self._model_trainer = ModelTrainer(self.MODEL_NAME, self._model_mock, self._criterion_mock,
-                                           self._optimizer_mock, self._scheduler_mock, self._metric_computer_mock)
+                                           self._optimizer_mock, self._scheduler_mock, self._metric_computer_mock,
+                                           self._gradient_clipping_strategy)
 
     def tearDown(self) -> None:
         super().tearDown()

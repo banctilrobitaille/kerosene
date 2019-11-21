@@ -163,7 +163,7 @@ class ModelTrainerConfiguration(object):
                        config_dict["scheduler"]["type"], config_dict["scheduler"].get("params"),
                        config_dict["criterion"]["type"], config_dict["criterion"].get("params"),
                        config_dict["metric"]["type"], config_dict["metric"].get("params"),
-                       config_dict.get("gradients").get("func"), config_dict.get("gradients").get("params"))
+                       config_dict["gradients"].get("clipping_strategy"), config_dict["gradients"].get("params"))
         except KeyError as e:
             raise InvalidConfigurationError(
                 "The provided model configuration is invalid. The section {} is missing.".format(e))
