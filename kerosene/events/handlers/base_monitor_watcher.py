@@ -39,7 +39,8 @@ class MonitorInspection(object):
 
 
 class MonitorWatcher(EventHandler, ABC):
-    def __init__(self, monitor: BaseVariable, mode: MonitorMode = MonitorMode.AUTO, min_delta=0.01, patience=3):
+    def __init__(self, monitor, mode: MonitorMode = MonitorMode.AUTO, min_delta=0.01, patience=3):
+        super().__init__()
         assert isinstance(monitor,
                           Monitor) or mode is not MonitorMode.AUTO, "Auto mode is not allowed with custom variables"
 
@@ -81,7 +82,7 @@ class MonitorWatcher(EventHandler, ABC):
             else:
                 delta = current_monitor_value - self._monitor_values[source_name].value
 
-            if delta >= self._min_delta:
+            if delta <= self._min_delta:
                 self._monitor_values[source_name].with_value(current_monitor_value).reset_inspection_num()
             else:
                 self._monitor_values[source_name].add_inspection()

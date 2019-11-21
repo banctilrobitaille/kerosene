@@ -50,19 +50,28 @@ class BaseVariable(Enum):
             return self.value == other.value
 
 
-class Monitor(BaseVariable):
+class MonitorLoss(BaseVariable):
     TRAINING_LOSS = "train_loss"
-    TRAINING_METRIC = "train_metric"
     VALID_LOSS = "valid_loss"
-    VALID_METRIC = "valid_metric"
     TEST_LOSS = "test_loss"
-    TEST_METRIC = "test_metric"
 
     def is_loss(self):
         return "loss" in self.value
 
-    def is_metric(self):
-        return "metric" in self.value
+
+class MonitorMetric(BaseVariable):
+    DICE = "train_metricsDice"
+    GeneralizedDice = "GeneralizedDice"
+    Accuracy = "Accuracy"
+    Precision = "Precision"
+    MeanAbsoluteError = "MeanAbsoluteError"
+    MeanPairwiseDistance = "MeanPairwiseDistance"
+    MeanSquaredError = "MeanSquaredError"
+    Recall = "Recall"
+    RootMeanSquaredError = "RootMeanSquaredError"
+    TopKCategoricalAccuracy = "TopKCategoricalAccuracy"
+    IoU = "IoU"
+    mIoU = "mIoU"
 
 
 class MonitorMode(Enum):
