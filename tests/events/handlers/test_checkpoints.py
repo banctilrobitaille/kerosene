@@ -8,6 +8,7 @@ import mockito
 import torch
 from hamcrest import *
 from ignite.metrics import Accuracy
+from kerosene.nn.criterions import CriterionType
 from torch import nn
 from torch.optim import Optimizer, lr_scheduler
 
@@ -35,8 +36,6 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
 
         self._trainer_mock = mockito.mock(SimpleTrainer)
 
-        self._valid_loss = AverageGauge()
-
     def tearDown(self) -> None:
         if os.path.exists(self.SAVE_PATH):
             shutil.rmtree(self.SAVE_PATH)
@@ -46,7 +45,8 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
     @mock.patch("kerosene.training.trainers.ModelTrainer.valid_loss", new_callable=PropertyMock)
     def test_should_not_save_model_with_higher_valid_loss(self, valid_loss_mock, model_state_mock,
                                                           optimizer_state_mock):
-        self._handler_mock = mockito.spy(Checkpoint(self.SAVE_PATH, monitor=Monitor.VALID_LOSS))
+        self._handler_mock = mockito.spy(
+            Checkpoint(self.SAVE_PATH, monitor=Monitor.VALID_LOSS, variable_name=CriterionType.CrossEntropyLoss))
         valid_loss_mock.return_value = torch.tensor([0.5])
         model_state_mock.return_value = dict
         optimizer_state_mock.return_value = dict
@@ -91,7 +91,8 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.valid_metrics", new_callable=PropertyMock)
-    def test_should_save_optimizer_with_higher_valid_metric(self, valid_metrics_mock, model_state_mock, optimizer_state_mock):
+    def test_should_save_optimizer_with_higher_valid_metric(self, valid_metrics_mock, model_state_mock,
+                                                            optimizer_state_mock):
         self._handler_mock = mockito.spy(
             Checkpoint(self.SAVE_PATH, monitor=Monitor.VALID_METRICS, metric_name=MetricType.Accuracy,
                        mode=MonitorMode.MAX))
@@ -110,7 +111,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
     @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.valid_metrics", new_callable=PropertyMock)
     def test_should_not_save_optimizer_with_lower_valid_metric(self, valid_metrics_mock, model_state_mock,
-                                                          optimizer_state_mock):
+                                                               optimizer_state_mock):
         self._handler_mock = mockito.spy(
             Checkpoint(self.SAVE_PATH, monitor=Monitor.VALID_METRICS, metric_name=MetricType.Accuracy,
                        mode=MonitorMode.MAX))
