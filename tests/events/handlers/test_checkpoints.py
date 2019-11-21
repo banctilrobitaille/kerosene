@@ -8,6 +8,8 @@ import mockito
 import torch
 from hamcrest import *
 from ignite.metrics import Accuracy
+
+from kerosene.events.handlers.base_monitor_watcher import MonitorPatienceExceeded
 from kerosene.nn.criterions import CriterionType
 from torch import nn
 from torch.optim import Optimizer, lr_scheduler
@@ -58,6 +60,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
         valid_loss_mock.return_value = torch.tensor([0.6])
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
+        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save_model(...).thenReturn(False)), is_(True))
         assert_that(
             not os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + "_optimizer.tar")))
 
@@ -75,6 +78,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
         valid_loss_mock.return_value = torch.tensor([0.4])
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
+        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save_model(...).thenReturn(True)), is_(True))
         assert_that(os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
 
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
@@ -91,6 +95,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
         valid_loss_mock.return_value = torch.tensor([0.4])
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
+        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save_model(...).thenReturn(True)), is_(True))
         assert_that(
             os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + "_optimizer.tar")))
 
@@ -100,7 +105,8 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
     def test_should_save_optimizer_with_higher_valid_metric(self, valid_metrics_mock, model_state_mock,
                                                             optimizer_state_mock):
         self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, monitor_fn=lambda model_trainer: model_trainer.valid_metric, mode=MonitorMode.MAX))
+            Checkpoint(self.SAVE_PATH, monitor_fn=lambda model_trainer: model_trainer.valid_metric,
+                       mode=MonitorMode.MAX))
         valid_metrics_mock.return_value = torch.tensor([0.5])
         model_state_mock.return_value = dict
         optimizer_state_mock.return_value = dict
@@ -109,6 +115,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
         valid_metrics_mock.return_value = torch.tensor([0.8])
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
+        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save_optimizer(...).thenReturn(True)), is_(True))
         assert_that(
             os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + "_optimizer.tar")))
 
@@ -118,7 +125,8 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
     def test_should_not_save_optimizer_with_lower_valid_metric(self, valid_metrics_mock, model_state_mock,
                                                                optimizer_state_mock):
         self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, monitor_fn=lambda model_trainer: model_trainer.valid_metric, mode=MonitorMode.MAX))
+            Checkpoint(self.SAVE_PATH, monitor_fn=lambda model_trainer: model_trainer.valid_metric,
+                       mode=MonitorMode.MAX))
 
         valid_metrics_mock.return_value = torch.tensor([0.8])
         model_state_mock.return_value = dict
@@ -128,5 +136,6 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
         valid_metrics_mock.return_value = torch.tensor([0.5])
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
+        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save_model(...).thenReturn(False)), is_(True))
         assert_that(
             not os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + "_optimizer.tar")))
