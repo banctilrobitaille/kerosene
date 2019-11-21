@@ -1,12 +1,14 @@
 import logging
 import os
+from typing import Optional
 
 import torch
 from ignite.metrics import Metric
 
-from kerosene.events import Event, Monitor, MonitorMode
+from kerosene.events import Event, MonitorMode, BaseVariable
 from kerosene.events.exceptions import UnsupportedEventException
 from kerosene.events.handlers.base_monitor_watcher import MonitorWatcher, MonitorPatienceExceeded
+from kerosene.metrics.metrics import MetricType
 from kerosene.training.trainers import Trainer
 from kerosene.utils.constants import CHECKPOINT_EXT
 from kerosene.utils.files import should_create_model_dir, create_model_dir
@@ -17,9 +19,11 @@ class Checkpoint(MonitorWatcher):
     CHECKPOINT_EXT = ".tar"
     SUPPORTED_EVENTS = [Event.ON_EPOCH_END]
 
-    def __init__(self, path, monitor: Monitor, mode: MonitorMode = MonitorMode.MIN):
+    def __init__(self, path, monitor: BaseVariable, metric_name: Optional[MetricType] = None,
+                 mode: MonitorMode = MonitorMode.MIN):
         super(Checkpoint, self).__init__(monitor, mode, patience=0)
         self._path = path
+        self._metric_name = metric_name
 
     def __call__(self, event: Event, trainer: Trainer):
         if event not in self.SUPPORTED_EVENTS:
@@ -27,7 +31,8 @@ class Checkpoint(MonitorWatcher):
 
         for model_trainer in trainer.model_trainers:
             try:
-                value = getattr(model_trainer, str(self._monitor))
+                value = getattr(model_trainer, str(self._monitor)) if self._monitor.is_loss() else getattr(
+                    model_trainer, str(self._monitor)[str(self._metric_name)])
                 self.watch(model_trainer.name, value)
             except MonitorPatienceExceeded as e:
                 self._save_model(model_trainer.name, model_trainer.model_state, trainer.epoch)

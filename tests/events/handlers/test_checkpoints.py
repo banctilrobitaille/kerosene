@@ -14,6 +14,7 @@ from torch.optim import Optimizer, lr_scheduler
 from kerosene.events import Event, MonitorMode, Monitor
 from kerosene.events.handlers.checkpoints_2 import Checkpoint
 from kerosene.metrics.gauges import AverageGauge
+from kerosene.metrics.metrics import MetricType
 from kerosene.training.trainers import SimpleTrainer, ModelTrainer
 
 
@@ -89,17 +90,37 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
 
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
-    @mock.patch("kerosene.training.trainers.ModelTrainer.valid_metric", new_callable=PropertyMock)
-    def test_should_save_optimizer_with_lower_valid_loss(self, valid_metric, model_state_mock, optimizer_state_mock):
+    @mock.patch("kerosene.training.trainers.ModelTrainer.valid_metrics", new_callable=PropertyMock)
+    def test_should_save_optimizer_with_higher_valid_metric(self, valid_metrics_mock, model_state_mock, optimizer_state_mock):
         self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, monitor=self._model_trainer.valid_metric, mode=MonitorMode.MAX))
-        valid_metric.return_value = torch.tensor([0.5])
+            Checkpoint(self.SAVE_PATH, monitor=Monitor.VALID_METRICS, metric_name=MetricType.Accuracy,
+                       mode=MonitorMode.MAX))
+        valid_metrics_mock.return_value = torch.tensor([0.5])
         model_state_mock.return_value = dict
         optimizer_state_mock.return_value = dict
         self._trainer_mock.epoch = 5
         self._trainer_mock.model_trainers = [self._model_trainer]
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
-        valid_metric.return_value = torch.tensor([0.8])
+        valid_metrics_mock.return_value = torch.tensor([0.8])
+        self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
+        assert_that(
+            os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + "_optimizer.tar")))
+
+    @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
+    @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
+    @mock.patch("kerosene.training.trainers.ModelTrainer.valid_metrics", new_callable=PropertyMock)
+    def test_should_not_save_optimizer_with_lower_valid_metric(self, valid_metrics_mock, model_state_mock,
+                                                          optimizer_state_mock):
+        self._handler_mock = mockito.spy(
+            Checkpoint(self.SAVE_PATH, monitor=Monitor.VALID_METRICS, metric_name=MetricType.Accuracy,
+                       mode=MonitorMode.MAX))
+        valid_metrics_mock.return_value = torch.tensor([0.8])
+        model_state_mock.return_value = dict
+        optimizer_state_mock.return_value = dict
+        self._trainer_mock.epoch = 5
+        self._trainer_mock.model_trainers = [self._model_trainer]
+        self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
+        valid_metrics_mock.return_value = torch.tensor([0.5])
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
         assert_that(
             os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + "_optimizer.tar")))
