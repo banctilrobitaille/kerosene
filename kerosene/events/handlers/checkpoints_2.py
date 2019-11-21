@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 
 import torch
 from ignite.metrics import Metric
@@ -20,11 +20,9 @@ class Checkpoint(MonitorWatcher):
     CHECKPOINT_EXT = ".tar"
     SUPPORTED_EVENTS = [Event.ON_EPOCH_END]
 
-    def __init__(self, path, monitor: BaseVariable, variable_name: Union[MetricType, CriterionType],
-                 mode: MonitorMode = MonitorMode.MIN):
+    def __init__(self, path, monitor: Callable, mode: MonitorMode = MonitorMode.MIN):
         super(Checkpoint, self).__init__(monitor, mode, patience=0)
         self._path = path
-        self._variable_name = variable_name
 
     def __call__(self, event: Event, trainer: Trainer):
         if event not in self.SUPPORTED_EVENTS:
@@ -32,7 +30,7 @@ class Checkpoint(MonitorWatcher):
 
         for model_trainer in trainer.model_trainers:
             try:
-                value = getattr(model_trainer, str(self._monitor)[str(self._variable_name)])
+                value = self._monitor(model_trainer)
                 self.watch(model_trainer.name, value)
             except MonitorPatienceExceeded as e:
                 self._save_model(model_trainer.name, model_trainer.model_state, trainer.epoch)
