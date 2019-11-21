@@ -162,8 +162,8 @@ class ModelTrainerConfiguration(object):
                        config_dict["optimizer"]["type"], config_dict["optimizer"].get("params"),
                        config_dict["scheduler"]["type"], config_dict["scheduler"].get("params"),
                        config_dict["criterion"]["type"], config_dict["criterion"].get("params"),
-                       [config_dict["metrics"][i]["type"] for i in range(len(config_dict["metrics"]))],
-                       [config_dict["metrics"][i].get("params") for i in range(len(config_dict["metrics"]))],
+                       [metric["type"] for metric in config_dict["metrics"]],
+                       [metric.get("params") for metric in config_dict["metrics"]],
                        config_dict["gradients"].get("clipping_strategy"), config_dict["gradients"].get("params"))
 
         except KeyError as e:
