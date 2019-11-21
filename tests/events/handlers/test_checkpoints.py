@@ -129,4 +129,4 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
         valid_metrics_mock.return_value = torch.tensor([0.5])
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
         assert_that(
-            os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + "_optimizer.tar")))
+            not os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + "_optimizer.tar")))
