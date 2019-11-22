@@ -1,9 +1,12 @@
+import os
 import unittest
 
 import torch
-from hamcrest import assert_that, equal_to
+from hamcrest import *
+from kerosene.config.trainers import RunConfiguration
 
-from kerosene.nn.apex import ApexLoss
+from kerosene.nn.apex import ApexLoss, ApexModule
+from kerosene.optim.optimizers import OptimizerFactory
 
 
 class TestApexLoss(unittest.TestCase):
@@ -60,3 +63,31 @@ class TestApexLoss(unittest.TestCase):
 
         assert_that(loss - self.VALID_SCALAR, equal_to(left_sub_expected_result))
         assert_that(self.VALID_SCALAR - loss, equal_to(right_sub_expected_result))
+
+
+class ApexModuleTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+    def setUp(self) -> None:
+        self._valid_optimizer_config = [{"type": "SGD", "params": {"lr": 0.01, "momentum": 0.5, "weight_decay": 0.0,
+                                                                   "model_parameters": "bias"}},
+                                        {"type": "SGD", "params": {"lr": 0.01, "momentum": 0.5, "weight_decay": 0.0,
+                                                                   "model_parameters": "weight"}}]
+        self._model = torch.nn.Conv2d(3, 32, (3, 3), (1, 1), bias=True)
+        self._optimizer_bias = OptimizerFactory().create(self._valid_optimizer_config[0]["type"], self._model,
+                                                         **self._valid_optimizer_config[0]["params"])
+        self._optimizer_weights = OptimizerFactory().create(self._valid_optimizer_config[1]["type"], self._model,
+                                                            **self._valid_optimizer_config[1]["params"])
+
+        self._optimizers = {"weight": self._optimizer_weights, "bias": self._optimizer_bias}
+        self._run_config = RunConfiguration()
+
+    def test_should_initialize_optimizer_and_model(self):
+        module = ApexModule(self._model, self._optimizers, 0, use_amp=True)
+
+        assert_that(module.model, is_not(None))
+        assert_that(module.optimizers, is_not(None))
+        assert_that(module.optimizers, instance_of(dict))

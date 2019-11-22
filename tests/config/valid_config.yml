@@ -6,12 +6,21 @@ training:
 models:
   SimpleNet:
     type: SimpleNet
-    optimizer:
-      type: SGD
-      params:
-        lr: 0.01
-        momentum: 0.5
-        weight_decay: 0
+    optimizers:
+      - name: "weight"
+        type: SGD
+        params:
+          lr: 0.01
+          momentum: 0.5
+          weight_decay: 0
+          model_parameters: "weight"
+      - name: "bias"
+        type: SGD
+        params:
+          lr: 0.01
+          momentum: 0.5
+          weight_decay: 0
+          model_parameters: "bias"
     scheduler:
       type: ReduceLROnPlateau
       params:

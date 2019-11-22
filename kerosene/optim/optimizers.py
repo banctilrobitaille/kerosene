@@ -59,9 +59,19 @@ class OptimizerFactory(object):
             self.register("FusedSGD", FusedSGD)
             self.register("FusedAdam", FusedAdam)
 
-    def create(self, optimizer_type: Union[str, OptimizerType], model_params, params):
+    def create(self, optimizer_type: Union[str, OptimizerType], model, model_parameters: str = None, **params):
+        model_params = list()
+
+        if model_parameters is not None:
+            for n, p in model.named_parameters():
+                if p.requires_grad and model_parameters in n:
+                    model_params.append(p)
+            model_params = (param for param in model_params)
+        else:
+            model_params = model.parameters()
+
         return self._optimizers[str(optimizer_type)](model_params, **params) if params is not None else \
-            self._optimizers[str(optimizer_type)](model_params)
+            self._optimizers[str(optimizer_type)](**params)
 
     def register(self, function: str, creator: Optimizer):
         """

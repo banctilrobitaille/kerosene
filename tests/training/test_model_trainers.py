@@ -1,13 +1,15 @@
 import unittest
 
 from hamcrest import *
-from ignite.metrics import Accuracy
+from ignite.metrics import Accuracy, Metric
 from mockito import mock, verify, spy
 from torch import nn
 from torch.optim import Optimizer, lr_scheduler
 
-from kerosene.training.trainers import ModelTrainer
+from kerosene.config.parsers import YamlConfigurationParser
+from kerosene.config.trainers import ModelTrainerConfiguration, RunConfiguration
 from kerosene.nn.utils.gradients import GradientClippingStrategy
+from kerosene.training.trainers import ModelTrainer, ModelTrainerFactory
 from tests.constants import *
 
 
@@ -109,3 +111,28 @@ class ModelTrainerTest(unittest.TestCase):
         assert_that(self._model_trainer.step_valid_metric, equal_to(ZERO))
         assert_that(self._model_trainer.step_train_loss, equal_to(ZERO))
         assert_that(self._model_trainer.train_loss, equal_to(ZERO))
+
+
+class ModelTrainerFactoryTest(unittest.TestCase):
+    VALID_CONFIG_FILE_PATH = "tests/config/valid_config.yml"
+    MODELS_CONFIG_YML_TAG = "models"
+    SIMPLE_NET_NAME = "SimpleNet"
+
+    def setUp(self) -> None:
+        config_dict = YamlConfigurationParser.parse_section(self.VALID_CONFIG_FILE_PATH, self.MODELS_CONFIG_YML_TAG)
+        self._model_trainer_config = ModelTrainerConfiguration.from_dict(self.SIMPLE_NET_NAME,
+                                                                         config_dict[self.SIMPLE_NET_NAME])
+        self._run_config = RunConfiguration()
+        self._model = nn.Conv2d(1, 32, (3, 3))
+
+    def test_should_create_model_trainer_with_config(self):
+        model_trainer = ModelTrainerFactory(model=self._model).create(self._model_trainer_config, self._run_config)
+
+        assert_that(model_trainer, instance_of(ModelTrainer))
+
+        assert_that(model_trainer.name, is_(self.SIMPLE_NET_NAME))
+        assert_that(model_trainer.criterion, instance_of(torch.nn.CrossEntropyLoss))
+        [assert_that(model_trainer.optimizers[optim], instance_of(torch.optim.Optimizer)) for optim in
+         model_trainer.optimizers.keys()]
+        [assert_that(model_trainer.scheduler[optim], instance_of(torch.optim.lr_scheduler.ReduceLROnPlateau)) for optim
+         in model_trainer.optimizers.keys()]

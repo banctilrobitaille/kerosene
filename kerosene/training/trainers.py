@@ -32,16 +32,16 @@ from kerosene.nn.criterions import CriterionFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training import Status
-from kerosene.nn.utils.gradients import GradientClippingStrategy
+from kerosene.nn.utils.gradients import GradientClippingStrategy, GradientClippingStrategyFactory
 from kerosene.utils.devices import on_cpu
 
 
 class ModelTrainer(ApexModule):
     LOGGER = logging.getLogger("ModelTrainer")
 
-    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computer: Metric,
+    def __init__(self, model_name, model, criterion, optimizers, scheduler, metric_computer: Metric,
                  gradient_clipping_strategy: Union[None, GradientClippingStrategy]):
-        super(ModelTrainer, self).__init__(model, optimizer)
+        super(ModelTrainer, self).__init__(model, optimizers)
         self._model_name = model_name
 
         self._criterion = criterion
@@ -139,7 +139,7 @@ class ModelTrainer(ApexModule):
         if self._status is Status.TRAIN:
             if self._should_clip_gradients():
                 self._gradient_clipping_strategy.clip(self._model.parameters())
-            self._optimizer.step()
+            [optimizer.step() for optimizer in list(self._optimizers.values())]
 
     def scheduler_step(self):
         if self._scheduler is not None:
@@ -152,18 +152,18 @@ class ModelTrainer(ApexModule):
         self._step_train_loss = self._criterion(pred, target)
         self._train_loss.update(self._step_train_loss)
 
-        return ApexLoss(self._amp_id, self._step_train_loss, self._optimizer) if self.use_amp else self._step_train_loss
+        return ApexLoss(self._amp_id, self._step_train_loss, self._optimizers) if self.use_amp else self._step_train_loss
 
     def compute_and_update_valid_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_valid_loss = self._criterion(pred, target)
         self._valid_loss.update(self._step_valid_loss)
 
-        return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
+        return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizers) if self.use_amp else self._step_valid_loss
 
     def compute_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         loss = self._criterion(pred, target)
 
-        return ApexLoss(self._amp_id, loss, self._optimizer) if self.use_amp else loss
+        return ApexLoss(self._amp_id, loss, self._optimizers) if self.use_amp else loss
 
     def update_train_loss(self, loss):
         self._step_train_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
@@ -408,13 +408,14 @@ class SimpleTrainer(Trainer):
 class ModelTrainerFactory(object):
     def __init__(self, model=None, model_factory: ModelFactory = None, optimizer_factory=OptimizerFactory(),
                  scheduler_factory=SchedulerFactory(), criterion_factory=CriterionFactory(),
-                 metric_factory=MetricFactory()):
+                 metric_factory=MetricFactory(), gradient_clipping_factory=GradientClippingStrategyFactory()):
         self._model = model
         self._model_factory = model_factory
         self._optimizer_factory = optimizer_factory
         self._scheduler_factory = scheduler_factory
         self._criterion_factory = criterion_factory
         self._metric_factory = metric_factory
+        self._gradient_clipping_factory = gradient_clipping_factory
 
         assert (self._model is not None) or (
                 self._model_factory is not None), "A model or a model factory must be provided !"
@@ -425,15 +426,23 @@ class ModelTrainerFactory(object):
 
         model = self._model if self._model is not None else self._model_factory.create(model_trainer_config.model_type,
                                                                                        model_trainer_config.model_params)
-        optimizer = self._optimizer_factory.create(model_trainer_config.optimizer_type,
-                                                   model.parameters(),
-                                                   model_trainer_config.optimizer_params)
-        scheduler = self._scheduler_factory.create(model_trainer_config.scheduler_type, optimizer,
-                                                   model_trainer_config.scheduler_params)
+        optimizers = {optimizer_name: self._optimizer_factory.create(model_trainer_config.optimizer_types[i],
+                                                                    model,
+                                                                    **model_trainer_config.optimizer_params[i]) for
+                     i, optimizer_name in enumerate(model_trainer_config.optimizer_names)}
+
+        schedulers = {optimizer_name: self._scheduler_factory.create(model_trainer_config.scheduler_type,
+                                                                    optimizers[optimizer_name],
+                                                                    model_trainer_config.scheduler_params) for
+                     optimizer_name in model_trainer_config.optimizer_names}
+
         criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
                                                    model_trainer_config.criterion_params).to(run_config.device)
 
         metric = self._metric_factory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
 
-        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric,
-                            model_trainer_config.gradient_clipping_func, model_trainer_config.gradient_clipping_params)
+        gradient_clipping_strategy = self._gradient_clipping_factory.create(model_trainer_config.gradient_clipping_func,
+                                                                            model_trainer_config.gradient_clipping_params)
+
+        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizers, schedulers, metric,
+                            gradient_clipping_strategy)

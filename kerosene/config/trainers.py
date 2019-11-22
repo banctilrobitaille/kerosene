@@ -81,14 +81,15 @@ class TrainerConfiguration(object):
 
 
 class ModelTrainerConfiguration(object):
-    def __init__(self, model_name, model_type, model_params, optimizer_type, optimizer_params, scheduler_type,
+    def __init__(self, model_name, model_type, model_params, optimizer_names, optimizer_types, optimizer_params, scheduler_type,
                  scheduler_params, criterion_type, criterion_params, metric_type, metric_params, gradient_clipping_func,
                  gradient_clipping_params):
         self._model_name = model_name
         self._model_type = model_type
         self._model_params = model_params
 
-        self._optimizer_type = optimizer_type
+        self._optimizer_names = optimizer_names
+        self._optimizer_types = optimizer_types
         self._optimizer_params = optimizer_params
 
         self._scheduler_type = scheduler_type
@@ -116,8 +117,12 @@ class ModelTrainerConfiguration(object):
         return self._model_params
 
     @property
-    def optimizer_type(self):
-        return self._optimizer_type
+    def optimizer_types(self):
+        return self._optimizer_types
+
+    @property
+    def optimizer_names(self):
+        return self._optimizer_names
 
     @property
     def optimizer_params(self):
@@ -159,7 +164,9 @@ class ModelTrainerConfiguration(object):
     def from_dict(cls, model_name, config_dict):
         try:
             return cls(model_name, config_dict["type"], config_dict.get("params"),
-                       config_dict["optimizer"]["type"], config_dict["optimizer"].get("params"),
+                       [optimizer["name"] for optimizer in config_dict["optimizers"]],
+                       [optimizer["type"] for optimizer in config_dict["optimizers"]],
+                       [optimizer.get("params") for optimizer in config_dict["optimizers"]],
                        config_dict["scheduler"]["type"], config_dict["scheduler"].get("params"),
                        config_dict["criterion"]["type"], config_dict["criterion"].get("params"),
                        config_dict["metric"]["type"], config_dict["metric"].get("params"),

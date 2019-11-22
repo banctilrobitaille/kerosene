@@ -16,8 +16,13 @@ class TestModelTrainerConfiguration(unittest.TestCase):
     SIMPLE_NET_NAME = "SimpleNet"
     SIMPLE_NET_TYPE = "SimpleNet"
 
+    SIMPLE_NET_OPTIMIZER_NAME = "weight"
     SIMPLE_NET_OPTIMIZER_TYPE = "SGD"
-    SIMPLE_NET_OPTIMIZER_PARAMS = {'lr': 0.01, 'momentum': 0.5, 'weight_decay': 0}
+    SIMPLE_NET_OPTIMIZER_PARAMS = {'lr': 0.01, 'momentum': 0.5, 'weight_decay': 0, 'model_parameters': 'weight'}
+
+    SIMPLE_NET_OPTIMIZER_NAME_2 = "bias"
+    SIMPLE_NET_OPTIMIZER_TYPE_2 = "SGD"
+    SIMPLE_NET_OPTIMIZER_PARAMS_2 = {'lr': 0.01, 'momentum': 0.5, 'weight_decay': 0, 'model_parameters': 'bias'}
 
     SIMPLE_NET_SCHEDULER_TYPE = "ReduceLROnPlateau"
     SIMPLE_NET_SCHEDULER_PARAMS = {'mode': 'min', 'factor': 0.1, 'patience': 3}
@@ -29,8 +34,12 @@ class TestModelTrainerConfiguration(unittest.TestCase):
 
     def test_should_parse_valid_model_trainer_config(self):
         expected_config_dict = {self.SIMPLE_NET_NAME: {'type': self.SIMPLE_NET_TYPE,
-                                                       'optimizer': {'type': self.SIMPLE_NET_OPTIMIZER_TYPE,
-                                                                     'params': self.SIMPLE_NET_OPTIMIZER_PARAMS},
+                                                       'optimizers': [{'name': self.SIMPLE_NET_OPTIMIZER_NAME,
+                                                                       'type': self.SIMPLE_NET_OPTIMIZER_TYPE,
+                                                                       'params': self.SIMPLE_NET_OPTIMIZER_PARAMS},
+                                                                      {'name': self.SIMPLE_NET_OPTIMIZER_NAME_2,
+                                                                       'type': self.SIMPLE_NET_OPTIMIZER_TYPE_2,
+                                                                       'params': self.SIMPLE_NET_OPTIMIZER_PARAMS_2}],
                                                        'scheduler': {'type': self.SIMPLE_NET_SCHEDULER_TYPE,
                                                                      'params': self.SIMPLE_NET_SCHEDULER_PARAMS},
                                                        'criterion': {'type': self.SIMPLE_NET_CRITERION_TYPE},
@@ -42,8 +51,12 @@ class TestModelTrainerConfiguration(unittest.TestCase):
 
         assert_that(config_dict, equal_to(expected_config_dict))
 
-        assert_that(model_trainer_config.optimizer_type, equal_to(self.SIMPLE_NET_OPTIMIZER_TYPE))
-        assert_that(model_trainer_config.optimizer_params, equal_to(self.SIMPLE_NET_OPTIMIZER_PARAMS))
+        assert_that(model_trainer_config.optimizer_types,
+                    equal_to([self.SIMPLE_NET_OPTIMIZER_TYPE, self.SIMPLE_NET_OPTIMIZER_TYPE_2]))
+        assert_that(model_trainer_config.optimizer_names,
+                    equal_to([self.SIMPLE_NET_OPTIMIZER_NAME, self.SIMPLE_NET_OPTIMIZER_NAME_2]))
+        assert_that(model_trainer_config.optimizer_params,
+                    equal_to([self.SIMPLE_NET_OPTIMIZER_PARAMS, self.SIMPLE_NET_OPTIMIZER_PARAMS_2]))
         assert_that(model_trainer_config.scheduler_type, equal_to(self.SIMPLE_NET_SCHEDULER_TYPE))
         assert_that(model_trainer_config.scheduler_params, equal_to(self.SIMPLE_NET_SCHEDULER_PARAMS))
         assert_that(model_trainer_config.criterion_type, equal_to(self.SIMPLE_NET_CRITERION_TYPE))

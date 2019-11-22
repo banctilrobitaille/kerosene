@@ -16,7 +16,7 @@
 from __future__ import division
 
 from abc import ABC
-from typing import Optional
+from typing import Optional, Dict
 
 import torch
 from torch import Tensor, nn
@@ -35,11 +35,11 @@ except ModuleNotFoundError:
 
 
 class ApexLoss(object):
-    def __init__(self, loss_id: int, loss: Tensor, optimizer: Optimizer):
+    def __init__(self, loss_id: int, loss: Tensor, optimizers: Dict[str, Optimizer]):
         super().__init__()
         self._loss_id = loss_id
         self._loss = loss
-        self._optimizer = optimizer
+        self._optimizers = optimizers
 
     @property
     def loss_id(self):
@@ -52,72 +52,72 @@ class ApexLoss(object):
     def backward(self, gradient: Optional[Tensor] = None, retain_graph=False,
                  create_graph=False) -> None:
         if APEX_AVAILABLE:
-            with amp.scale_loss(self._loss, self._optimizer, loss_id=self._loss_id) as scaled_loss:
+            with amp.scale_loss(self._loss, list(self._optimizers.values()), loss_id=self._loss_id) as scaled_loss:
                 scaled_loss.backward(gradient, retain_graph, create_graph)
         else:
             self._loss.backward(gradient, retain_graph, create_graph)
 
     def cpu(self):
-        return ApexLoss(self._loss_id, self._loss.cpu(), self._optimizer)
+        return ApexLoss(self._loss_id, self._loss.cpu(), self._optimizers)
 
     def detach(self):
-        return ApexLoss(self._loss_id, self._loss.detach(), self._optimizer)
+        return ApexLoss(self._loss_id, self._loss.detach(), self._optimizers)
 
     def float(self):
-        return ApexLoss(self._loss_id, self._loss.float(), self._optimizer)
+        return ApexLoss(self._loss_id, self._loss.float(), self._optimizers)
 
     def numpy(self):
         return self._loss.numpy()
 
     def mean(self):
-        return ApexLoss(self._loss_id, torch.mean(self._loss), self._optimizer)
+        return ApexLoss(self._loss_id, torch.mean(self._loss), self._optimizers)
 
     def __add__(self, other):
         if isinstance(other, (Tensor, int, float)):
-            loss = ApexLoss(self._loss_id, torch.add(self._loss, other), self._optimizer)
+            loss = ApexLoss(self._loss_id, torch.add(self._loss, other), self._optimizers)
         elif isinstance(other, ApexLoss):
-            loss = ApexLoss(self._loss_id, torch.add(self._loss, other.loss), self._optimizer)
+            loss = ApexLoss(self._loss_id, torch.add(self._loss, other.loss), self._optimizers)
         else:
             raise NotImplementedError("Cannot add an element of type: {} to an ApexLoss.".format(str(type(other))))
         return loss
 
     def __mul__(self, other):
         if isinstance(other, (Tensor, int, float)):
-            loss = ApexLoss(self._loss_id, torch.mul(self._loss, other), self._optimizer)
+            loss = ApexLoss(self._loss_id, torch.mul(self._loss, other), self._optimizers)
         elif isinstance(other, ApexLoss):
-            loss = ApexLoss(self._loss_id, torch.mul(self._loss, other.loss), self._optimizer)
+            loss = ApexLoss(self._loss_id, torch.mul(self._loss, other.loss), self._optimizers)
         else:
             raise NotImplementedError("Cannot mul an element of type: {} to an ApexLoss.".format(str(type(other))))
         return loss
 
     def __rmul__(self, other):
         if isinstance(other, (Tensor, int, float)):
-            loss = ApexLoss(self._loss_id, torch.mul(self._loss, other), self._optimizer)
+            loss = ApexLoss(self._loss_id, torch.mul(self._loss, other), self._optimizers)
         else:
             raise NotImplementedError("Cannot rmul an element of type: {} to an ApexLoss.".format(str(type(other))))
         return loss
 
     def __truediv__(self, other):
         if isinstance(other, (Tensor, int, float)):
-            loss = ApexLoss(self._loss_id, torch.div(self._loss, other), self._optimizer)
+            loss = ApexLoss(self._loss_id, torch.div(self._loss, other), self._optimizers)
         elif isinstance(other, ApexLoss):
-            loss = ApexLoss(self._loss_id, torch.div(self._loss, other.loss), self._optimizer)
+            loss = ApexLoss(self._loss_id, torch.div(self._loss, other.loss), self._optimizers)
         else:
             raise NotImplementedError("Cannot truediv an element of type: {} to an ApexLoss.".format(str(type(other))))
         return loss
 
     def __rtruediv__(self, other):
         if isinstance(other, (Tensor, int, float)):
-            loss = ApexLoss(self._loss_id, torch.div(other, self._loss), self._optimizer)
+            loss = ApexLoss(self._loss_id, torch.div(other, self._loss), self._optimizers)
         else:
             raise NotImplementedError("Cannot rtruediv an element of type: {} to an ApexLoss.".format(str(type(other))))
         return loss
 
     def __sub__(self, other):
         if isinstance(other, (Tensor, int, float)):
-            loss = ApexLoss(self._loss_id, torch.sub(self._loss, other), self._optimizer)
+            loss = ApexLoss(self._loss_id, torch.sub(self._loss, other), self._optimizers)
         elif isinstance(other, ApexLoss):
-            loss = ApexLoss(self._loss_id, torch.sub(self._loss, other.loss), self._optimizer)
+            loss = ApexLoss(self._loss_id, torch.sub(self._loss, other.loss), self._optimizers)
         else:
             raise NotImplementedError(
                 "Cannot substract an element of type: {} to an ApexLoss.".format(str(type(other))))
@@ -125,7 +125,7 @@ class ApexLoss(object):
 
     def __rsub__(self, other):
         if isinstance(other, (Tensor, int, float)):
-            loss = ApexLoss(self._loss_id, torch.sub(other, self._loss), self._optimizer)
+            loss = ApexLoss(self._loss_id, torch.sub(other, self._loss), self._optimizers)
         else:
             raise NotImplementedError(
                 "Cannot substract an element of type: {} to an ApexLoss.".format(str(type(other))))
@@ -142,12 +142,12 @@ class ApexLoss(object):
 
 
 class ApexModule(ABC, nn.Module):
-    def __init__(self, model, optimizer, amp_id=0, use_amp=True):
+    def __init__(self, model, optimizers, amp_id=0, use_amp=True):
         super().__init__()
         self._amp_id = amp_id
         self._use_amp = use_amp
         self._model = model
-        self._optimizer = optimizer
+        self._optimizers = optimizers
 
     @property
     def model(self):
@@ -158,8 +158,8 @@ class ApexModule(ABC, nn.Module):
         self._model = value
 
     @property
-    def optimizer(self):
-        return self._optimizer
+    def optimizers(self):
+        return self._optimizers
 
     @property
     def amp_id(self):
@@ -175,7 +175,11 @@ class ApexModule(ABC, nn.Module):
         self._model.to(run_config.device)
 
         if APEX_AVAILABLE and self._use_amp:
-            self._model, self._optimizer = amp.initialize(
-                self._model, self._optimizer, opt_level=run_config.amp_opt_level, num_losses=num_losses)
+            self._model, optimizers = amp.initialize(
+                self._model, list(self._optimizers.values()), opt_level=run_config.amp_opt_level, num_losses=num_losses)
+
+            self._optimizers = {optimizer_key: optimizer_value for (optimizer_key, optimizer_value) in
+                                self._optimizers.items()}
+
         if not on_single_device(run_config.devices):
             self._model = DDP(self._model, delay_allreduce=True)
