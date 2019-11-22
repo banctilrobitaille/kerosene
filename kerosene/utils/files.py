@@ -50,3 +50,7 @@ def extract_file_paths(path: str, ext='*.nii*') -> List[str]:
     """
     file_paths = sorted(glob(os.path.join(path, ext)))
     return file_paths
+
+
+def should_create_dir(path, dir_name):
+    return not os.path.exists(os.path.join(path, dir_name))
