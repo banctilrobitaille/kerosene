@@ -1,14 +1,15 @@
-import unittest
-import torch
-from kerosene.config.trainers import RunConfiguration
-
-from kerosene.training.trainers import ModelTrainer, SimpleTrainer
-from mockito import mock
-from kerosene.config.configs import CheckpointConfiguration
 import os
-from torch.utils.data.dataloader import DataLoader
-from kerosene.metrics.metrics import Accuracy
+import unittest
+
+import torch
 from hamcrest import *
+from mockito import mock
+from torch.utils.data.dataloader import DataLoader
+
+from kerosene.config.configs import CheckpointConfiguration
+from kerosene.config.trainers import RunConfiguration
+from kerosene.metrics.metrics import Accuracy
+from kerosene.training.trainers import ModelTrainer, SimpleTrainer
 
 
 class TrainerTest(unittest.TestCase):
@@ -40,8 +41,8 @@ class TrainerTest(unittest.TestCase):
         checkpoint_config = CheckpointConfiguration("test_model_trainer", os.path.join(self.MODEL_PATH, "model.tar"),
                                                     os.path.join(self.OPTIMIZER_PATH, "optimizer.tar"))
 
-        self._trainer = SimpleTrainer("test_trainer", mock(DataLoader), mock(DataLoader), [self._model_trainer],
-                                      self._run_config)
+        self._trainer = SimpleTrainer("test_trainer", mock(DataLoader), mock(DataLoader), mock(DataLoader),
+                                      [self._model_trainer], self._run_config)
 
         self._trainer.load([checkpoint_config])
 
