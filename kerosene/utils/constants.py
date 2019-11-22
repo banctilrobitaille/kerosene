@@ -14,3 +14,4 @@
 # limitations under the License.
 # ==============================================================================
 EPSILON = 1e-15
+CHECKPOINT_EXT = ".tar"

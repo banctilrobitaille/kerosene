@@ -2,9 +2,9 @@ import unittest
 
 from hamcrest import *
 
-from kerosene.config.exceptions import InvalidConfigurationError
-from kerosene.config.parsers import YamlConfigurationParser
-from kerosene.config.trainers import ModelTrainerConfiguration
+from kerosene.configs.configs import ModelTrainerConfiguration
+from kerosene.configs.exceptions import InvalidConfigurationError
+from kerosene.configs.parsers import YamlConfigurationParser
 
 
 class TestModelTrainerConfiguration(unittest.TestCase):

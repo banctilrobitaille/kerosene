@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from kerosene.config.parsers import YamlConfigurationParser
+from kerosene.configs.parsers import YamlConfigurationParser
 
 
 class VisdomConfiguration(object):
