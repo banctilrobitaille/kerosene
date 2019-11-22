@@ -375,7 +375,6 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
                 self._on_test_epoch_end()
                 self._on_test_end()
                 self._on_epoch_end()
-
             else:
                 self._finalize()
 
@@ -427,8 +426,6 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
                 self._on_valid_batch_end()
                 self._on_batch_end()
 
-            self._current_valid_batch = 0
-
     def _test_epoch(self):
 
         for model_trainer in self._model_trainers:
@@ -448,15 +445,12 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
                 self._on_test_batch_end()
                 self._on_batch_end()
 
-            self._current_valid_batch = 0
-            self._current_test_batch = 0
-
     def _reset_model_trainers(self):
         for model_trainer in self._model_trainers:
             model_trainer.reset()
 
     def _at_least_one_model_is_active(self):
-        return len(list(filter(lambda model_trainer: model_trainer.is_active(), self._model_trainers))) > 0
+        return any(model_trainer.is_active for model_trainer in self._model_trainers)
 
     def _finalize(self):
         self._status = Status.FINALIZING
