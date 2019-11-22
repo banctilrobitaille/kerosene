@@ -8,16 +8,11 @@ import mockito
 import torch
 from hamcrest import *
 from ignite.metrics import Accuracy
-
-from kerosene.events.handlers.base_monitor_watcher import MonitorPatienceExceeded
-from kerosene.nn.criterions import CriterionType
 from torch import nn
 from torch.optim import Optimizer, lr_scheduler
 
-from kerosene.events import Event, MonitorMode, Monitor
+from kerosene.events import Event, MonitorMode
 from kerosene.events.handlers.checkpoints import Checkpoint
-from kerosene.metrics.gauges import AverageGauge
-from kerosene.metrics.metrics import MetricType
 from kerosene.nn.utils.gradients import GradientClippingStrategy
 from kerosene.training.trainers import SimpleTrainer, ModelTrainer
 
@@ -51,7 +46,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
     def test_should_not_save_model_with_higher_valid_loss(self, valid_loss_mock, model_state_mock,
                                                           optimizer_state_mock):
         self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, monitor_fn=lambda model_trainer: model_trainer.valid_loss))
+            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_loss, 0.01, MonitorMode.MIN))
         valid_loss_mock.return_value = torch.tensor([0.5])
         model_state_mock.return_value = dict
         optimizer_state_mock.return_value = dict
@@ -69,7 +64,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
     @mock.patch("kerosene.training.trainers.ModelTrainer.valid_loss", new_callable=PropertyMock)
     def test_should_save_model_with_lower_valid_loss(self, valid_loss_mock, model_state_mock, optimizer_state_mock):
         self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, monitor_fn=lambda model_trainer: model_trainer.valid_loss))
+            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_loss, 0.01, MonitorMode.MIN))
         valid_loss_mock.return_value = torch.tensor([0.5])
         model_state_mock.return_value = dict
         optimizer_state_mock.return_value = dict
@@ -86,7 +81,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
     @mock.patch("kerosene.training.trainers.ModelTrainer.valid_loss", new_callable=PropertyMock)
     def test_should_save_optimizer_with_lower_valid_loss(self, valid_loss_mock, model_state_mock, optimizer_state_mock):
         self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, monitor_fn=lambda model_trainer: model_trainer.valid_loss))
+            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_loss, 0.01, MonitorMode.MIN))
         valid_loss_mock.return_value = torch.tensor([0.5])
         model_state_mock.return_value = dict
         optimizer_state_mock.return_value = dict
@@ -105,8 +100,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
     def test_should_save_optimizer_with_higher_valid_metric(self, valid_metrics_mock, model_state_mock,
                                                             optimizer_state_mock):
         self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, monitor_fn=lambda model_trainer: model_trainer.valid_metric,
-                       mode=MonitorMode.MAX))
+            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_metric, 0.01, MonitorMode.MAX))
         valid_metrics_mock.return_value = torch.tensor([0.5])
         model_state_mock.return_value = dict
         optimizer_state_mock.return_value = dict
@@ -125,8 +119,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
     def test_should_not_save_optimizer_with_lower_valid_metric(self, valid_metrics_mock, model_state_mock,
                                                                optimizer_state_mock):
         self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, monitor_fn=lambda model_trainer: model_trainer.valid_metric,
-                       mode=MonitorMode.MAX))
+            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_metric, 0.01, MonitorMode.MAX))
 
         valid_metrics_mock.return_value = torch.tensor([0.8])
         model_state_mock.return_value = dict

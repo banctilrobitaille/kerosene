@@ -1,27 +1,23 @@
 import logging
 import os
-from typing import Optional, Union, Callable
+from typing import Callable
 
 import torch
-from ignite.metrics import Metric
-from kerosene.nn.criterions import CriterionType
 
-from kerosene.events import Event, MonitorMode, BaseVariable
+from kerosene.events import Event, MonitorMode
 from kerosene.events.exceptions import UnsupportedEventException
 from kerosene.events.handlers.base_monitor_watcher import MonitorWatcher, MonitorPatienceExceeded
-from kerosene.metrics.metrics import MetricType
 from kerosene.training.trainers import Trainer
 from kerosene.utils.constants import CHECKPOINT_EXT
-from kerosene.utils.files import should_create_model_dir, create_model_dir
+from kerosene.utils.files import should_create_dir
 
 
 class Checkpoint(MonitorWatcher):
     LOGGER = logging.getLogger("Checkpoint")
-    CHECKPOINT_EXT = ".tar"
     SUPPORTED_EVENTS = [Event.ON_EPOCH_END]
 
-    def __init__(self, path, monitor_fn: Callable, mode: MonitorMode = MonitorMode.MIN):
-        super(Checkpoint, self).__init__(monitor_fn, mode, patience=0)
+    def __init__(self, path, monitor_fn: Callable, delta: float, mode: MonitorMode):
+        super(Checkpoint, self).__init__(monitor_fn, mode, delta, patience=0)
         self._path = path
 
     def __call__(self, event: Event, trainer: Trainer):
@@ -37,13 +33,13 @@ class Checkpoint(MonitorWatcher):
                 self._save_optimizer(model_trainer.name, model_trainer.optimizer_state)
 
     def _save_model(self, model_name, model_state, epoch_num):
-        if should_create_model_dir(self._path, model_name):
-            create_model_dir(self._path, model_name)
+        if should_create_dir(self._path, model_name):
+            os.makedirs(os.path.join(self._path, model_name))
         torch.save({"model_state_dict": model_state, "epoch_num": epoch_num},
                    os.path.join(self._path, model_name, model_name + CHECKPOINT_EXT))
 
     def _save_optimizer(self, model_name, optimizer_state):
-        if should_create_model_dir(self._path, model_name):
-            create_model_dir(self._path, model_name)
+        if should_create_dir(self._path, model_name):
+            os.makedirs(os.path.join(self._path, model_name))
         torch.save({"optimizer_state_dict": optimizer_state},
                    os.path.join(self._path, model_name, "{}_optimizer{}".format(model_name, CHECKPOINT_EXT)))

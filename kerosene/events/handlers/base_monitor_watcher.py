@@ -39,7 +39,7 @@ class MonitorInspection(object):
 
 
 class MonitorWatcher(EventHandler, ABC):
-    def __init__(self, monitor_fn, mode: MonitorMode, min_delta=0.01, patience=3):
+    def __init__(self, monitor_fn, mode: MonitorMode, min_delta, patience):
         super().__init__()
         self._monitor_fn = monitor_fn
         self._mode = mode
@@ -48,7 +48,7 @@ class MonitorWatcher(EventHandler, ABC):
         self._monitor_values: Dict[str, MonitorInspection] = {}
 
     @property
-    def monitor(self):
+    def monitor_fn(self):
         return self._monitor_fn
 
     @property
