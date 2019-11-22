@@ -54,6 +54,7 @@ class ModelTrainer(ApexModule):
         self._step_train_loss = torch.Tensor().new_zeros((1,))
         self._step_valid_loss = torch.Tensor().new_zeros((1,))
         self._step_test_loss = torch.Tensor().new_zeros((1,))
+
         self._step_train_metrics = {metric_name: torch.Tensor().new_zeros((1,)) for
                                     metric_name in metric_computers.keys()}
         self._step_valid_metrics = {metric_name: torch.Tensor().new_zeros((1,)) for
