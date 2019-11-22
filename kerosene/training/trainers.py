@@ -49,12 +49,12 @@ class ModelTrainer(ApexModule):
         self._scheduler = scheduler
         self._metric_computer = metric_computer
 
-        self._step_train_loss = torch.Tensor().new_zeros((1,), dtype=torch.float32, device="cpu")
-        self._step_valid_loss = torch.Tensor().new_zeros((1,), dtype=torch.float32, device="cpu")
-        self._step_test_loss = torch.Tensor().new_zeros((1,), dtype=torch.float32, device="cpu")
-        self._step_train_metric = torch.Tensor().new_zeros((1,), dtype=torch.float32, device="cpu")
-        self._step_valid_metric = torch.Tensor().new_zeros((1,), dtype=torch.float32, device="cpu")
-        self._step_test_metric = torch.Tensor().new_zeros((1,), dtype=torch.float32, device="cpu")
+        self._step_train_loss = torch.Tensor().new_zeros((1,))
+        self._step_valid_loss = torch.Tensor().new_zeros((1,))
+        self._step_test_loss = torch.Tensor().new_zeros((1,))
+        self._step_train_metric = torch.Tensor().new_zeros((1,))
+        self._step_valid_metric = torch.Tensor().new_zeros((1,))
+        self._step_test_metric = torch.Tensor().new_zeros((1,))
 
         self._train_loss = AverageGauge()
         self._valid_loss = AverageGauge()
@@ -144,7 +144,7 @@ class ModelTrainer(ApexModule):
     def named_parameters(self, prefix: str = ..., recurse: bool = ...) -> tuple:
         return self.model.named_parameters()
 
-    def forward(self, *input) -> torch.Tensor:
+    def forward(self, *input):
         return self._model.forward(*input)
 
     def train(self, mode=True) -> None:
