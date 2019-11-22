@@ -1,13 +1,14 @@
+import os
 import unittest
 
 from hamcrest import *
 from ignite.metrics import Accuracy, Metric
-from kerosene.config.parsers import YamlConfigurationParser
-from kerosene.config.trainers import ModelTrainerConfiguration, RunConfiguration
 from mockito import mock, verify, spy
 from torch import nn
 from torch.optim import Optimizer, lr_scheduler
 
+from kerosene.configs.configs import ModelTrainerConfiguration, RunConfiguration
+from kerosene.configs.parsers import YamlConfigurationParser
 from kerosene.nn.utils.gradients import GradientClippingStrategy
 from kerosene.training.trainers import ModelTrainer, ModelTrainerFactory
 from tests.constants import *
@@ -84,16 +85,16 @@ class ModelTrainerTest(unittest.TestCase):
         assert_that(self._model_trainer.test_loss, equal_to(ZERO))
 
     def test_should_compute_test_metric_and_update_state(self):
-        metric = self._model_trainer.compute_metric(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
-        self._model_trainer.update_test_metric(metric)
-        assert_that(self._model_trainer.test_metric, equal_to(ONE))
-        assert_that(self._model_trainer.step_test_metric, equal_to(ONE))
+        metric = self._model_trainer.compute_metrics(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
+        self._model_trainer.update_test_metrics(metric)
+        assert_that(self._model_trainer.test_metrics["Accuracy"], equal_to(ONE))
+        assert_that(self._model_trainer.step_test_metrics["Accuracy"], equal_to(ONE))
         verify(self._metric_computer_mock).update((MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0))
 
-        metric = self._model_trainer.compute_metric(MODEL_PREDICTION_CLASS_1, TARGET_CLASS_0)
-        self._model_trainer.update_test_metric(metric)
-        assert_that(self._model_trainer.test_metric, equal_to(ONE / 2))
-        assert_that(self._model_trainer.step_test_metric, equal_to(ZERO))
+        metric = self._model_trainer.compute_metrics(MODEL_PREDICTION_CLASS_1, TARGET_CLASS_0)
+        self._model_trainer.update_test_metrics(metric)
+        assert_that(self._model_trainer.test_metrics["Accuracy"], equal_to(ONE / 2))
+        assert_that(self._model_trainer.step_test_metrics["Accuracy"], equal_to(ZERO))
 
         verify(self._metric_computer_mock, times=2).compute()
 
@@ -184,6 +185,10 @@ class ModelTrainerFactoryTest(unittest.TestCase):
     MODELS_CONFIG_YML_TAG = "models"
     SIMPLE_NET_NAME = "SimpleNet"
 
+    @classmethod
+    def setUpClass(cls) -> None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
     def setUp(self) -> None:
         config_dict = YamlConfigurationParser.parse_section(self.VALID_CONFIG_FILE_PATH, self.MODELS_CONFIG_YML_TAG)
         self._model_trainer_config = ModelTrainerConfiguration.from_dict(self.SIMPLE_NET_NAME,
@@ -193,7 +198,6 @@ class ModelTrainerFactoryTest(unittest.TestCase):
 
     def test_should_create_model_trainer_with_config(self):
         model_trainer = ModelTrainerFactory(model=self._model).create(self._model_trainer_config)
-
         assert_that(model_trainer, instance_of(ModelTrainer))
         assert_that(model_trainer.name, is_(self.SIMPLE_NET_NAME))
         assert_that(model_trainer.criterion, instance_of(torch.nn.CrossEntropyLoss))

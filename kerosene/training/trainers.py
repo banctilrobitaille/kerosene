@@ -42,7 +42,7 @@ class ModelTrainer(ApexModule):
     LOGGER = logging.getLogger("ModelTrainer")
 
     def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computers: Dict[str, Metric],
-                 gradient_clipping_strategy: Union[None, GradientClippingStrategy]):
+                 gradient_clipping_strategy: GradientClippingStrategy = None):
         super(ModelTrainer, self).__init__(model, optimizer)
         self._model_name = model_name
 
@@ -53,7 +53,7 @@ class ModelTrainer(ApexModule):
 
         self._step_train_loss = torch.Tensor().new_zeros((1,))
         self._step_valid_loss = torch.Tensor().new_zeros((1,))
-        self._step_test_lost = torch.Tensor().new_zeros((1,))
+        self._step_test_loss = torch.Tensor().new_zeros((1,))
         self._step_train_metrics = {metric_name: torch.Tensor().new_zeros((1,)) for
                                     metric_name in metric_computers.keys()}
         self._step_valid_metrics = {metric_name: torch.Tensor().new_zeros((1,)) for
@@ -109,6 +109,10 @@ class ModelTrainer(ApexModule):
     @property
     def valid_loss(self):
         return torch.tensor([self._valid_loss.compute()]).cpu()
+
+    @property
+    def test_loss(self):
+        return torch.tensor([self._test_loss.compute()]).cpu()
 
     @property
     def train_metrics(self):
