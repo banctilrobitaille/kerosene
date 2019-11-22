@@ -20,10 +20,10 @@ from typing import Optional
 
 import torch
 from torch import Tensor, nn
+from torch.nn.parallel.distributed import DistributedDataParallel as DDP
 from torch.optim import Optimizer
 
-from kerosene.utils.devices import on_multiple_gpus, get_devices, on_multiple_devices
-from torch.nn.parallel.distributed import DistributedDataParallel as DDP
+from kerosene.utils.devices import on_multiple_gpus, get_devices
 
 try:
     from apex import amp

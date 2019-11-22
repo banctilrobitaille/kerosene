@@ -146,6 +146,8 @@ class RunConfiguration(Configuration):
         self._devices = get_devices()
         self._current_device = self._devices[self._local_rank]
 
+        torch.cuda.set_device(self._current_device)
+
         self._initialize_ddp_process_group()
 
     @property
