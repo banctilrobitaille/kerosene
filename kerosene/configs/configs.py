@@ -123,25 +123,13 @@ class ModelTrainerConfiguration(Configuration):
                        config_dict["optimizer"]["type"], config_dict["optimizer"].get("params"),
                        config_dict["scheduler"]["type"], config_dict["scheduler"].get("params"),
                        config_dict["criterion"]["type"], config_dict["criterion"].get("params"),
-<<<<<<< HEAD:kerosene/config/trainers.py
                        [metric["type"] for metric in config_dict["metrics"]],
                        [metric.get("params") for metric in config_dict["metrics"]],
                        config_dict["gradients"].get("clipping_strategy"), config_dict["gradients"].get("params"))
-
-=======
-                       config_dict["metric"]["type"], config_dict["metric"].get("params"),
-                       config_dict["gradients"].get("clipping_strategy"), config_dict["gradients"].get("params"))
->>>>>>> develop:kerosene/configs/configs.py
         except KeyError as e:
             raise InvalidConfigurationError(
                 "The provided model configuration is invalid. The section {} is missing.".format(e))
 
-<<<<<<< HEAD:kerosene/config/trainers.py
-
-def to_html(self):
-    configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
-    return "<h4>{}</h4> \n {}".format(self._model_name, configuration_values)
-=======
     def to_html(self):
         configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
         return "<h2>Model Configuration \n </h2><h4>{}</h4> \n {}".format(self._model_name, configuration_values)
@@ -220,4 +208,3 @@ class TrainerConfiguration(Configuration):
     def to_html(self):
         configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
         return "<h2>Training Configuration</h2> \n {}".format(configuration_values)
->>>>>>> develop:kerosene/configs/configs.py
