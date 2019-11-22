@@ -19,7 +19,7 @@ from typing import Callable
 from kerosene.events import BaseEvent
 
 
-class EventGenerator(ABC):
+class EventPublisher(ABC):
     def __init__(self):
         self._event_handlers = {}
 
