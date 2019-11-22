@@ -6,7 +6,7 @@ from hamcrest import *
 from kerosene.utils.devices import on_multiple_gpus, on_single_gpu, get_devices
 
 
-class UtilsTests(unittest.TestCase):
+class DeviceTests(unittest.TestCase):
 
     def setUp(self) -> None:
         self._multiple_gpus_devices = [torch.device("cuda:0"), torch.device("cuda:1")]

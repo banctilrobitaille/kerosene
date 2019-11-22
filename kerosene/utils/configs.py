@@ -15,7 +15,7 @@
 # ==============================================================================
 from typing import List
 
-from kerosene.config.configs import Configuration
+from kerosene.configs.configs import Configuration
 
 
 def configs_to_html(configs: List[Configuration]):

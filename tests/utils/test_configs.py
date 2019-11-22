@@ -2,11 +2,11 @@ import unittest
 
 from hamcrest import *
 
-from kerosene.config.configs import TrainerConfiguration, DatasetConfiguration
+from kerosene.configs.configs import TrainerConfiguration, DatasetConfiguration
 from kerosene.utils.configs import configs_to_html
 
 
-class UtilsTests(unittest.TestCase):
+class ConfigTests(unittest.TestCase):
 
     def setUp(self) -> None:
         self._config_1 = TrainerConfiguration({"num_epochs": 30, "batch_size": 32})

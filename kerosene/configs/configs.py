@@ -15,14 +15,12 @@
 # ==============================================================================
 import abc
 import os
-
-import torch
-
 from socket import socket
 
+import torch
 from torch.distributed import is_nccl_available
 
-from kerosene.config.exceptions import InvalidConfigurationError
+from kerosene.configs.exceptions import InvalidConfigurationError
 from kerosene.utils.devices import get_devices, on_multiple_gpus, num_gpus
 
 
@@ -150,20 +148,6 @@ class RunConfiguration(Configuration):
 
         self._initialize_ddp_process_group()
 
-    def _initialize_ddp_process_group(self):
-        if on_multiple_gpus(self._devices):
-            if is_nccl_available():
-                if os.environ.get("MASTER_ADDR") is None:
-                    os.environ["MASTER_ADDR"] = "127.0.0.1"
-                if os.environ.get("MASTER_PORT") is None:
-                    os.environ["MASTER_PORT"] = str(self._get_random_free_port)
-                if os.environ.get("WORLD_SIZE") is None:
-                    os.environ["WORLD_SIZE"] = str(self._world_size)
-                torch.distributed.init_process_group(backend='nccl', init_method='env://',
-                                                     world_size=os.environ["WORLD_SIZE"], rank=self._local_rank)
-            else:
-                raise Exception("NCCL not available and required for multi-GPU training.")
-
     @property
     def use_amp(self):
         return self._use_amp
@@ -193,6 +177,20 @@ class RunConfiguration(Configuration):
         with socket() as s:
             s.bind(("", 0))
             return s.getsockname()[1]
+
+    def _initialize_ddp_process_group(self):
+        if on_multiple_gpus(self._devices):
+            if is_nccl_available():
+                if os.environ.get("MASTER_ADDR") is None:
+                    os.environ["MASTER_ADDR"] = "127.0.0.1"
+                if os.environ.get("MASTER_PORT") is None:
+                    os.environ["MASTER_PORT"] = str(self._get_random_free_port())
+                if os.environ.get("WORLD_SIZE") is None:
+                    os.environ["WORLD_SIZE"] = str(self._world_size)
+                torch.distributed.init_process_group(backend='nccl', init_method='env://',
+                                                     world_size=os.environ["WORLD_SIZE"], rank=self._local_rank)
+            else:
+                raise Exception("NCCL not available and required for multi-GPU training.")
 
     def to_html(self):
         configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())

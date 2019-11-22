@@ -21,7 +21,7 @@ import torch
 from ignite.metrics import Metric
 from torch.utils.data import DataLoader
 
-from kerosene.config.configs import ModelTrainerConfiguration
+from kerosene.configs.configs import ModelTrainerConfiguration
 from kerosene.events import BaseEvent
 from kerosene.events.publishers.base_publisher import BatchEventPublisherMixin, \
     EpochEventPublisherMixin, TrainingPhaseEventPublisherMixin, EventPublisher
