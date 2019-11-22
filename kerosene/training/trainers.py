@@ -30,7 +30,7 @@ from kerosene.metrics.metrics import MetricFactory
 from kerosene.models.models import ModelFactory
 from kerosene.nn.apex import ApexModule, ApexLoss
 from kerosene.nn.criterions import CriterionFactory
-from kerosene.nn.utils.gradients import GradientClippingStrategy
+from kerosene.nn.utils.gradients import GradientClippingStrategy, GradientClippingStrategyFactory
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training import Status
@@ -503,13 +503,14 @@ class SimpleTrainer(Trainer):
 class ModelTrainerFactory(object):
     def __init__(self, model=None, model_factory: ModelFactory = None, optimizer_factory=OptimizerFactory(),
                  scheduler_factory=SchedulerFactory(), criterion_factory=CriterionFactory(),
-                 metric_factory=MetricFactory()):
+                 metric_factory=MetricFactory(), gradient_clipping_strategy_factory=GradientClippingStrategyFactory()):
         self._model = model
         self._model_factory = model_factory
         self._optimizer_factory = optimizer_factory
         self._scheduler_factory = scheduler_factory
         self._criterion_factory = criterion_factory
         self._metric_factory = metric_factory
+        self._gradient_clipping_strategy_factory = gradient_clipping_strategy_factory
 
         assert (self._model is not None) or (
                 self._model_factory is not None), "A model or a model factory must be provided !"
@@ -530,5 +531,8 @@ class ModelTrainerFactory(object):
 
         metric = self._metric_factory.create(model_trainer_config.metric_type, model_trainer_config.metric_params)
 
+        gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(
+            model_trainer_config.gradient_clipping_func, model_trainer_config.gradient_clipping_params)
+
         return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric,
-                            model_trainer_config.gradient_clipping_func, model_trainer_config.gradient_clipping_params)
+                            gradient_clipping_strategy)

@@ -40,9 +40,9 @@ class ConsoleColors(Enum):
 
 class StatusConsoleColorPalette(Dict[Status, ConsoleColors]):
     DEFAULT = {
-        Status.TRAIN: ConsoleColors.GREEN,
-        Status.VALID: ConsoleColors.BLUE,
-        Status.TEST: ConsoleColors.PURPLE
+        Status.TRAINING: ConsoleColors.GREEN,
+        Status.VALIDATING: ConsoleColors.BLUE,
+        Status.TESTING: ConsoleColors.PURPLE
     }
 
 
