@@ -14,7 +14,6 @@
 # limitations under the License.
 # ==============================================================================
 from abc import ABC, abstractmethod
-from typing import Callable
 
 from kerosene.events import BaseEvent
 
@@ -39,6 +38,8 @@ class EventPublisher(ABC):
             for handler in self._event_handlers[event]:
                 handler(event, state)
 
+
+class TrainingEventPublisher(EventPublisher, ABC):
     def on_batch_begin(self):
         pass
 
