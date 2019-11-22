@@ -40,6 +40,7 @@ class MonitorInspection(object):
 
 class MonitorWatcher(EventHandler, ABC):
     def __init__(self, monitor: BaseVariable, mode: MonitorMode = MonitorMode.AUTO, min_delta=0.01, patience=3):
+        super(MonitorWatcher, self).__init__()
         assert isinstance(monitor,
                           Monitor) or mode is not MonitorMode.AUTO, "Auto mode is not allowed with custom variables"
 

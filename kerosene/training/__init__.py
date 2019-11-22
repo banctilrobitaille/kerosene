@@ -14,11 +14,14 @@ class BaseStatus(Enum):
 
 
 class Status(BaseStatus):
-    INITIALIZED = "Initialization"
-    TRAIN = "Training"
-    VALID = "Validating"
-    TEST = "Testing"
-    FINALIZE = "Finalizing"
+    INITIALIZING = "Initializing"
+    INITIALIZED = "Initialized"
+    READY = "Ready"
+    TRAINING = "Training"
+    VALIDATING = "Validating"
+    TESTING = "Testing"
+    FINALIZING = "Finalizing"
+    FINALIZED = "Finalized"
 
     def __hash__(self):
         return hash(self.value)
