@@ -23,8 +23,8 @@ from torch.utils.data import DataLoader
 
 from kerosene.config.trainers import ModelTrainerConfiguration, RunConfiguration
 from kerosene.events import BaseEvent
-from kerosene.events.event_mixins import BatchEventMixin, EpochEventMixin, PhaseEventMixin
-from kerosene.events.publishers.base_publisher import TrainingEventPublisher
+from kerosene.events.publishers.base_publisher import BatchEventPublisherMixin, \
+    EpochEventPublisherMixin, TrainingPhaseEventPublisherMixin, EventPublisher
 from kerosene.metrics.gauges import AverageGauge
 from kerosene.metrics.metrics import MetricFactory
 from kerosene.models.models import ModelFactory
@@ -245,7 +245,7 @@ class ModelTrainer(ApexModule):
         self._status = Status.FINALIZED
 
 
-class Trainer(BatchEventMixin, EpochEventMixin, PhaseEventMixin, TrainingEventPublisher):
+class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseEventPublisherMixin, EventPublisher):
     LOGGER = logging.getLogger("Trainer")
 
     def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader, test_data_loader: DataLoader,
