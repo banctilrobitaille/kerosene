@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import Dict
 
-from kerosene.events import BaseVariable, MonitorMode, Monitor
+from kerosene.events import MonitorMode
 from kerosene.events.handlers.base_handler import EventHandler
 
 
@@ -39,19 +39,13 @@ class MonitorInspection(object):
 
 
 class MonitorWatcher(EventHandler, ABC):
-    def __init__(self, monitor_fn, mode: MonitorMode = MonitorMode.AUTO, min_delta=0.01, patience=3):
+    def __init__(self, monitor_fn, mode: MonitorMode, min_delta=0.01, patience=3):
         super().__init__()
-        assert isinstance(monitor_fn,
-                          Monitor) or mode is not MonitorMode.AUTO, "Auto mode is not allowed with custom variables"
-
         self._monitor_fn = monitor_fn
         self._mode = mode
         self._min_delta = min_delta
         self._patience = patience
         self._monitor_values: Dict[str, MonitorInspection] = {}
-
-        if mode is MonitorMode.AUTO:
-            self._mode = MonitorWatcher.get_mode_for(monitor_fn)
 
     @property
     def monitor(self):
@@ -88,7 +82,3 @@ class MonitorWatcher(EventHandler, ABC):
                 self._monitor_values[source_name].add_inspection()
                 if self._monitor_values[source_name].inspection_num >= self._patience:
                     raise MonitorPatienceExceeded()
-
-    @staticmethod
-    def get_mode_for(monitor: Monitor):
-        return MonitorMode.MIN if monitor.is_loss() else MonitorMode.MAX

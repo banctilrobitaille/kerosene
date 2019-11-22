@@ -51,11 +51,11 @@ class BaseVariable(Enum):
 
 
 class Monitor(BaseVariable):
-    TRAINING_LOSS = "train_loss"
+    TRAIN_LOSS = "train_loss"
     VALID_LOSS = "valid_loss"
     TEST_LOSS = "test_loss"
 
-    TRAINING_METRICS = "train_metrics"
+    TRAIN_METRICS = "train_metrics"
     VALID_METRICS = "valid_metrics"
     TEST_METRICS = "test_metrics"
 
@@ -72,7 +72,6 @@ class Monitor(BaseVariable):
 class MonitorMode(Enum):
     MIN = -1
     MAX = 1
-    AUTO = "auto"
 
     def __str__(self):
         return self.value
