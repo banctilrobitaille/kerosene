@@ -19,7 +19,7 @@ from typing import List
 import torch
 from torch.utils.data import DataLoader
 
-from kerosene.config.trainers import RunConfiguration
+from kerosene.configs.configs import RunConfiguration
 from kerosene.training.trainers import ModelTrainer
 from kerosene.training.trainers import Trainer
 from kerosene.utils.devices import on_single_device
