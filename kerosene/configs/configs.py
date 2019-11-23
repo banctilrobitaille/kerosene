@@ -109,7 +109,7 @@ class ModelTrainerConfiguration(Configuration):
         return self._metric_params
 
     @property
-    def gradient_clipping_func(self):
+    def gradient_clipping_strategy(self):
         return self._gradient_clipping_strategy
 
     @property

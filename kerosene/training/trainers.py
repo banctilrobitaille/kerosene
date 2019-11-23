@@ -554,7 +554,7 @@ class ModelTrainerFactory(object):
                    enumerate(model_trainer_config.metric_types)}
 
         gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(
-            model_trainer_config.gradient_clipping_func, model_trainer_config.gradient_clipping_params)
+            model_trainer_config.gradient_clipping_strategy, model_trainer_config.gradient_clipping_params)
 
         return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metrics,
                             gradient_clipping_strategy)
