@@ -174,8 +174,8 @@ class ModelTrainer(ApexModule):
         self.model.to(device)
         self.criterion.to(device)
 
-    def zero_grad(self) -> None:
-        self._optimizer.zero_grad()
+    def finalize(self) -> None:
+        self._status = Status.FINALIZED
 
     def freeze(self) -> None:
         for param in self.parameters():
@@ -184,6 +184,11 @@ class ModelTrainer(ApexModule):
     def unfreeze(self) -> None:
         for param in self.parameters():
             param.requires_grad = True
+
+    def compute_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
+        loss = self._criterion(pred, target)
+
+        return ApexLoss(self._amp_id, loss, self._optimizer) if self.use_amp else loss
 
     def compute_and_update_train_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_train_loss = self._criterion(pred, target)
@@ -202,11 +207,6 @@ class ModelTrainer(ApexModule):
         self._test_loss.update(self._step_test_loss)
 
         return ApexLoss(self._amp_id, self._step_test_loss, self._optimizer) if self.use_amp else self._step_test_loss
-
-    def compute_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
-        loss = self._criterion(pred, target)
-
-        return ApexLoss(self._amp_id, loss, self._optimizer) if self.use_amp else loss
 
     def update_train_loss(self, loss) -> None:
         self._step_train_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
@@ -248,8 +248,13 @@ class ModelTrainer(ApexModule):
         self._valid_metric.reset()
         self._test_metric.reset()
 
-    def finalize(self) -> None:
-        self._status = Status.FINALIZED
+    def load(self, path):
+        checkpoint = torch.load(path)
+        self._model.load_state_dict(checkpoint["model_state_dict"])
+        self._optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+    def zero_grad(self) -> None:
+        self._optimizer.zero_grad()
 
     def _should_clip_gradients(self):
         return self._gradient_clipping_strategy is not None
@@ -529,6 +534,10 @@ class ModelTrainerFactory(object):
                                                                       ModelTrainerConfiguration) else model_trainer_configs
         return list(map(lambda model_trainer_config: self._create(model_trainer_config), model_trainer_configs))
 
+    @staticmethod
+    def _should_reload(model_trainer_config):
+        return model_trainer_config.path is not None
+
     def _create(self, model_trainer_config: ModelTrainerConfiguration):
         model = self._model if self._model is not None else self._model_factory.create(
             model_trainer_config.model_type,
@@ -536,8 +545,10 @@ class ModelTrainerFactory(object):
         optimizer = self._optimizer_factory.create(model_trainer_config.optimizer_type,
                                                    model.parameters(),
                                                    model_trainer_config.optimizer_params)
+
         scheduler = self._scheduler_factory.create(model_trainer_config.scheduler_type, optimizer,
                                                    model_trainer_config.scheduler_params)
+
         criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
                                                    model_trainer_config.criterion_params)
 
@@ -546,5 +557,10 @@ class ModelTrainerFactory(object):
         gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(
             model_trainer_config.gradient_clipping_func, model_trainer_config.gradient_clipping_params)
 
-        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric,
-                            gradient_clipping_strategy)
+        model_trainer = ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric,
+                                     gradient_clipping_strategy)
+
+        if self._should_reload(model_trainer_config.path):
+            model_trainer.load(model_trainer_config.path)
+
+        return model_trainer

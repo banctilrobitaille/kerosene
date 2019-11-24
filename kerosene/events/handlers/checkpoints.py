@@ -29,17 +29,12 @@ class Checkpoint(MonitorWatcher):
                 value = self._monitor_fn(model_trainer)
                 self.watch(model_trainer.name, value)
             except MonitorPatienceExceeded as e:
-                self._save_model(model_trainer.name, model_trainer.model_state, trainer.epoch)
-                self._save_optimizer(model_trainer.name, model_trainer.optimizer_state)
+                self._save(trainer.epoch, model_trainer.name, model_trainer.model_state, model_trainer.optimizer_state)
 
-    def _save_model(self, model_name, model_state, epoch_num):
+    def _save(self, epoch_num, model_name, model_state, optimizer_state):
         if should_create_dir(self._path, model_name):
             os.makedirs(os.path.join(self._path, model_name))
-        torch.save({"model_state_dict": model_state, "epoch_num": epoch_num},
+        torch.save({"epoch_num": epoch_num,
+                    "model_state_dict": model_state,
+                    "optimizer_state": optimizer_state},
                    os.path.join(self._path, model_name, model_name + CHECKPOINT_EXT))
-
-    def _save_optimizer(self, model_name, optimizer_state):
-        if should_create_dir(self._path, model_name):
-            os.makedirs(os.path.join(self._path, model_name))
-        torch.save({"optimizer_state_dict": optimizer_state},
-                   os.path.join(self._path, model_name, "{}_optimizer{}".format(model_name, CHECKPOINT_EXT)))
