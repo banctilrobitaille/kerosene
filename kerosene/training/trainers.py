@@ -258,8 +258,9 @@ class ModelTrainer(ApexModule):
 class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseEventPublisherMixin, EventPublisher):
     LOGGER = logging.getLogger("Trainer")
 
-    def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader, test_data_loader: DataLoader,
-                 model_trainers: Union[List[ModelTrainer], ModelTrainer], run_config: RunConfiguration):
+    def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
+                 test_data_loader: Union[DataLoader, None], model_trainers: Union[List[ModelTrainer], ModelTrainer],
+                 run_config: RunConfiguration):
         super().__init__()
 
         self._status = Status.INITIALIZING
