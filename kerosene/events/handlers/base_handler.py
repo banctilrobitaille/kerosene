@@ -28,7 +28,7 @@ class EventHandler(ABC):
         return self._every
 
     def should_handle_iteration(self, iter):
-        if iter == 0 or self._every != 1:
+        if iter == 0 and self._every != 1:
             return False
         else:
             return iter % self._every == 0
