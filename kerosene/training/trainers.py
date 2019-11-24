@@ -258,8 +258,9 @@ class ModelTrainer(ApexModule):
 class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseEventPublisherMixin, EventPublisher):
     LOGGER = logging.getLogger("Trainer")
 
-    def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader, test_data_loader: DataLoader,
-                 model_trainers: Union[List[ModelTrainer], ModelTrainer], run_config: RunConfiguration):
+    def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
+                 test_data_loader: Union[DataLoader, None], model_trainers: Union[List[ModelTrainer], ModelTrainer],
+                 run_config: RunConfiguration):
         super().__init__()
 
         self._status = Status.INITIALIZING
@@ -438,23 +439,23 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
                 self._on_batch_end()
 
     def _test_epoch(self):
+        if self._test_data_loader is not None:
+            for model_trainer in self._model_trainers:
+                model_trainer.eval()
 
-        for model_trainer in self._model_trainers:
-            model_trainer.eval()
+            with torch.no_grad():
+                for self._current_test_batch, (inputs, target) in enumerate(self._test_data_loader):
+                    self._on_test_batch_begin()
 
-        with torch.no_grad():
-            for self._current_test_batch, (inputs, target) in enumerate(self._test_data_loader):
-                self._on_test_batch_begin()
+                    inputs = [single_input.to(self._device, non_blocking=True) for single_input in
+                              inputs] if isinstance(inputs, list) else inputs.to(self._device, non_blocking=True)
 
-                inputs = [single_input.to(self._device, non_blocking=True) for single_input in
-                          inputs] if isinstance(inputs, list) else inputs.to(self._device, non_blocking=True)
+                    target = [single_target.to(self._device, non_blocking=True) for single_target in
+                              target] if isinstance(target, list) else target.to(self._device, non_blocking=True)
 
-                target = [single_target.to(self._device, non_blocking=True) for single_target in
-                          target] if isinstance(target, list) else target.to(self._device, non_blocking=True)
-
-                self.test_step(inputs, target)
-                self._on_test_batch_end()
-                self._on_batch_end()
+                    self.test_step(inputs, target)
+                    self._on_test_batch_end()
+                    self._on_batch_end()
 
     def _reset_model_trainers(self):
         for model_trainer in self._model_trainers:
