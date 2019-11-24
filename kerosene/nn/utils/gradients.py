@@ -80,7 +80,11 @@ class GradientClippingStrategyFactory(object):
         }
 
     def create(self, clipping_strategy: Union[str, GradientClippingStrategyType], params):
-        return self._clipping_strategies[str(clipping_strategy)](**params)
+
+        if clipping_strategy is not None:
+            return self._clipping_strategies[str(clipping_strategy)](**params)
+        else:
+            return None
 
     def register(self, function: str, creator: Callable):
         self._clipping_strategies[function] = creator

@@ -27,7 +27,7 @@ except ImportError:
     NCCL_AVAILABLE = False
 
 from kerosene.configs.exceptions import InvalidConfigurationError
-from kerosene.utils.devices import get_devices, on_multiple_gpus, num_gpus
+from kerosene.utils.devices import get_devices, on_multiple_gpus, num_gpus, on_cpu
 
 
 class Configuration(object):
@@ -130,7 +130,8 @@ class ModelTrainerConfiguration(Configuration):
                        config_dict["scheduler"]["type"], config_dict["scheduler"].get("params"),
                        config_dict["criterion"]["type"], config_dict["criterion"].get("params"),
                        config_dict["metric"]["type"], config_dict["metric"].get("params"),
-                       config_dict["gradients"].get("clipping_strategy"), config_dict["gradients"].get("params"))
+                       config_dict.get("gradients", {}).get("clipping_strategy"),
+                       config_dict.get("gradients", {}).get("params"))
         except KeyError as e:
             raise InvalidConfigurationError(
                 "The provided model configuration is invalid. The section {} is missing.".format(e))
@@ -152,8 +153,9 @@ class RunConfiguration(Configuration):
         self._devices = get_devices()
         self._device = self._devices[self._local_rank]
 
-        torch.cuda.set_device(self._device)
-        self._initialize_ddp_process_group()
+        if not on_cpu(self._device):
+            torch.cuda.set_device(self._device)
+            self._initialize_ddp_process_group()
 
     @property
     def use_amp(self):
