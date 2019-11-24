@@ -21,7 +21,7 @@ import torch
 from ignite.metrics import Metric
 from torch.utils.data import DataLoader
 
-from kerosene.configs.configs import ModelTrainerConfiguration
+from kerosene.configs.configs import ModelTrainerConfiguration, RunConfiguration
 from kerosene.events import BaseEvent
 from kerosene.events.publishers.base_publisher import BatchEventPublisherMixin, \
     EpochEventPublisherMixin, TrainingPhaseEventPublisherMixin, EventPublisher
@@ -259,8 +259,7 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
     LOGGER = logging.getLogger("Trainer")
 
     def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader, test_data_loader: DataLoader,
-                 model_trainers: Union[List[ModelTrainer], ModelTrainer], use_amp: bool, amp_opt_level: str,
-                 device: torch.device):
+                 model_trainers: Union[List[ModelTrainer], ModelTrainer], run_config: RunConfiguration):
         super().__init__()
 
         self._status = Status.INITIALIZING
@@ -271,7 +270,7 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
         self._test_data_loader = test_data_loader
 
         self._model_trainers = model_trainers if isinstance(model_trainers, list) else [model_trainers]
-        self._device = device
+        self._device = run_config.device
 
         self._current_train_batch = 0
         self._current_valid_batch = 0
@@ -283,7 +282,8 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
         for amp_id, model_trainer in enumerate(self._model_trainers):
             if on_gpu(self._device):
                 model_trainer.to(self._device)
-            model_trainer.initialize(amp_id, len(self._model_trainers), use_amp, amp_opt_level, self._device)
+            model_trainer.initialize(amp_id, len(self._model_trainers), run_config.use_amp, run_config.amp_opt_level,
+                                     self._device)
 
         self._status = Status.INITIALIZED
 

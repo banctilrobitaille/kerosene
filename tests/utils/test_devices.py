@@ -32,4 +32,4 @@ class DeviceTests(unittest.TestCase):
             assert_that(get_devices(), is_(
                 [torch.device("cuda:{}".format(id)) for id in range(int(torch.cuda.device_count()))]))
         else:
-            assert_that(get_devices(), is_("cpu"))
+            assert_that(get_devices(), is_([torch.device("cpu")]))
