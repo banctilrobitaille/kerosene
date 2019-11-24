@@ -520,9 +520,15 @@ class ModelTrainerFactory(object):
         assert (self._model is not None) or (
                 self._model_factory is not None), "A model or a model factory must be provided !"
 
-    def create(self, model_trainer_config: ModelTrainerConfiguration):
-        model = self._model if self._model is not None else self._model_factory.create(model_trainer_config.model_type,
-                                                                                       model_trainer_config.model_params)
+    def create(self, model_trainer_configs: Union[List[ModelTrainerConfiguration], ModelTrainerConfiguration]):
+        model_trainer_configs = [model_trainer_configs] if isinstance(model_trainer_configs,
+                                                                      ModelTrainerConfiguration) else model_trainer_configs
+        return list(map(lambda model_trainer_config: self._create(model_trainer_config), model_trainer_configs))
+
+    def _create(self, model_trainer_config: ModelTrainerConfiguration):
+        model = self._model if self._model is not None else self._model_factory.create(
+            model_trainer_config.model_type,
+            model_trainer_config.model_params)
         optimizer = self._optimizer_factory.create(model_trainer_config.optimizer_type,
                                                    model.parameters(),
                                                    model_trainer_config.optimizer_params)
