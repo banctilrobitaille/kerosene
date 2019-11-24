@@ -11,6 +11,9 @@ class BaseEvent(Enum):
         elif isinstance(other, BaseEvent):
             return self.value == other.value
 
+    def __hash__(self):
+        return hash(self.value)
+
 
 class Event(BaseEvent):
     ON_TRAINING_BEGIN = "training_begin"
@@ -53,6 +56,9 @@ class BaseVariable(Enum):
             return self.value == other
         elif isinstance(other, BaseVariable):
             return self.value == other.value
+
+    def __hash__(self):
+        return hash(self.value)
 
 
 class Monitor(BaseVariable):

@@ -161,7 +161,7 @@ class ModelTrainer(ApexModule):
         self._model.eval()
 
     def step(self):
-        if self._status is Status.TRAIN:
+        if self._status is Status.TRAINING:
             if self._should_clip_gradients():
                 self._gradient_clipping_strategy.clip(self._model.parameters())
             self._optimizer.step()
