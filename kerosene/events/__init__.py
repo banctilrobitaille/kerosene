@@ -11,6 +11,9 @@ class BaseEvent(Enum):
         elif isinstance(other, BaseEvent):
             return self.value == other.value
 
+    def __hash__(self):
+        return hash(self.value)
+
 
 class Event(BaseEvent):
     ON_TRAINING_BEGIN = "training_begin"
@@ -37,11 +40,23 @@ class Event(BaseEvent):
     ON_BATCH_END = "batch_end"
     ON_FINALIZE = "finalizing"
 
-    EPOCH_EVENTS = [ON_EPOCH_BEGIN, ON_TRAIN_EPOCH_BEGIN, ON_TRAIN_EPOCH_END, ON_VALID_EPOCH_BEGIN, ON_VALID_EPOCH_END,
-                    ON_EPOCH_END, ON_TEST_EPOCH_BEGIN, ON_TEST_BATCH_BEGIN, ON_TEST_BATCH_END]
-    TRAIN_BATCH_EVENTS = [ON_BATCH_BEGIN, ON_TRAIN_BATCH_BEGIN, ON_TRAIN_BATCH_END, ON_BATCH_END]
-    VALID_BATCH_EVENTS = [ON_BATCH_BEGIN, ON_VALID_BATCH_BEGIN, ON_VALID_BATCH_END, ON_BATCH_END]
-    TEST_BATCH_EVENTS = [ON_BATCH_BEGIN, ON_TEST_BATCH_BEGIN, ON_TEST_BATCH_END, ON_BATCH_END]
+    @staticmethod
+    def epoch_events():
+        return [Event.ON_EPOCH_BEGIN, Event.ON_TRAIN_EPOCH_BEGIN, Event.ON_TRAIN_EPOCH_END, Event.ON_VALID_EPOCH_BEGIN,
+                Event.ON_VALID_EPOCH_END, Event.ON_EPOCH_END, Event.ON_TEST_EPOCH_BEGIN, Event.ON_TEST_BATCH_BEGIN,
+                Event.ON_TEST_BATCH_END]
+
+    @staticmethod
+    def train_batch_events():
+        return [Event.ON_BATCH_BEGIN, Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_BATCH_END]
+
+    @staticmethod
+    def valid_batch_events():
+        return [Event.ON_BATCH_BEGIN, Event.ON_VALID_BATCH_BEGIN, Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]
+
+    @staticmethod
+    def test_batch_events():
+        return [Event.ON_BATCH_BEGIN, Event.ON_TEST_BATCH_BEGIN, Event.ON_TEST_BATCH_END, Event.ON_BATCH_END]
 
 
 class BaseVariable(Enum):
@@ -53,6 +68,9 @@ class BaseVariable(Enum):
             return self.value == other
         elif isinstance(other, BaseVariable):
             return self.value == other.value
+
+    def __hash__(self):
+        return hash(self.value)
 
 
 class Monitor(BaseVariable):

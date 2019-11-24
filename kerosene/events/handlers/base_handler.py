@@ -34,13 +34,13 @@ class EventHandler(ABC):
             return iter % self._every == 0
 
     def should_handle_epoch_data(self, event, trainer):
-        return (event in Event.EPOCH_EVENTS) and self.should_handle_iteration(trainer.epoch)
+        return (event in Event.epoch_events()) and self.should_handle_iteration(trainer.epoch)
 
     def should_handle_train_step_data(self, event, trainer):
-        return (event in Event.TRAIN_BATCH_EVENTS) and self.should_handle_iteration(trainer.current_train_step)
+        return (event in Event.train_batch_events()) and self.should_handle_iteration(trainer.current_train_step)
 
     def should_handle_valid_step_data(self, event, trainer):
-        return (event in Event.VALID_BATCH_EVENTS) and self.should_handle_iteration(trainer.current_train_step)
+        return (event in Event.valid_batch_events()) and self.should_handle_iteration(trainer.current_train_step)
 
     @abstractmethod
     def __call__(self, *inputs):
