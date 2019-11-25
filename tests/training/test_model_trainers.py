@@ -197,7 +197,9 @@ class ModelTrainerFactoryTest(unittest.TestCase):
 
         assert_that(model_trainer[0].name, is_(self.SIMPLE_NET_NAME))
         assert_that(model_trainer[0].criterion, instance_of(torch.nn.CrossEntropyLoss))
+        assert_that(len(model_trainer[0].optimizers), is_(2))
         [assert_that(optim, instance_of(torch.optim.Optimizer)) for optim in
          model_trainer[0].optimizers]
+        assert_that(len(model_trainer[0].schedulers), is_(2))
         [assert_that(scheduler, instance_of(torch.optim.lr_scheduler.ReduceLROnPlateau)) for scheduler
          in model_trainer[0].schedulers]
