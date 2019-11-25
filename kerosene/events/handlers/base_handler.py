@@ -40,7 +40,7 @@ class EventHandler(ABC):
         return (event in Event.train_batch_events()) and self.should_handle_iteration(trainer.current_train_step)
 
     def should_handle_valid_step_data(self, event, trainer):
-        return (event in Event.valid_batch_events()) and self.should_handle_iteration(trainer.current_train_step)
+        return (event in Event.valid_batch_events()) and self.should_handle_iteration(trainer.current_valid_step)
 
     @abstractmethod
     def __call__(self, *inputs):
