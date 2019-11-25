@@ -18,10 +18,16 @@ import os
 from socket import socket
 
 import torch
-from torch.distributed import is_nccl_available
+
+try:
+    from torch.distributed import is_nccl_available
+
+    NCCL_AVAILABLE = is_nccl_available()
+except ImportError:
+    NCCL_AVAILABLE = False
 
 from kerosene.configs.exceptions import InvalidConfigurationError
-from kerosene.utils.devices import get_devices, on_multiple_gpus, num_gpus
+from kerosene.utils.devices import get_devices, on_multiple_gpus, num_gpus, on_cpu
 
 
 class Configuration(object):
@@ -125,7 +131,8 @@ class ModelTrainerConfiguration(Configuration):
                        config_dict["criterion"]["type"], config_dict["criterion"].get("params"),
                        [metric["type"] for metric in config_dict["metrics"]],
                        [metric.get("params") for metric in config_dict["metrics"]],
-                       config_dict["gradients"].get("clipping_strategy"), config_dict["gradients"].get("params"))
+                       config_dict.get("gradients", {}).get("clipping_strategy"),
+                       config_dict.get("gradients", {}).get("params"))
         except KeyError as e:
             raise InvalidConfigurationError(
                 "The provided model configuration is invalid. The section {} is missing.".format(e))
@@ -145,11 +152,11 @@ class RunConfiguration(Configuration):
         self._world_size = world_size
 
         self._devices = get_devices()
-        self._current_device = self._devices[self._local_rank]
+        self._device = self._devices[self._local_rank]
 
-        torch.cuda.set_device(self._current_device)
-
-        self._initialize_ddp_process_group()
+        if not on_cpu(self._device):
+            torch.cuda.set_device(self._device)
+            self._initialize_ddp_process_group()
 
     @property
     def use_amp(self):
@@ -168,12 +175,12 @@ class RunConfiguration(Configuration):
         return self._local_rank
 
     @property
-    def current_device(self):
-        return self._current_device
+    def device(self):
+        return self._device
 
-    @current_device.setter
-    def current_device(self, device):
-        self._current_device = device
+    @device.setter
+    def device(self, device):
+        self._device = device
 
     @staticmethod
     def _get_random_free_port():
@@ -183,7 +190,7 @@ class RunConfiguration(Configuration):
 
     def _initialize_ddp_process_group(self):
         if on_multiple_gpus(self._devices):
-            if is_nccl_available():
+            if NCCL_AVAILABLE:
                 if os.environ.get("MASTER_ADDR") is None:
                     os.environ["MASTER_ADDR"] = "127.0.0.1"
                 if os.environ.get("MASTER_PORT") is None:
