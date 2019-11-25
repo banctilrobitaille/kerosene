@@ -7,7 +7,7 @@
 ```python
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    CONFIG_FILE_PATH = configs
+    CONFIG_FILE_PATH = "config.yml"
 
     model_trainer_config, training_config = YamlConfigurationParser.parse(CONFIG_FILE_PATH)
 
