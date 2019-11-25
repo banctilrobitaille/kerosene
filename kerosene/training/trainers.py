@@ -166,7 +166,7 @@ class ModelTrainer(ApexModule):
         if self._status is Status.TRAINING:
             if self._should_clip_gradients():
                 self._gradient_clipping_strategy.clip(self._model.parameters())
-            [optimizer.step() for optimizer in list(self._optimizers.values())]
+            [optimizer.step() for optimizer in self._optimizers]
 
     def scheduler_step(self) -> None:
         if self._schedulers is not None:
