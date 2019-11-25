@@ -2,25 +2,22 @@ import unittest
 
 from hamcrest import *
 
-from kerosene.config.exceptions import InvalidConfigurationError
-from kerosene.config.parsers import YamlConfigurationParser
-from kerosene.config.trainers import ModelTrainerConfiguration
+from kerosene.configs.exceptions import InvalidConfigurationError
+from kerosene.configs.parsers import YamlConfigurationParser
+from kerosene.configs.configs import ModelTrainerConfiguration
 
 
 class TestModelTrainerConfiguration(unittest.TestCase):
-    VALID_CONFIG_FILE_PATH = "tests/config/valid_config.yml"
-    INVALID_CONFIG_FILE_PATH = "tests/config/invalid_config.yml"
+    VALID_CONFIG_FILE_PATH = "tests/configs/valid_config.yml"
+    INVALID_CONFIG_FILE_PATH = "tests/configs/invalid_config.yml"
 
     MODELS_CONFIG_YML_TAG = "models"
 
     SIMPLE_NET_NAME = "SimpleNet"
     SIMPLE_NET_TYPE = "SimpleNet"
-
-    SIMPLE_NET_OPTIMIZER_NAME = "weight"
     SIMPLE_NET_OPTIMIZER_TYPE = "SGD"
     SIMPLE_NET_OPTIMIZER_PARAMS = {'lr': 0.01, 'momentum': 0.5, 'weight_decay': 0, 'model_parameters': 'weight'}
 
-    SIMPLE_NET_OPTIMIZER_NAME_2 = "bias"
     SIMPLE_NET_OPTIMIZER_TYPE_2 = "SGD"
     SIMPLE_NET_OPTIMIZER_PARAMS_2 = {'lr': 0.01, 'momentum': 0.5, 'weight_decay': 0, 'model_parameters': 'bias'}
 
@@ -34,14 +31,14 @@ class TestModelTrainerConfiguration(unittest.TestCase):
 
     def test_should_parse_valid_model_trainer_config(self):
         expected_config_dict = {self.SIMPLE_NET_NAME: {'type': self.SIMPLE_NET_TYPE,
-                                                       'optimizers': [{'name': self.SIMPLE_NET_OPTIMIZER_NAME,
-                                                                       'type': self.SIMPLE_NET_OPTIMIZER_TYPE,
+                                                       'optimizers': [{'type': self.SIMPLE_NET_OPTIMIZER_TYPE,
                                                                        'params': self.SIMPLE_NET_OPTIMIZER_PARAMS},
-                                                                      {'name': self.SIMPLE_NET_OPTIMIZER_NAME_2,
-                                                                       'type': self.SIMPLE_NET_OPTIMIZER_TYPE_2,
+                                                                      {'type': self.SIMPLE_NET_OPTIMIZER_TYPE_2,
                                                                        'params': self.SIMPLE_NET_OPTIMIZER_PARAMS_2}],
-                                                       'scheduler': {'type': self.SIMPLE_NET_SCHEDULER_TYPE,
-                                                                     'params': self.SIMPLE_NET_SCHEDULER_PARAMS},
+                                                       'schedulers': [{'type': self.SIMPLE_NET_SCHEDULER_TYPE,
+                                                                       'params': self.SIMPLE_NET_SCHEDULER_PARAMS},
+                                                                      {'type': self.SIMPLE_NET_SCHEDULER_TYPE,
+                                                                       'params': self.SIMPLE_NET_SCHEDULER_PARAMS}],
                                                        'criterion': {'type': self.SIMPLE_NET_CRITERION_TYPE},
                                                        'metric': {'type': self.SIMPLE_NET_METRIC_TYPE},
                                                        'gradients': self.SIMPLE_NET_GRADIENT_CLIPPING}}
@@ -53,12 +50,12 @@ class TestModelTrainerConfiguration(unittest.TestCase):
 
         assert_that(model_trainer_config.optimizer_types,
                     equal_to([self.SIMPLE_NET_OPTIMIZER_TYPE, self.SIMPLE_NET_OPTIMIZER_TYPE_2]))
-        assert_that(model_trainer_config.optimizer_names,
-                    equal_to([self.SIMPLE_NET_OPTIMIZER_NAME, self.SIMPLE_NET_OPTIMIZER_NAME_2]))
         assert_that(model_trainer_config.optimizer_params,
                     equal_to([self.SIMPLE_NET_OPTIMIZER_PARAMS, self.SIMPLE_NET_OPTIMIZER_PARAMS_2]))
-        assert_that(model_trainer_config.scheduler_type, equal_to(self.SIMPLE_NET_SCHEDULER_TYPE))
-        assert_that(model_trainer_config.scheduler_params, equal_to(self.SIMPLE_NET_SCHEDULER_PARAMS))
+        assert_that(model_trainer_config.scheduler_types,
+                    equal_to([self.SIMPLE_NET_SCHEDULER_TYPE, self.SIMPLE_NET_SCHEDULER_TYPE]))
+        assert_that(model_trainer_config.scheduler_params,
+                    equal_to([self.SIMPLE_NET_SCHEDULER_PARAMS, self.SIMPLE_NET_SCHEDULER_PARAMS]))
         assert_that(model_trainer_config.criterion_type, equal_to(self.SIMPLE_NET_CRITERION_TYPE))
         assert_that(model_trainer_config.criterion_params, equal_to(None))
         assert_that(model_trainer_config.metric_type, equal_to(self.SIMPLE_NET_METRIC_TYPE))

@@ -19,12 +19,17 @@ models:
           momentum: 0.5
           weight_decay: 0
           model_parameters: "bias"
-    scheduler:
-      type: ReduceLROnPlateau
-      params:
-        mode: 'min'
-        factor: 0.1
-        patience: 3
+    schedulers:
+      - type: ReduceLROnPlateau
+        params:
+          mode: 'min'
+          factor: 0.1
+          patience: 3
+      - type: ReduceLROnPlateau
+        params:
+          mode: 'min'
+          factor: 0.1
+          patience: 3
     criterion:
       type: CrossEntropyLoss
     metric:

@@ -3,7 +3,7 @@ import unittest
 
 import torch
 from hamcrest import *
-from kerosene.config.trainers import RunConfiguration
+from kerosene.configs.configs import RunConfiguration
 
 from kerosene.nn.apex import ApexLoss, ApexModule
 from kerosene.optim.optimizers import OptimizerFactory

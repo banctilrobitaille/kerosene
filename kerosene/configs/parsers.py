@@ -15,10 +15,33 @@
 # ==============================================================================
 import logging
 
+import torch
 import yaml
 
-from kerosene.config.trainers import ModelTrainerConfiguration, TrainerConfiguration
-from kerosene.parsers.yaml import CustomYamlParser
+from kerosene.configs.configs import ModelTrainerConfiguration, TrainerConfiguration
+
+
+class CustomYamlParser(object):
+
+    def __init__(self):
+        yaml.SafeLoader.add_constructor(u"!torch/tensor", CustomYamlParser.parse_tensor)
+        yaml.SafeLoader.add_constructor(u"!python/tuple", CustomYamlParser.parse_tuple)
+
+    @staticmethod
+    def safe_load(file):
+        return yaml.safe_load(file)
+
+    @staticmethod
+    def parse_tensor(loader, node):
+        value = loader.construct_sequence(node, deep=True)
+        tensor = torch.Tensor().new_tensor(value)
+        return tensor
+
+    @staticmethod
+    def parse_tuple(loader, node):
+        value = loader.construct_sequence(node, deep=True)
+        tuple_ = tuple(value)
+        return tuple_
 
 
 class YamlConfigurationParser(object):
@@ -41,7 +64,7 @@ class YamlConfigurationParser(object):
                 return model_trainer_configs, training_config
             except yaml.YAMLError as e:
                 YamlConfigurationParser.LOGGER.warning(
-                    "Unable to read the training config file: {} with error {}".format(config_file_path, e))
+                    "Unable to read the training configs file: {} with error {}".format(config_file_path, e))
 
     @staticmethod
     def parse_section(config_file_path, yml_tag):
@@ -52,4 +75,4 @@ class YamlConfigurationParser(object):
                 return config[yml_tag]
             except yaml.YAMLError as e:
                 YamlConfigurationParser.LOGGER.warning(
-                    "Unable to read the training config file: {} with error {}".format(config_file_path, e))
+                    "Unable to read the training configs file: {} with error {}".format(config_file_path, e))

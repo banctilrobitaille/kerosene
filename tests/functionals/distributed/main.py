@@ -3,13 +3,13 @@ import os
 import sys
 from argparse import ArgumentParser
 
-from kerosene.config.trainers import RunConfiguration
+from kerosene.configs.configs import RunConfiguration
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + '/../../../')
 import torchvision
 from torchvision.transforms import Compose, ToTensor, Normalize
 
-from kerosene.config.parsers import YamlConfigurationParser
+from kerosene.configs.parsers import YamlConfigurationParser
 from kerosene.events import Event
 from kerosene.dataloaders.factories import DataloaderFactory
 from kerosene.events.handlers.console import ConsoleLogger
@@ -35,7 +35,7 @@ class ArgsParserFactory(object):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    CONFIG_FILE_PATH = "config.yml"
+    CONFIG_FILE_PATH = "configs.yml"
     args = ArgsParserFactory.create_parser().parse_args()
     run_config = RunConfiguration(args.use_amp, args.amp_opt_level, args.local_rank)
 
