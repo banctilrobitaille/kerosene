@@ -15,8 +15,7 @@
 # ==============================================================================
 import logging
 from abc import abstractmethod
-from typing import Dict
-from typing import Union, List, Optional
+from typing import Dict, Union, List, Optional
 
 import torch
 from ignite.metrics import Metric
@@ -543,7 +542,10 @@ class ModelTrainerFactory(object):
     def create(self, model_trainer_configs: Union[List[ModelTrainerConfiguration], ModelTrainerConfiguration]):
         model_trainer_configs = [model_trainer_configs] if isinstance(model_trainer_configs,
                                                                       ModelTrainerConfiguration) else model_trainer_configs
-        return list(map(lambda model_trainer_config: self._create(model_trainer_config), model_trainer_configs))
+        model_trainers = list(
+            map(lambda model_trainer_config: self._create(model_trainer_config), model_trainer_configs))
+
+        return model_trainers if len(model_trainers) > 1 else model_trainers[0]
 
     def _create(self, model_trainer_config: ModelTrainerConfiguration):
         model = self._model if self._model is not None else self._model_factory.create(
