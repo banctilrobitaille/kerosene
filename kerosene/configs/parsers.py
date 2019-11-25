@@ -64,7 +64,7 @@ class YamlConfigurationParser(object):
                 return model_trainer_configs, training_config
             except yaml.YAMLError as e:
                 YamlConfigurationParser.LOGGER.warning(
-                    "Unable to read the training configs file: {} with error {}".format(config_file_path, e))
+                    "Unable to read the training config file: {} with error {}".format(config_file_path, e))
 
     @staticmethod
     def parse_section(config_file_path, yml_tag):
@@ -75,4 +75,4 @@ class YamlConfigurationParser(object):
                 return config[yml_tag]
             except yaml.YAMLError as e:
                 YamlConfigurationParser.LOGGER.warning(
-                    "Unable to read the training configs file: {} with error {}".format(config_file_path, e))
+                    "Unable to read the training config file: {} with error {}".format(config_file_path, e))
