@@ -180,6 +180,12 @@ class TrainingPhaseEventPublisherMixin(object):
     def on_test_end(self):
         pass
 
+    def on_before_zero_grad(self):
+        pass
+
+    def on_after_backward(self):
+        pass
+
     def finalize(self):
         pass
 
@@ -209,6 +215,14 @@ class TrainingPhaseEventPublisherMixin(object):
     def _on_test_end(self):
         self.on_test_end()
         self.fire(Event.ON_TEST_END)
+
+    def _on_before_zero_grad(self):
+        self.on_before_zero_grad()
+        self.fire(Event.ON_BEFORE_ZERO_GRAD)
+
+    def _on_after_backward(self):
+        self.on_after_backward()
+        self.fire(Event.ON_AFTER_BACKWARD)
 
     def _finalize(self):
         self._status = Status.FINALIZING

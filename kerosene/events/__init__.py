@@ -24,6 +24,8 @@ class Event(BaseEvent):
     ON_TEST_END = "test_end"
     ON_EPOCH_BEGIN = "epoch_begin"
     ON_EPOCH_END = "epoch_end"
+    ON_AFTER_BACKWARD = "after_backward"
+    ON_BEFORE_ZERO_GRAD = "before_zero_grad"
     ON_TRAIN_EPOCH_BEGIN = "train_epoch_begin"
     ON_TRAIN_EPOCH_END = "train_epoch_end"
     ON_VALID_EPOCH_BEGIN = "valid_epoch_begin"
