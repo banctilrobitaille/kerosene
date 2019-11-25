@@ -7,15 +7,13 @@ models:
   SimpleNet:
     type: SimpleNet
     optimizers:
-      - name: "weight"
-        type: SGD
+      - type: SGD
         params:
           lr: 0.01
           momentum: 0.5
           weight_decay: 0
           model_parameters: "weight"
-      - name: "bias"
-        type: SGD
+      - type: SGD
         params:
           lr: 0.01
           momentum: 0.5

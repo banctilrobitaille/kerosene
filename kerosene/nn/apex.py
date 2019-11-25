@@ -16,7 +16,7 @@
 from __future__ import division
 
 from abc import ABC
-from typing import Optional, Dict
+from typing import Optional, List
 
 import torch
 from torch import Tensor, nn
@@ -35,7 +35,7 @@ except ModuleNotFoundError:
 
 
 class ApexLoss(object):
-    def __init__(self, loss_id: int, loss: Tensor, optimizers: Dict[str, Optimizer]):
+    def __init__(self, loss_id: int, loss: Tensor, optimizers: List[Optimizer]):
         super().__init__()
         self._loss_id = loss_id
         self._loss = loss
@@ -52,7 +52,7 @@ class ApexLoss(object):
     def backward(self, gradient: Optional[Tensor] = None, retain_graph=False,
                  create_graph=False) -> None:
         if APEX_AVAILABLE:
-            with amp.scale_loss(self._loss, list(self._optimizers.values()), loss_id=self._loss_id) as scaled_loss:
+            with amp.scale_loss(self._loss, self._optimizers, loss_id=self._loss_id) as scaled_loss:
                 scaled_loss.backward(gradient, retain_graph, create_graph)
         else:
             self._loss.backward(gradient, retain_graph, create_graph)
@@ -176,10 +176,7 @@ class ApexModule(ABC, nn.Module):
 
         if APEX_AVAILABLE and self._use_amp:
             self._model, optimizers = amp.initialize(
-                self._model, list(self._optimizers.values()), opt_level=run_config.amp_opt_level, num_losses=num_losses)
-
-            self._optimizers = {optimizer_key: optimizer_value for (optimizer_key, optimizer_value) in
-                                self._optimizers.items()}
+                self._model, self._optimizers, opt_level=run_config.amp_opt_level, num_losses=num_losses)
 
         if not on_single_device(run_config.devices):
             self._model = DDP(self._model, delay_allreduce=True)
