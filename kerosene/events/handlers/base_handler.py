@@ -15,7 +15,7 @@
 # ==============================================================================
 from abc import ABC, abstractmethod
 
-from kerosene.events import Event
+from kerosene.events import Event, BaseEvent
 
 
 class EventHandler(ABC):
@@ -27,21 +27,32 @@ class EventHandler(ABC):
     def every(self):
         return self._every
 
+    def should_handle_epoch_data(self, event):
+        return event in Event.epoch_events()
+
+    def should_handle_train_step_data(self, event):
+        return event in Event.train_batch_events()
+
+    def should_handle_valid_step_data(self, event):
+        return event in Event.valid_batch_events()
+
+    @abstractmethod
+    def __call__(self, event: BaseEvent, trainer, *args, **kwargs):
+        raise NotImplementedError()
+
+
+class PeriodicEventHandler(EventHandler, ABC):
+
+    def __init__(self, every=1):
+        super().__init__(every)
+        self._every = every
+
+    @property
+    def every(self):
+        return self._every
+
     def should_handle_iteration(self, iter):
         if iter == 0 and self._every != 1:
             return False
         else:
             return iter % self._every == 0
-
-    def should_handle_epoch_data(self, event, trainer):
-        return (event in Event.epoch_events()) and self.should_handle_iteration(trainer.epoch)
-
-    def should_handle_train_step_data(self, event, trainer):
-        return (event in Event.train_batch_events()) and self.should_handle_iteration(trainer.current_train_step)
-
-    def should_handle_valid_step_data(self, event, trainer):
-        return (event in Event.valid_batch_events()) and self.should_handle_iteration(trainer.current_valid_step)
-
-    @abstractmethod
-    def __call__(self, *inputs):
-        raise NotImplementedError()

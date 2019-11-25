@@ -185,6 +185,23 @@ class ModelTrainer(ApexModule):
         for param in self.parameters():
             param.requires_grad = True
 
+    def compute_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
+        loss = self._criterion(pred, target)
+
+        return ApexLoss(self._amp_id, loss, self._optimizer) if self.use_amp else loss
+
+    def update_train_loss(self, loss) -> None:
+        self._step_train_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
+        self._train_loss.update(self._step_train_loss)
+
+    def update_valid_loss(self, loss) -> None:
+        self._step_valid_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
+        self._valid_loss.update(self._step_valid_loss)
+
+    def update_test_loss(self, loss) -> None:
+        self._step_test_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
+        self._test_loss.update(self._step_test_loss)
+
     def compute_and_update_train_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_train_loss = self._criterion(pred, target)
         self._train_loss.update(self._step_train_loss)
@@ -202,23 +219,6 @@ class ModelTrainer(ApexModule):
         self._test_loss.update(self._step_test_loss)
 
         return ApexLoss(self._amp_id, self._step_test_loss, self._optimizer) if self.use_amp else self._step_test_loss
-
-    def compute_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
-        loss = self._criterion(pred, target)
-
-        return ApexLoss(self._amp_id, loss, self._optimizer) if self.use_amp else loss
-
-    def update_train_loss(self, loss) -> None:
-        self._step_train_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
-        self._train_loss.update(self._step_train_loss)
-
-    def update_valid_loss(self, loss) -> None:
-        self._step_valid_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
-        self._valid_loss.update(self._step_valid_loss)
-
-    def update_test_loss(self, loss) -> None:
-        self._step_test_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
-        self._test_loss.update(self._step_test_loss)
 
     def compute_metric(self, pred, target) -> float:
         self._metric_computer.update((pred, target))
