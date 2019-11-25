@@ -559,9 +559,8 @@ class ModelTrainerFactory(object):
         criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
                                                    model_trainer_config.criterion_params)
 
-        metrics = {metric_type: self._metric_factory.create(model_trainer_config.metric_types[i],
-                                                            model_trainer_config.metric_params[i]) for i, metric_type in
-                   enumerate(model_trainer_config.metric_types)}
+        metrics = {metric_type: self._metric_factory.create(metric_type, metric_params) for metric_type, metric_params
+                   in list(zip(model_trainer_config.metric_types, model_trainer_config.metric_params))}
 
         gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(
             model_trainer_config.gradient_clipping_strategy, model_trainer_config.gradient_clipping_params)
