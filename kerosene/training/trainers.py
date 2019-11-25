@@ -560,7 +560,7 @@ class ModelTrainerFactory(object):
         model_trainer = ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metric,
                                      gradient_clipping_strategy)
 
-        if self._should_reload(model_trainer_config.path):
+        if self._should_reload(model_trainer_config):
             model_trainer.load(model_trainer_config.path)
 
         return model_trainer

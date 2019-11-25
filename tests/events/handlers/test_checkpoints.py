@@ -55,9 +55,9 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
         valid_loss_mock.return_value = torch.tensor([0.6])
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
-        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save_model(...).thenReturn(False)), is_(True))
+        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save(...).thenReturn(False)), is_(True))
         assert_that(
-            not os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + "_optimizer.tar")))
+            not os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
 
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
@@ -73,7 +73,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
         valid_loss_mock.return_value = torch.tensor([0.4])
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
-        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save_model(...).thenReturn(True)), is_(True))
+        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save(...).thenReturn(True)), is_(True))
         assert_that(os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
 
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
@@ -90,9 +90,9 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
         valid_loss_mock.return_value = torch.tensor([0.4])
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
-        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save_model(...).thenReturn(True)), is_(True))
+        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save(...).thenReturn(True)), is_(True))
         assert_that(
-            os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + "_optimizer.tar")))
+            os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
 
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
@@ -109,9 +109,9 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
         valid_metrics_mock.return_value = torch.tensor([0.8])
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
-        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save_optimizer(...).thenReturn(True)), is_(True))
+        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save(...).thenReturn(True)), is_(True))
         assert_that(
-            os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + "_optimizer.tar")))
+            os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
 
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
@@ -129,6 +129,6 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
         valid_metrics_mock.return_value = torch.tensor([0.5])
         self._handler_mock(Event.ON_EPOCH_END, self._trainer_mock)
-        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save_model(...).thenReturn(False)), is_(True))
+        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save(...).thenReturn(False)), is_(True))
         assert_that(
-            not os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + "_optimizer.tar")))
+            not os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))

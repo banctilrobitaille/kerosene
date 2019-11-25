@@ -8,11 +8,9 @@ models:
     type: SimpleNet
     path:
     optimizer:
-      type: SGD
+      type: Adam
       params:
         lr: 0.01
-        momentum: 0.5
-        weight_decay: 0
     scheduler:
       type: ReduceLROnPlateau
       params:

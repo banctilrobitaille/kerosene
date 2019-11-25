@@ -29,6 +29,7 @@ class TestModelTrainerConfiguration(unittest.TestCase):
 
     def test_should_parse_valid_model_trainer_config(self):
         expected_config_dict = {self.SIMPLE_NET_NAME: {'type': self.SIMPLE_NET_TYPE,
+                                                       'path': None,
                                                        'optimizer': {'type': self.SIMPLE_NET_OPTIMIZER_TYPE,
                                                                      'params': self.SIMPLE_NET_OPTIMIZER_PARAMS},
                                                        'scheduler': {'type': self.SIMPLE_NET_SCHEDULER_TYPE,

@@ -6,13 +6,11 @@ training:
 models:
   SimpleNet:
     type: SimpleNet
-    path:
+    path: "saves/checkpoint/checkpoint.tar"
     optimizer:
-      type: SGD
+      type: Adam
       params:
         lr: 0.01
-        momentum: 0.5
-        weight_decay: 0
     scheduler:
       type: ReduceLROnPlateau
       params:
