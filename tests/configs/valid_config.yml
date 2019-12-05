@@ -7,17 +7,13 @@ models:
   SimpleNet:
     type: SimpleNet
     optimizers:
-      - type: SGD
+      - type: Adam
         params:
           lr: 0.01
-          momentum: 0.5
-          weight_decay: 0
           model_parameters: "weight"
-      - type: SGD
+      - type: Adam
         params:
           lr: 0.01
-          momentum: 0.5
-          weight_decay: 0
           model_parameters: "bias"
     schedulers:
       - type: ReduceLROnPlateau
@@ -32,8 +28,15 @@ models:
           patience: 3
     criterion:
       type: CrossEntropyLoss
-    metric:
-      type: Accuracy
+    metrics:
+      - type: Dice
+        params:
+          num_classes: 4
+          reduction: !!null
+          ignore_index: 0
+          average: !!null
+          weight: !!null
+      - type: Accuracy
     gradients:
       clipping_strategy: "norm"
       params:

@@ -11,7 +11,17 @@ models:
       - type: Adam
         params:
           lr: 0.01
+          model_parameters: "weight"
+      - type: Adam
+        params:
+          lr: 0.01
+          model_parameters: "bias"
     schedulers:
+      - type: ReduceLROnPlateau
+        params:
+          mode: 'min'
+          factor: 0.1
+          patience: 3
       - type: ReduceLROnPlateau
         params:
           mode: 'min'
@@ -19,8 +29,15 @@ models:
           patience: 3
     criterion:
       type: CrossEntropyLoss
-    metric:
-      type: Accuracy
+    metrics:
+      - type: Dice
+        params:
+          num_classes: 4
+          reduction: !!null
+          ignore_index: 0
+          average: !!null
+          weight: !!null
+      - type: Accuracy
     gradients:
       clipping_strategy: "norm"
       params:

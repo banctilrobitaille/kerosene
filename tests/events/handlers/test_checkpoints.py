@@ -27,7 +27,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
         self._criterion_mock = mockito.mock(nn.CrossEntropyLoss)
         self._optimizer_mock = mockito.mock(Optimizer)
         self._scheduler_mock = mockito.mock(lr_scheduler)
-        self._metric_computer_mock = mockito.mock(Accuracy)
+        self._metric_computer_mock = {"Accuracy": mockito.mock(Accuracy)}
         self._gradient_clipping_strategy = mockito.mock(GradientClippingStrategy)
 
         self._model_trainer = ModelTrainer(self.MODEL_NAME, self._model_mock, self._criterion_mock,
@@ -97,11 +97,11 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
 
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_states", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
-    @mock.patch("kerosene.training.trainers.ModelTrainer.valid_metric", new_callable=PropertyMock)
+    @mock.patch("kerosene.training.trainers.ModelTrainer.valid_metrics", new_callable=PropertyMock)
     def test_should_save_optimizer_with_higher_valid_metric(self, valid_metrics_mock, model_state_mock,
                                                             optimizer_states_mock):
         self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_metric, 0.01, MonitorMode.MAX))
+            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_metrics, 0.01, MonitorMode.MAX))
         valid_metrics_mock.return_value = torch.tensor([0.5])
         model_state_mock.return_value = dict()
         optimizer_states_mock.return_value = list(dict())
@@ -116,11 +116,11 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
 
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_states", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
-    @mock.patch("kerosene.training.trainers.ModelTrainer.valid_metric", new_callable=PropertyMock)
+    @mock.patch("kerosene.training.trainers.ModelTrainer.valid_metrics", new_callable=PropertyMock)
     def test_should_not_save_optimizer_with_lower_valid_metric(self, valid_metrics_mock, model_state_mock,
                                                                optimizer_state_mocks):
         self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_metric, 0.01, MonitorMode.MAX))
+            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_metrics, 0.01, MonitorMode.MAX))
 
         valid_metrics_mock.return_value = torch.tensor([0.8])
         model_state_mock.return_value = dict()

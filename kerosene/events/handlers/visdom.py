@@ -176,34 +176,38 @@ class PlotMetrics(BaseVisdomHandler):
     @staticmethod
     def create_epoch_visdom_data(epoch, model_trainer: ModelTrainer):
         return [
-            VisdomData(model_trainer.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
+            VisdomData(model_trainer.name, train_metric_name, PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
                        [[epoch, epoch]],
-                       [[model_trainer.train_metric, model_trainer.valid_metric]],
-                       params={'opts': {'xlabel': str(PlotFrequency.EVERY_EPOCH), 'ylabel': "Metric",
-                                        'title': "{} {} per {}".format(model_trainer.name, "Metric",
+                       [[train_metric, valid_metric]],
+                       params={'opts': {'xlabel': str(PlotFrequency.EVERY_EPOCH), 'ylabel': train_metric_name,
+                                        'title': "{} {} per {}".format(model_trainer.name, train_metric_name,
                                                                        str(PlotFrequency.EVERY_EPOCH)),
                                         'legend': ["Training",
-                                                   "Validation"]}})]
+                                                   "Validation"]}}) for
+            (train_metric_name, train_metric), (valid_metric_name, valid_metric) in
+            zip(model_trainer.train_metrics.items(), model_trainer.valid_metrics.items())]
 
     @staticmethod
     def create_train_batch_visdom_data(step, model_trainer: ModelTrainer):
-        return [VisdomData(model_trainer.name, "Training Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           [step], model_trainer.step_train_metric,
+        return [VisdomData(model_trainer.name, step_train_metric_name, PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
+                           [step], step_train_metric,
                            params={'opts': {'xlabel': str(PlotFrequency.EVERY_STEP),
-                                            'ylabel': "Metric",
-                                            'title': "{} {} per {}".format(model_trainer.name, "Training Metric",
+                                            'ylabel': step_train_metric_name,
+                                            'title': "{} {} per {}".format(model_trainer.name, step_train_metric_name,
                                                                            str(PlotFrequency.EVERY_STEP)),
-                                            'legend': [model_trainer.name]}})]
+                                            'legend': [model_trainer.name]}}) for
+                (step_train_metric_name, step_train_metric) in model_trainer.step_train_metrics.items()]
 
     @staticmethod
     def create_valid_batch_visdom_data(step, model_trainer: ModelTrainer):
-        return [VisdomData(model_trainer.name, "Validation Metric", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           [step], model_trainer.step_valid_metric,
+        return [VisdomData(model_trainer.name, step_valid_metric_name, PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
+                           [step], step_valid_metric,
                            params={'opts': {'xlabel': str(PlotFrequency.EVERY_STEP),
                                             'ylabel': "Metric",
-                                            'title': "{} {} per {}".format(model_trainer.name, "Validation Metric",
+                                            'title': "{} {} per {}".format(model_trainer.name, step_valid_metric_name,
                                                                            str(PlotFrequency.EVERY_STEP)),
-                                            'legend': [model_trainer.name]}})]
+                                            'legend': [model_trainer.name]}}) for
+                (step_valid_metric_name, step_valid_metric) in model_trainer.step_valid_metrics.items()]
 
 
 class PlotCustomVariables(BaseVisdomHandler):
