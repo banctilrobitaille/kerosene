@@ -48,11 +48,13 @@ class DatasetConfiguration(Configuration):
 
 
 class ModelTrainerConfiguration(Configuration):
-    def __init__(self, model_name, model_type, model_params, optimizer_types, optimizer_params, scheduler_types,
+
+    def __init__(self, model_name, model_type, path, model_params, optimizer_types, optimizer_params, scheduler_types,
                  scheduler_params, criterion_type, criterion_params, metric_type, metric_params, gradient_clipping_func,
                  gradient_clipping_params):
         self._model_name = model_name
         self._model_type = model_type
+        self._path = path
         self._model_params = model_params
 
         self._optimizer_types = optimizer_types
@@ -85,6 +87,10 @@ class ModelTrainerConfiguration(Configuration):
     @property
     def optimizer_types(self):
         return self._optimizer_types
+
+    @property
+    def path(self):
+        return self._path
 
     @property
     def optimizer_params(self):
@@ -125,7 +131,7 @@ class ModelTrainerConfiguration(Configuration):
     @classmethod
     def from_dict(cls, model_name, config_dict):
         try:
-            return cls(model_name, config_dict["type"], config_dict.get("params"),
+            return cls(model_name, config_dict["type"], config_dict.get("path"), config_dict.get("params"),
                        [optimizer["type"] for optimizer in config_dict["optimizers"]],
                        [optimizer.get("params") for optimizer in config_dict["optimizers"]],
                        [scheduler["type"] for scheduler in config_dict["schedulers"]],

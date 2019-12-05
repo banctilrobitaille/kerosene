@@ -42,8 +42,7 @@ class ModelTrainer(ApexModule):
     LOGGER = logging.getLogger("ModelTrainer")
 
     def __init__(self, model_name: str, model: torch.nn.Module, criterion: torch.nn.Module, optimizers: List[Optimizer],
-                 schedulers, metric_computer: Metric,
-                 gradient_clipping_strategy: GradientClippingStrategy = None):
+                 schedulers, metric_computer: Metric, gradient_clipping_strategy: GradientClippingStrategy = None):
         super(ModelTrainer, self).__init__(model, optimizers)
         self._model_name = model_name
 
@@ -121,17 +120,17 @@ class ModelTrainer(ApexModule):
         return torch.tensor([self._test_metric.compute()]).cpu()
 
     @property
-    def optimizer_state(self):
-        return self._optimizer.state_dict()
+    def model_state(self):
+        return self._model.state_dict()
+
+    @property
+    def optimizer_states(self):
+        return [optimizer.state_dict() for optimizer in self._optimizers]
 
     @property
     def optimizer_lr(self):
         for param_group in self._optimizer.param_groups:
             return torch.tensor([param_group["lr"]])
-
-    @property
-    def model_state(self):
-        return self._model.state_dict()
 
     @property
     def criterion(self):
@@ -176,8 +175,8 @@ class ModelTrainer(ApexModule):
         self.model.to(device)
         self.criterion.to(device)
 
-    def zero_grad(self) -> None:
-        self._optimizer.zero_grad()
+    def finalize(self) -> None:
+        self._status = Status.FINALIZED
 
     def freeze(self) -> None:
         for param in self.parameters():
@@ -252,8 +251,13 @@ class ModelTrainer(ApexModule):
         self._valid_metric.reset()
         self._test_metric.reset()
 
-    def finalize(self) -> None:
-        self._status = Status.FINALIZED
+    def load(self, path):
+        checkpoint = torch.load(path)
+        self._model.load_state_dict(checkpoint["model_state_dict"])
+        [optimizer.load_state_dict(optimizer_state_dict) for optimizer, optimizer_state_dict in zip(self._optimizers, checkpoint["optimizer_state_dict"])]
+
+    def zero_grad(self) -> None:
+        [optimizer.zero_grad() for optimizer in self._optimizers]
 
     def _should_clip_gradients(self):
         return self._gradient_clipping_strategy is not None
@@ -327,6 +331,10 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
     @property
     def epoch(self):
         return self._current_epoch
+
+    @epoch.setter
+    def epoch(self, epoch):
+        self._current_epoch = epoch
 
     @property
     def custom_variables(self):
@@ -530,6 +538,10 @@ class ModelTrainerFactory(object):
                                                                       ModelTrainerConfiguration) else model_trainer_configs
         return list(map(lambda model_trainer_config: self._create(model_trainer_config), model_trainer_configs))
 
+    @staticmethod
+    def _should_reload(model_trainer_config):
+        return model_trainer_config.path is not None
+
     def _create(self, model_trainer_config: ModelTrainerConfiguration):
         model = self._model if self._model is not None else self._model_factory.create(
             model_trainer_config.model_type,
@@ -553,5 +565,10 @@ class ModelTrainerFactory(object):
             model_trainer_config.gradient_clipping_func,
             model_trainer_config.gradient_clipping_params)
 
-        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizers, schedulers, metric,
-                            gradient_clipping_strategy)
+        model_trainer = ModelTrainer(model_trainer_config.model_name, model, criterion, optimizers, schedulers, metric,
+                                     gradient_clipping_strategy)
+
+        if self._should_reload(model_trainer_config):
+            model_trainer.load(model_trainer_config.path)
+
+        return model_trainer
