@@ -51,7 +51,7 @@ class YamlConfigurationParser(object):
     def parse(config_file_path):
         with open(config_file_path, 'r') as config_file:
             try:
-                config = CustomYamlParser.safe_load(config_file)
+                config = CustomYamlParser().safe_load(config_file)
 
                 model_trainer_configs = list(
                     map(lambda model_name: ModelTrainerConfiguration.from_dict(model_name,

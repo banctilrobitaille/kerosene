@@ -175,12 +175,16 @@ class RunConfiguration(Configuration):
         return self._amp_opt_level
 
     @property
-    def devices(self):
-        return self._devices
-
-    @property
     def local_rank(self):
         return self._local_rank
+
+    @property
+    def world_size(self):
+        return self._world_size
+
+    @property
+    def devices(self):
+        return self._devices
 
     @property
     def device(self):
