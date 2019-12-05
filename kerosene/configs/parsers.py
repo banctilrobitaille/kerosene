@@ -70,7 +70,7 @@ class YamlConfigurationParser(object):
     def parse_section(config_file_path, yml_tag):
         with open(config_file_path, 'r') as config_file:
             try:
-                config = yaml.load(config_file, Loader=yaml.FullLoader)
+                config = CustomYamlParser().safe_load(config_file)
 
                 return config[yml_tag]
             except yaml.YAMLError as e:
