@@ -36,7 +36,8 @@ class BaseVisdomHandler(EventHandler, ABC):
 
     def should_handle_step_data(self, event, step):
         return (event in [Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_BEGIN,
-                          Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]) and (step % self._every == 0)
+                          Event.ON_VALID_BATCH_END, Event.ON_TEST_BATCH_BEGIN, Event.ON_TEST_BATCH_END,
+                          Event.ON_BATCH_END]) and (step % self._every == 0)
 
     def flatten(self, list_of_visdom_data):
         return [item for sublist in list_of_visdom_data for item in sublist]
@@ -64,7 +65,10 @@ class PlotAllModelStateVariables(BaseVisdomHandler):
             data = list(map(
                 lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                 trainer.model_trainers))
-
+        elif self.should_handle_step_data(event, trainer.current_test_step):
+            data = list(map(
+                lambda model_state: self.create_test_batch_visdom_data(trainer.current_test_step, model_state),
+                trainer.model_trainers))
         if data is not None:
             self.visdom_logger(self.flatten(data))
 
@@ -86,6 +90,13 @@ class PlotAllModelStateVariables(BaseVisdomHandler):
     def create_valid_batch_visdom_data(step, model_trainer: ModelTrainer):
         data = PlotLosses.create_valid_batch_visdom_data(step, model_trainer)
         data.extend(PlotMetrics.create_valid_batch_visdom_data(step, model_trainer))
+
+        return data
+
+    @staticmethod
+    def create_test_batch_visdom_data(step, model_trainer: ModelTrainer):
+        data = PlotLosses.create_test_batch_visdom_data(step, model_trainer)
+        data.extend(PlotMetrics.create_test_batch_visdom_data(step, model_trainer))
 
         return data
 
@@ -112,6 +123,10 @@ class PlotLosses(BaseVisdomHandler):
             data = list(
                 map(lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                     trainer.model_trainers))
+        elif self.should_handle_step_data(event, trainer.current_test_step):
+            data = list(
+                map(lambda model_state: self.create_test_batch_visdom_data(trainer.current_test_step, model_state),
+                    trainer.model_trainers))
 
         if data is not None:
             self.visdom_logger(self.flatten(data))
@@ -119,12 +134,13 @@ class PlotLosses(BaseVisdomHandler):
     @staticmethod
     def create_epoch_visdom_data(epoch, model_trainer: ModelTrainer):
         return [VisdomData(model_trainer.name, "Training Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                           [[epoch, epoch]], [[model_trainer.train_loss, model_trainer.valid_loss]],
+                           [[epoch, epoch, epoch]],
+                           [[model_trainer.train_loss, model_trainer.valid_loss, model_trainer.test_loss]],
                            params={'opts': {'xlabel': str(PlotFrequency.EVERY_EPOCH),
                                             'ylabel': "Loss",
                                             'title': "{} {} per {}".format(model_trainer.name, "Loss",
                                                                            str(PlotFrequency.EVERY_EPOCH)),
-                                            'legend': ["Training", "Validation"]}})]
+                                            'legend': ["Training", "Validation", "Test"]}})]
 
     @staticmethod
     def create_train_batch_visdom_data(step, model_trainer: ModelTrainer):
@@ -143,6 +159,16 @@ class PlotLosses(BaseVisdomHandler):
                            params={'opts': {'xlabel': str(PlotFrequency.EVERY_STEP),
                                             'ylabel': "Loss",
                                             'title': "{} {} per {}".format(model_trainer.name, "Validation Loss",
+                                                                           str(PlotFrequency.EVERY_EPOCH)),
+                                            'legend': [model_trainer.name]}})]
+
+    @staticmethod
+    def create_test_batch_visdom_data(step, model_trainer: ModelTrainer):
+        return [VisdomData(model_trainer.name, "Test Loss", PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
+                           [step], model_trainer.step_test_loss,
+                           params={'opts': {'xlabel': str(PlotFrequency.EVERY_STEP),
+                                            'ylabel': "Loss",
+                                            'title': "{} {} per {}".format(model_trainer.name, "Test Loss",
                                                                            str(PlotFrequency.EVERY_EPOCH)),
                                             'legend': [model_trainer.name]}})]
 
@@ -169,6 +195,10 @@ class PlotMetrics(BaseVisdomHandler):
             data = list(
                 map(lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
                     trainer.model_trainers))
+        elif self.should_handle_step_data(event, trainer.current_test_step):
+            data = list(
+                map(lambda model_state: self.create_test_batch_visdom_data(trainer.current_test_step, model_state),
+                    trainer.model_trainers))
 
         if data is not None:
             self.visdom_logger(self.flatten(data))
@@ -177,15 +207,17 @@ class PlotMetrics(BaseVisdomHandler):
     def create_epoch_visdom_data(epoch, model_trainer: ModelTrainer):
         return [
             VisdomData(model_trainer.name, train_metric_name, PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                       [[epoch, epoch]],
-                       [[train_metric, valid_metric]],
+                       [[epoch, epoch, epoch]],
+                       [[train_metric, valid_metric, test_metric]],
                        params={'opts': {'xlabel': str(PlotFrequency.EVERY_EPOCH), 'ylabel': train_metric_name,
                                         'title': "{} {} per {}".format(model_trainer.name, train_metric_name,
                                                                        str(PlotFrequency.EVERY_EPOCH)),
                                         'legend': ["Training",
-                                                   "Validation"]}}) for
-            (train_metric_name, train_metric), (valid_metric_name, valid_metric) in
-            zip(model_trainer.train_metrics.items(), model_trainer.valid_metrics.items())]
+                                                   "Validation",
+                                                   "Test"]}}) for
+            (train_metric_name, train_metric), (valid_metric_name, valid_metric), (test_metric_name, test_metric) in
+            zip(model_trainer.train_metrics.items(), model_trainer.valid_metrics.items(),
+                model_trainer.test_metrics.items())]
 
     @staticmethod
     def create_train_batch_visdom_data(step, model_trainer: ModelTrainer):
@@ -209,6 +241,17 @@ class PlotMetrics(BaseVisdomHandler):
                                             'legend': [model_trainer.name]}}) for
                 (step_valid_metric_name, step_valid_metric) in model_trainer.step_valid_metrics.items()]
 
+    @staticmethod
+    def create_test_batch_visdom_data(step, model_trainer: ModelTrainer):
+        return [VisdomData(model_trainer.name, step_test_metric_name, PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
+                           [step], step_test_metric,
+                           params={'opts': {'xlabel': str(PlotFrequency.EVERY_STEP),
+                                            'ylabel': "Metric",
+                                            'title': "{} {} per {}".format(model_trainer.name, step_test_metric_name,
+                                                                           str(PlotFrequency.EVERY_STEP)),
+                                            'legend': [model_trainer.name]}}) for
+                (step_test_metric_name, step_test_metric) in model_trainer.step_test_metrics.items()]
+
 
 class PlotCustomVariables(BaseVisdomHandler):
     SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
@@ -230,21 +273,31 @@ class PlotCustomVariables(BaseVisdomHandler):
             data = self.create_train_batch_visdom_data(trainer)
         elif self.should_handle_step_data(event, trainer.current_valid_step):
             data = self.create_valid_batch_visdom_data(trainer)
+        elif self.should_handle_step_data(event, trainer.current_test_step):
+            data = self.create_test_batch_visdom_data(trainer)
 
         if data is not None:
             self.visdom_logger(data)
 
     def create_epoch_visdom_data(self, trainer: Trainer):
         return [VisdomData(trainer.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_EPOCH,
-                           [trainer.epoch], trainer.custom_variables[self._variable_name], self._params)]
+                           [trainer.epoch] * len(trainer.custom_variables[self._variable_name]),
+                           trainer.custom_variables[self._variable_name], self._params)]
 
     def create_train_batch_visdom_data(self, trainer: Trainer):
         return [VisdomData(trainer.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_STEP,
-                           [trainer.current_train_step], trainer.custom_variables[self._variable_name], self._params)]
+                           [trainer.current_train_step] * len(trainer.custom_variables[self._variable_name]),
+                           trainer.custom_variables[self._variable_name], self._params)]
 
     def create_valid_batch_visdom_data(self, trainer: Trainer):
         return [VisdomData(trainer.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_STEP,
-                           [trainer.current_valid_step], trainer.custom_variables[self._variable_name], self._params)]
+                           [trainer.current_valid_step] * len(trainer.custom_variables[self._variable_name]),
+                           trainer.custom_variables[self._variable_name], self._params)]
+
+    def create_test_batch_visdom_data(self, trainer: Trainer):
+        return [VisdomData(trainer.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_STEP,
+                           [trainer.current_test_step] * len(trainer.custom_variables[self._variable_name]),
+                           trainer.custom_variables[self._variable_name], self._params)]
 
 
 class PlotLR(BaseVisdomHandler):
@@ -267,8 +320,8 @@ class PlotLR(BaseVisdomHandler):
 
     @staticmethod
     def create_epoch_visdom_data(epoch, model_trainer: ModelTrainer):
-        return VisdomData(model_trainer.name, "Learning Rate", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH, [epoch],
-                          model_trainer.optimizer_lr,
+        return VisdomData(model_trainer.name, "Learning Rate", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
+                          [epoch] * len(model_trainer.optimizers_lr), model_trainer.optimizers_lr,
                           params={'opts': {'xlabel': str(PlotFrequency.EVERY_EPOCH),
                                            'ylabel': "Learning Rate",
                                            'title': "{} {} per {}".format(model_trainer.name, "Learning Rate",

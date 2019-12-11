@@ -141,9 +141,13 @@ class ModelTrainer(ApexModule):
         return [optimizer.state_dict() for optimizer in self._optimizers]
 
     @property
-    def optimizer_lr(self):
-        for param_group in self._optimizer.param_groups:
-            return torch.tensor([param_group["lr"]])
+    def optimizers_lr(self):
+        lr = []
+        for optimizer in self._optimizers:
+            for param_groups in optimizer.param_groups:
+                lr.append(param_groups["lr"])
+
+        return lr
 
     @property
     def criterion(self):
@@ -182,7 +186,7 @@ class ModelTrainer(ApexModule):
 
     def scheduler_step(self) -> None:
         if self._schedulers is not None:
-            self._schedulers.step(self._train_loss.compute())
+            [scheduler.step(self._train_loss.compute()) for scheduler in self._schedulers]
 
     def to(self, device: Optional[Union[int, torch.device]] = ..., dtype=..., non_blocking: bool = ...):
         self.model.to(device)
@@ -266,9 +270,9 @@ class ModelTrainer(ApexModule):
 
     def reset(self):
         [metric_computer.reset() for metric_computer in self._metric_computers.values()]
-        [train_metric.reset() for train_metric in self._train_metrics]
-        [valid_metric.reset() for valid_metric in self._valid_metrics]
-        [test_metric.reset() for test_metric in self._test_metrics]
+        [train_metric.reset() for train_metric_key, train_metric in self._train_metrics.items()]
+        [valid_metric.reset() for valid_metric_key, valid_metric in self._valid_metrics.items()]
+        [test_metric.reset() for test_metric_key, test_metric in self._test_metrics.items()]
         self._train_loss.reset()
         self._valid_loss.reset()
         self._test_loss.reset()
@@ -407,20 +411,20 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
 
         for self._current_epoch in range(0, nb_epoch):
             if self._at_least_one_model_is_active():
-                self._on_epoch_begin()
-                self._on_train_epoch_begin()
-                self._train_epoch()
-                self._on_train_epoch_end()
-                self._on_valid_begin()
-                self._on_valid_epoch_begin()
-                self._validate_epoch()
-                self._on_valid_epoch_end()
-                self._on_valid_end()
-                self._on_test_begin()
-                self._on_test_epoch_begin()
-                self._test_epoch()
-                self._on_test_epoch_end()
-                self._on_test_end()
+                # self._on_epoch_begin()
+                # self._on_train_epoch_begin()
+                # self._train_epoch()
+                # self._on_train_epoch_end()
+                # self._on_valid_begin()
+                # self._on_valid_epoch_begin()
+                # self._validate_epoch()
+                # self._on_valid_epoch_end()
+                # self._on_valid_end()
+                # self._on_test_begin()
+                # self._on_test_epoch_begin()
+                # self._test_epoch()
+                # self._on_test_epoch_end()
+                # self._on_test_end()
                 self._on_epoch_end()
             else:
                 self._finalize()

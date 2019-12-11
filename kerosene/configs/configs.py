@@ -48,9 +48,9 @@ class DatasetConfiguration(Configuration):
 
 
 class ModelTrainerConfiguration(Configuration):
-    def __init__(self, model_name, model_type, path, model_params, optimizer_types, optimizer_params, scheduler_types,
-                 scheduler_params, criterion_type, criterion_params, metric_types, metric_params,
-                 gradient_clipping_strategy, gradient_clipping_params):
+    def __init__(self, model_name, model_type, path, model_params, optimizer_types, optimizer_names, optimizer_params,
+                 scheduler_types, scheduler_names, scheduler_params, criterion_type, criterion_name, criterion_params,
+                 metric_types, metric_names, metric_params, gradient_clipping_strategy, gradient_clipping_params):
 
         self._model_name = model_name
         self._model_type = model_type
@@ -58,15 +58,19 @@ class ModelTrainerConfiguration(Configuration):
         self._model_params = model_params
 
         self._optimizer_types = optimizer_types
+        self._optimizer_names = optimizer_names
         self._optimizer_params = optimizer_params
 
         self._scheduler_types = scheduler_types
+        self._scheduler_names = scheduler_names
         self._scheduler_params = scheduler_params
 
         self._criterion_type = criterion_type
+        self._criterion_name = criterion_name
         self._criterion_params = criterion_params
 
         self._metric_types = metric_types
+        self._metric_names = metric_names
         self._metric_params = metric_params
 
         self._gradient_clipping_strategy = gradient_clipping_strategy
@@ -81,6 +85,10 @@ class ModelTrainerConfiguration(Configuration):
         return self._model_type
 
     @property
+    def path(self):
+        return self._path
+
+    @property
     def model_params(self):
         return self._model_params
 
@@ -89,8 +97,8 @@ class ModelTrainerConfiguration(Configuration):
         return self._optimizer_types
 
     @property
-    def path(self):
-        return self._path
+    def optimizer_names(self):
+        return self._optimizer_names
 
     @property
     def optimizer_params(self):
@@ -101,6 +109,10 @@ class ModelTrainerConfiguration(Configuration):
         return self._scheduler_types
 
     @property
+    def scheduler_names(self):
+        return self._scheduler_names
+
+    @property
     def scheduler_params(self):
         return self._scheduler_params
 
@@ -109,12 +121,20 @@ class ModelTrainerConfiguration(Configuration):
         return self._criterion_type
 
     @property
+    def criterion_name(self):
+        return self._criterion_name
+
+    @property
     def criterion_params(self):
         return self._criterion_params
 
     @property
     def metric_types(self):
         return self._metric_types
+
+    @property
+    def metric_names(self):
+        return self._metric_names
 
     @property
     def metric_params(self):
@@ -133,11 +153,16 @@ class ModelTrainerConfiguration(Configuration):
         try:
             return cls(model_name, config_dict["type"], config_dict.get("path"), config_dict.get("params"),
                        [optimizer["type"] for optimizer in config_dict["optimizers"]],
+                       [optimizer.get("name") for optimizer in config_dict["optimizers"]],
                        [optimizer.get("params") for optimizer in config_dict["optimizers"]],
                        [scheduler["type"] for scheduler in config_dict["schedulers"]],
+                       [scheduler.get("name") for scheduler in config_dict["schedulers"]],
                        [scheduler.get("params") for scheduler in config_dict["schedulers"]],
-                       config_dict["criterion"]["type"], config_dict["criterion"].get("params"),
+                       config_dict["criterion"]["type"],
+                       config_dict["criterion"].get("name"),
+                       config_dict["criterion"].get("params"),
                        [metric["type"] for metric in config_dict["metrics"]],
+                       [metric.get("name") for metric in config_dict["metrics"]],
                        [metric.get("params") for metric in config_dict["metrics"]],
                        config_dict.get("gradients", {}).get("clipping_strategy"),
                        config_dict.get("gradients", {}).get("params"))

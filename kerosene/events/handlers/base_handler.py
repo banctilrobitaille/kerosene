@@ -42,6 +42,9 @@ class EventHandler(ABC):
     def should_handle_valid_step_data(self, event, trainer):
         return (event in Event.valid_batch_events()) and self.should_handle_iteration(trainer.current_valid_step)
 
+    def should_handle_test_step_data(self, event, trainer):
+        return (event in Event.test_batch_events()) and self.should_handle_iteration(trainer.current_test_step)
+
     @abstractmethod
     def __call__(self, *inputs):
         raise NotImplementedError()
