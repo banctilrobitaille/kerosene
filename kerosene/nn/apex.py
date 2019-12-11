@@ -174,9 +174,11 @@ class ApexModule(ABC, nn.Module):
         self._use_amp = use_amp
 
         if APEX_AVAILABLE and self._use_amp:
-            self._model, self._optimizers = amp.initialize(
-                self._model, self._optimizers, opt_level=amp_opt_level, num_losses=num_losses)
+            self._model, optimizers = amp.initialize(
+                self._model, list(self._optimizers.values()), opt_level=amp_opt_level, num_losses=num_losses)
+            self._optimizers = {optimizer_name: optimizer for optimizer_name, optimizer in
+                                zip(list(self._optimizers.keys()), optimizers)}
             if on_multiple_gpus(get_devices()):
                 self._model = ApexDDP(self._model, delay_allreduce=True)
-        if not APEX_AVAILABLE and on_multiple_gpus(get_devices()):
-            self._model = DDP(self._model, device_ids=[device])
+            if not APEX_AVAILABLE and on_multiple_gpus(get_devices()):
+                self._model = DDP(self._model, device_ids=[device])

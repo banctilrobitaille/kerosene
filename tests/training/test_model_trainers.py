@@ -28,7 +28,7 @@ class ModelTrainerTest(unittest.TestCase):
         self._gradient_clipping_strategy = None
 
         self._model_trainer = ModelTrainer(self.MODEL_NAME, self._model_mock, self._criterion_mock,
-                                           self._optimizer_mock, self._scheduler_mock,
+                                           {"Adam_weights": self._optimizer_mock}, self._scheduler_mock,
                                            {"Accuracy": self._metric_computer_mock}, self._gradient_clipping_strategy)
 
         self._gradient_clipping_strategy = mock(GradientClippingStrategy)
@@ -206,7 +206,7 @@ class ModelTrainerFactoryTest(unittest.TestCase):
         assert_that(model_trainer.criterion, instance_of(torch.nn.CrossEntropyLoss))
         assert_that(len(model_trainer.optimizers), is_(2))
         [assert_that(optim, instance_of(torch.optim.Optimizer)) for optim in
-         model_trainer.optimizers]
+         list(model_trainer.optimizers.values())]
         assert_that(len(model_trainer.schedulers), is_(2))
         [assert_that(scheduler, instance_of(torch.optim.lr_scheduler.ReduceLROnPlateau)) for scheduler
          in model_trainer.schedulers]

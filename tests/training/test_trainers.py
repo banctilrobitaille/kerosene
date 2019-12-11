@@ -28,7 +28,7 @@ class ModelTrainerFactoryTest(unittest.TestCase):
         self._inputs = torch.rand((1, 32))
         self._truth = torch.ones((1,), dtype=torch.long)
         self._optims = [OptimizerFactory().create(model_trainer_config.optimizer_types[0], self._model,
-                                                 **model_trainer_config.optimizer_params[0]),
+                                                  **model_trainer_config.optimizer_params[0]),
                         OptimizerFactory().create(model_trainer_config.optimizer_types[1], self._model,
                                                   **model_trainer_config.optimizer_params[1])]
         self._epoch = 10
@@ -63,6 +63,6 @@ class ModelTrainerFactoryTest(unittest.TestCase):
         assert_that(model_trainer.model.state_dict()["bias"].cpu().numpy().all(),
                     equal_to(self._model.state_dict()["bias"].cpu().numpy().all()))
         [assert_that(optimizer.state_dict()["state"], is_(optim.state_dict()["state"])) for optimizer, optim in
-         zip(self._model_trainer.optimizers, self._optims)]
+         zip(list(self._model_trainer.optimizers.values()), self._optims)]
         [assert_that(optimizer.state_dict()["param_groups"][0], equal_to(optim.state_dict()["param_groups"][0]))
-         for optimizer, optim in zip(self._model_trainer.optimizers, self._optims)]
+         for optimizer, optim in zip(list(self._model_trainer.optimizers.values()), self._optims)]

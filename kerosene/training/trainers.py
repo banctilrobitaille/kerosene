@@ -41,8 +41,8 @@ from kerosene.utils.devices import on_gpu
 class ModelTrainer(ApexModule):
     LOGGER = logging.getLogger("ModelTrainer")
 
-    def __init__(self, model_name: str, model: torch.nn.Module, criterion: torch.nn.Module, optimizers: List[Optimizer],
-                 schedulers, metric_computers: Dict[str, Metric],
+    def __init__(self, model_name: str, model: torch.nn.Module, criterion: torch.nn.Module,
+                 optimizers: Dict[str, Optimizer], schedulers, metric_computers: Dict[str, Metric],
                  gradient_clipping_strategy: GradientClippingStrategy = None):
         super(ModelTrainer, self).__init__(model, optimizers)
         self._model_name = model_name
@@ -138,12 +138,12 @@ class ModelTrainer(ApexModule):
 
     @property
     def optimizer_states(self):
-        return [optimizer.state_dict() for optimizer in self._optimizers]
+        return [optimizer.state_dict() for optimizer in list(self._optimizers.values())]
 
     @property
     def optimizers_lr(self):
         lr = []
-        for optimizer in self._optimizers:
+        for optimizer in list(self._optimizers.values()):
             for param_groups in optimizer.param_groups:
                 lr.append(param_groups["lr"])
 
@@ -208,25 +208,26 @@ class ModelTrainer(ApexModule):
         self._train_loss.update(self._step_train_loss)
 
         return ApexLoss(self._amp_id, self._step_train_loss,
-                        self._optimizers) if self.use_amp else self._step_train_loss
+                        list(self._optimizers.values())) if self.use_amp else self._step_train_loss
 
     def compute_and_update_valid_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_valid_loss = self._criterion(pred, target)
         self._valid_loss.update(self._step_valid_loss)
 
         return ApexLoss(self._amp_id, self._step_valid_loss,
-                        self._optimizers) if self.use_amp else self._step_valid_loss
+                        list(self._optimizers.values())) if self.use_amp else self._step_valid_loss
 
     def compute_and_update_test_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_test_loss = self._criterion(pred, target)
         self._test_loss.update(self._step_test_loss)
 
-        return ApexLoss(self._amp_id, self._step_test_loss, self._optimizers) if self.use_amp else self._step_test_loss
+        return ApexLoss(self._amp_id, self._step_test_loss,
+                        list(self._optimizers.values())) if self.use_amp else self._step_test_loss
 
     def compute_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
         loss = self._criterion(pred, target)
 
-        return ApexLoss(self._amp_id, loss, self._optimizers) if self.use_amp else loss
+        return ApexLoss(self._amp_id, loss, list(self._optimizers.values())) if self.use_amp else loss
 
     def update_train_loss(self, loss) -> None:
         self._step_train_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
@@ -281,10 +282,10 @@ class ModelTrainer(ApexModule):
         checkpoint = torch.load(path)
         self._model.load_state_dict(checkpoint["model_state_dict"])
         [optimizer.load_state_dict(optimizer_state_dict) for optimizer, optimizer_state_dict in
-         zip(self._optimizers, checkpoint["optimizer_state_dict"])]
+         zip(list(self._optimizers.values()), checkpoint["optimizer_state_dict"])]
 
     def zero_grad(self) -> None:
-        [optimizer.zero_grad() for optimizer in self._optimizers]
+        [optimizer.zero_grad() for optimizer in list(self._optimizers.values())]
 
     def _should_clip_gradients(self):
         return self._gradient_clipping_strategy is not None
@@ -575,21 +576,24 @@ class ModelTrainerFactory(object):
             model_trainer_config.model_type,
             model_trainer_config.model_params)
 
-        optimizers = [self._optimizer_factory.create(optimizer_type, model, **optimizer_params) for
-                      optimizer_type, optimizer_params in
-                      list(zip(model_trainer_config.optimizer_types, model_trainer_config.optimizer_params))]
+        optimizers = {optimizer_name if optimizer_name is not None else optimizer_type: self._optimizer_factory.create(
+            optimizer_type, model, **optimizer_params) for optimizer_name, optimizer_type, optimizer_params
+            in list(zip(model_trainer_config.optimizer_names, model_trainer_config.optimizer_types,
+                        model_trainer_config.optimizer_params))}
 
         schedulers = [self._scheduler_factory.create(scheduler_type, optimizer, scheduler_params) for
                       scheduler_type, optimizer, scheduler_params in
-                      list(
-                          zip(model_trainer_config.scheduler_types, optimizers, model_trainer_config.scheduler_params))]
+                      list(zip(model_trainer_config.scheduler_types, list(optimizers.values()),
+                               model_trainer_config.scheduler_params))]
 
         criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
                                                    model_trainer_config.criterion_params)
 
-        metrics = {metric_type: self._metric_factory.create(model_trainer_config.metric_types[i],
-                                                            model_trainer_config.metric_params[i]) for i, metric_type in
-                   enumerate(model_trainer_config.metric_types)}
+        metrics = {metric_name if metric_name is not None else metric_type: self._metric_factory.create(metric_type,
+                                                                                                        metric_params)
+                   for metric_name, metric_type, metric_params
+                   in list(zip(model_trainer_config.metric_names, model_trainer_config.metric_types,
+                               model_trainer_config.metric_params))}
 
         gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(
             model_trainer_config.gradient_clipping_strategy,

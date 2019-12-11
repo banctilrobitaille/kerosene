@@ -326,7 +326,7 @@ class PlotLR(BaseVisdomHandler):
                                            'ylabel': "Learning Rate",
                                            'title': "{} {} per {}".format(model_trainer.name, "Learning Rate",
                                                                           str(PlotFrequency.EVERY_EPOCH)),
-                                           'legend': [model_trainer.name]}})
+                                           'legend': list(model_trainer.optimizers.keys())}})
 
 
 class PlotGradientFlow(BaseVisdomHandler):

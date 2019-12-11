@@ -8,12 +8,14 @@ models:
     type: SimpleNet
     optimizers:
       - type: Adam
+        name: "Adam_weights"
         params:
           lr: 0.01
           model_parameters: "weight"
       - type: Adam
+        name: "Adam_bias"
         params:
-          lr: 0.01
+          lr: 0.001
           model_parameters: "bias"
     schedulers:
       - type: ReduceLROnPlateau

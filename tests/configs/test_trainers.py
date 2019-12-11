@@ -16,10 +16,12 @@ class TestModelTrainerConfiguration(unittest.TestCase):
     SIMPLE_NET_NAME = "SimpleNet"
     SIMPLE_NET_TYPE = "SimpleNet"
     SIMPLE_NET_OPTIMIZER_TYPE = "Adam"
+    SIMPLE_NET_OPTIMIZER_NAME = "Adam_weights"
     SIMPLE_NET_OPTIMIZER_PARAMS = {'lr': 0.01, 'model_parameters': 'weight'}
 
     SIMPLE_NET_OPTIMIZER_TYPE_2 = "Adam"
-    SIMPLE_NET_OPTIMIZER_PARAMS_2 = {'lr': 0.01, 'model_parameters': 'bias'}
+    SIMPLE_NET_OPTIMIZER_NAME_2 = "Adam_bias"
+    SIMPLE_NET_OPTIMIZER_PARAMS_2 = {'lr': 0.001, 'model_parameters': 'bias'}
 
     SIMPLE_NET_SCHEDULER_TYPE = "ReduceLROnPlateau"
     SIMPLE_NET_SCHEDULER_PARAMS = {'mode': 'min', 'factor': 0.1, 'patience': 3}
@@ -37,8 +39,10 @@ class TestModelTrainerConfiguration(unittest.TestCase):
     def test_should_parse_valid_model_trainer_config(self):
         expected_config_dict = {self.SIMPLE_NET_NAME: {'type': self.SIMPLE_NET_TYPE,
                                                        'optimizers': [{'type': self.SIMPLE_NET_OPTIMIZER_TYPE,
+                                                                       'name': self.SIMPLE_NET_OPTIMIZER_NAME,
                                                                        'params': self.SIMPLE_NET_OPTIMIZER_PARAMS},
                                                                       {'type': self.SIMPLE_NET_OPTIMIZER_TYPE_2,
+                                                                       'name': self.SIMPLE_NET_OPTIMIZER_NAME_2,
                                                                        'params': self.SIMPLE_NET_OPTIMIZER_PARAMS_2}],
                                                        'schedulers': [{'type': self.SIMPLE_NET_SCHEDULER_TYPE,
                                                                        'params': self.SIMPLE_NET_SCHEDULER_PARAMS},
