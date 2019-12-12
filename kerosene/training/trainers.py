@@ -35,7 +35,9 @@ from kerosene.nn.utils.gradients import GradientClippingStrategy, GradientClippi
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training import Status
-from kerosene.utils.devices import on_gpu
+from kerosene.utils.devices import on_gpu, on_multiple_gpus
+from kerosene.training.exceptions import InvalidDataSamplerTypeException
+from torch.utils.data.distributed import DistributedSampler
 
 
 class ModelTrainer(ApexModule):
@@ -182,7 +184,7 @@ class ModelTrainer(ApexModule):
         if self._status is Status.TRAINING:
             if self._should_clip_gradients():
                 self._gradient_clipping_strategy.clip(self._model.parameters())
-            [optimizer.step() for optimizer in self._optimizers]
+            [optimizer.step() for optimizer in list(self._optimizers.values())]
 
     def scheduler_step(self) -> None:
         if self._schedulers is not None:
@@ -316,11 +318,16 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
 
         self._custom_variables = {}
 
+        list(map(lambda sampler, phase: self._verify_dataloader_samplers(run_config.devices, sampler, phase),
+                 [self._train_data_loader.sampler, self._valid_data_loader.sampler, self._test_data_loader.sampler],
+                 ["Train", "Valid", "Test"]))
+
         for amp_id, model_trainer in enumerate(self._model_trainers):
             if on_gpu(self._device):
                 model_trainer.to(self._device)
-            model_trainer.initialize(amp_id, len(self._model_trainers), run_config.use_amp, run_config.amp_opt_level,
-                                     self._device)
+                model_trainer.initialize(amp_id, len(self._model_trainers), run_config.use_amp,
+                                         run_config.amp_opt_level,
+                                         self._device)
 
         self._status = Status.INITIALIZED
 
@@ -509,6 +516,11 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
         self.finalize()
         self._status = Status.FINALIZED
 
+    def _verify_dataloader_samplers(self, devices: list, sampler: torch.utils.data.Sampler, phase: str):
+        if on_multiple_gpus(devices) and not \
+                isinstance(sampler, DistributedSampler):
+            raise InvalidDataSamplerTypeException(phase, type(self._train_data_loader))
+
 
 class SimpleTrainer(Trainer):
 
@@ -576,10 +588,11 @@ class ModelTrainerFactory(object):
             model_trainer_config.model_type,
             model_trainer_config.model_params)
 
-        optimizers = {optimizer_name if optimizer_name is not None else optimizer_type: self._optimizer_factory.create(
-            optimizer_type, model, **optimizer_params) for optimizer_name, optimizer_type, optimizer_params
-            in list(zip(model_trainer_config.optimizer_names, model_trainer_config.optimizer_types,
-                        model_trainer_config.optimizer_params))}
+        optimizers = {optimizer_name if optimizer_name is not None else "{}_{}".format(optimizer_type,
+                                                                                       i): self._optimizer_factory.create(
+            optimizer_type, model, **optimizer_params) for i, (optimizer_name, optimizer_type, optimizer_params)
+            in enumerate(list(zip(model_trainer_config.optimizer_names, model_trainer_config.optimizer_types,
+                                  model_trainer_config.optimizer_params)))}
 
         schedulers = [self._scheduler_factory.create(scheduler_type, optimizer, scheduler_params) for
                       scheduler_type, optimizer, scheduler_params in
@@ -589,11 +602,13 @@ class ModelTrainerFactory(object):
         criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
                                                    model_trainer_config.criterion_params)
 
-        metrics = {metric_name if metric_name is not None else metric_type: self._metric_factory.create(metric_type,
-                                                                                                        metric_params)
-                   for metric_name, metric_type, metric_params
-                   in list(zip(model_trainer_config.metric_names, model_trainer_config.metric_types,
-                               model_trainer_config.metric_params))}
+        metrics = {
+            metric_name if metric_name is not None else "{}_{}".format(metric_type, i): self._metric_factory.create(
+                metric_type,
+                metric_params)
+            for i, (metric_name, metric_type, metric_params)
+            in enumerate(list(zip(model_trainer_config.metric_names, model_trainer_config.metric_types,
+                                  model_trainer_config.metric_params)))}
 
         gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(
             model_trainer_config.gradient_clipping_strategy,
