@@ -590,9 +590,10 @@ class ModelTrainerFactory(object):
 
         optimizers = {optimizer_name if optimizer_name is not None else "{}_{}".format(optimizer_type,
                                                                                        i): self._optimizer_factory.create(
-            optimizer_type, model, **optimizer_params) for i, (optimizer_name, optimizer_type, optimizer_params)
-            in enumerate(list(zip(model_trainer_config.optimizer_names, model_trainer_config.optimizer_types,
-                                  model_trainer_config.optimizer_params)))}
+            optimizer_type, model,
+            **optimizer_params) for i, (optimizer_name, optimizer_type, optimizer_params) in
+            enumerate(list(zip(model_trainer_config.optimizer_names, model_trainer_config.optimizer_types,
+                               model_trainer_config.optimizer_params)))}
 
         schedulers = [self._scheduler_factory.create(scheduler_type, optimizer, scheduler_params) for
                       scheduler_type, optimizer, scheduler_params in
