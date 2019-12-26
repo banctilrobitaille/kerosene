@@ -51,7 +51,7 @@ class YamlConfigurationParser(object):
     def parse(config_file_path):
         with open(config_file_path, 'r') as config_file:
             try:
-                config = CustomYamlParser.safe_load(config_file)
+                config = CustomYamlParser().safe_load(config_file)
 
                 model_trainer_configs = list(
                     map(lambda model_name: ModelTrainerConfiguration.from_dict(model_name,
@@ -70,7 +70,7 @@ class YamlConfigurationParser(object):
     def parse_section(config_file_path, yml_tag):
         with open(config_file_path, 'r') as config_file:
             try:
-                config = yaml.load(config_file, Loader=yaml.FullLoader)
+                config = CustomYamlParser().safe_load(config_file)
 
                 return config[yml_tag]
             except yaml.YAMLError as e:
