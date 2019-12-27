@@ -2,7 +2,7 @@ import os
 import unittest
 
 from hamcrest import *
-from ignite.metrics import Accuracy, Metric
+from ignite.metrics import Accuracy, Metric, Recall
 from mockito import mock, verify, spy
 from torch import nn
 from torch.optim import Optimizer, lr_scheduler
@@ -23,12 +23,14 @@ class ModelTrainerTest(unittest.TestCase):
         self._criterion_mock = spy(nn.CrossEntropyLoss())
         self._optimizer_mock = mock(Optimizer)
         self._scheduler_mock = mock(lr_scheduler)
-        self._metric_computer_mock = spy(Accuracy())
+        self._accuracy_computer_mock = spy(Accuracy())
+        self._recall_computer_mock = spy(Recall())
         self._gradient_clipping_strategy = None
 
         self._model_trainer = ModelTrainer(self.MODEL_NAME, self._model_mock, self._criterion_mock,
                                            self._optimizer_mock, self._scheduler_mock,
-                                           {"Accuracy": self._metric_computer_mock}, self._gradient_clipping_strategy)
+                                           {"Accuracy": self._accuracy_computer_mock,
+                                            "Recall": self._recall_computer_mock}, self._gradient_clipping_strategy)
 
         self._gradient_clipping_strategy = mock(GradientClippingStrategy)
 
@@ -40,14 +42,14 @@ class ModelTrainerTest(unittest.TestCase):
         self._model_trainer.update_train_metrics(metric)
         assert_that(self._model_trainer.train_metrics["Accuracy"], equal_to(ONE))
         assert_that(self._model_trainer.step_train_metrics["Accuracy"], equal_to(ONE))
-        verify(self._metric_computer_mock).update((MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0))
+        verify(self._accuracy_computer_mock).update((MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0))
 
         metric = self._model_trainer.compute_metrics(MODEL_PREDICTION_CLASS_1, TARGET_CLASS_0)
         self._model_trainer.update_train_metrics(metric)
         assert_that(self._model_trainer.train_metrics["Accuracy"], equal_to(ONE / 2))
         assert_that(self._model_trainer.step_train_metrics["Accuracy"], equal_to(ZERO))
 
-        verify(self._metric_computer_mock, times=2).compute()
+        verify(self._accuracy_computer_mock, times=2).compute()
 
         assert_that(self._model_trainer.valid_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.test_metrics["Accuracy"], equal_to(ZERO))
@@ -65,14 +67,14 @@ class ModelTrainerTest(unittest.TestCase):
         self._model_trainer.update_valid_metrics(metric)
         assert_that(self._model_trainer.valid_metrics["Accuracy"], equal_to(ONE))
         assert_that(self._model_trainer.step_valid_metrics["Accuracy"], equal_to(ONE))
-        verify(self._metric_computer_mock).update((MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0))
+        verify(self._accuracy_computer_mock).update((MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0))
 
         metric = self._model_trainer.compute_metrics(MODEL_PREDICTION_CLASS_1, TARGET_CLASS_0)
         self._model_trainer.update_valid_metrics(metric)
         assert_that(self._model_trainer.valid_metrics["Accuracy"], equal_to(ONE / 2))
         assert_that(self._model_trainer.step_valid_metrics["Accuracy"], equal_to(ZERO))
 
-        verify(self._metric_computer_mock, times=2).compute()
+        verify(self._accuracy_computer_mock, times=2).compute()
         assert_that(self._model_trainer.train_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.test_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.step_train_metrics["Accuracy"], equal_to(ZERO))
@@ -89,14 +91,14 @@ class ModelTrainerTest(unittest.TestCase):
         self._model_trainer.update_test_metrics(metric)
         assert_that(self._model_trainer.test_metrics["Accuracy"], equal_to(ONE))
         assert_that(self._model_trainer.step_test_metrics["Accuracy"], equal_to(ONE))
-        verify(self._metric_computer_mock).update((MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0))
+        verify(self._accuracy_computer_mock).update((MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0))
 
         metric = self._model_trainer.compute_metrics(MODEL_PREDICTION_CLASS_1, TARGET_CLASS_0)
         self._model_trainer.update_test_metrics(metric)
         assert_that(self._model_trainer.test_metrics["Accuracy"], equal_to(ONE / 2))
         assert_that(self._model_trainer.step_test_metrics["Accuracy"], equal_to(ZERO))
 
-        verify(self._metric_computer_mock, times=2).compute()
+        verify(self._accuracy_computer_mock, times=2).compute()
 
         assert_that(self._model_trainer.train_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.valid_metrics["Accuracy"], equal_to(ZERO))

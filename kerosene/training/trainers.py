@@ -26,7 +26,7 @@ from kerosene.events import BaseEvent
 from kerosene.events.publishers.base_publisher import BatchEventPublisherMixin, \
     EpochEventPublisherMixin, TrainingPhaseEventPublisherMixin, EventPublisher
 from kerosene.metrics.gauges import AverageGauge
-from kerosene.metrics.metrics import MetricFactory
+from kerosene.metrics.metrics import MetricFactory, to_tensor
 from kerosene.models.models import ModelFactory
 from kerosene.nn.apex import ApexModule, ApexLoss
 from kerosene.nn.criterions import CriterionFactory
@@ -89,17 +89,17 @@ class ModelTrainer(ApexModule):
 
     @property
     def step_train_metrics(self):
-        return {metric_name: torch.tensor([step_train_metric]).cpu() for metric_name, step_train_metric in
+        return {metric_name: to_tensor(step_train_metric).cpu() for metric_name, step_train_metric in
                 self._step_train_metrics.items()}
 
     @property
     def step_valid_metrics(self):
-        return {metric_name: torch.tensor([step_valid_metric]).cpu() for metric_name, step_valid_metric in
+        return {metric_name: to_tensor(step_valid_metric).cpu() for metric_name, step_valid_metric in
                 self._step_valid_metrics.items()}
 
     @property
     def step_test_metrics(self):
-        return {metric_name: torch.tensor([step_test_metric]).cpu() for metric_name, step_test_metric in
+        return {metric_name: to_tensor(step_test_metric).cpu() for metric_name, step_test_metric in
                 self._step_test_metrics.items()}
 
     @property
@@ -116,17 +116,17 @@ class ModelTrainer(ApexModule):
 
     @property
     def train_metrics(self):
-        return {metric_name: torch.tensor([train_metric.compute()]).cpu() for metric_name, train_metric in
+        return {metric_name: to_tensor(train_metric.compute()).cpu() for metric_name, train_metric in
                 self._train_metrics.items()}
 
     @property
     def valid_metrics(self):
-        return {metric_name: torch.tensor([valid_metric.compute()]).cpu() for metric_name, valid_metric in
+        return {metric_name: to_tensor(valid_metric.compute()).cpu() for metric_name, valid_metric in
                 self._valid_metrics.items()}
 
     @property
     def test_metrics(self):
-        return {metric_name: torch.tensor([test_metric.compute()]).cpu() for metric_name, test_metric in
+        return {metric_name: to_tensor(test_metric.compute()).cpu() for metric_name, test_metric in
                 self._test_metrics.items()}
 
     @property
