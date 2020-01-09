@@ -12,6 +12,8 @@ from kerosene.configs.parsers import YamlConfigurationParser
 from kerosene.nn.utils.gradients import GradientClippingStrategy
 from kerosene.training.trainers import ModelTrainer, ModelTrainerFactory
 from tests.constants import *
+from tests.functionals.models import SimpleNet
+from torch.optim import SGD
 
 
 # noinspection PyUnresolvedReferences
@@ -19,15 +21,15 @@ class ModelTrainerTest(unittest.TestCase):
     MODEL_NAME = "Harry Potter"
 
     def setUp(self) -> None:
-        self._model_mock = mock(nn.Module)
+        self._model = SimpleNet()
         self._criterion_mock = spy(nn.CrossEntropyLoss())
-        self._optimizer_mock = mock(Optimizer)
+        self._optimizer_mock = spy(SGD(self._model.parameters(), lr=0.001))
         self._scheduler_mock = mock(lr_scheduler)
         self._accuracy_computer_mock = spy(Accuracy())
         self._recall_computer_mock = spy(Recall())
         self._gradient_clipping_strategy = None
 
-        self._model_trainer = ModelTrainer(self.MODEL_NAME, self._model_mock, self._criterion_mock,
+        self._model_trainer = ModelTrainer(self.MODEL_NAME, self._model, self._criterion_mock,
                                            self._optimizer_mock, self._scheduler_mock,
                                            {"Accuracy": self._accuracy_computer_mock,
                                             "Recall": self._recall_computer_mock}, self._gradient_clipping_strategy)

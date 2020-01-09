@@ -82,7 +82,7 @@ class PrintTrainingStatus(ColoredConsoleLogger):
 
     def print_status(self, status, epoch, train_step, valid_step):
         self.LOGGER.info(
-            "\nCurrent state: {} |  Epoch: {} | Training step: {} | Validation step: {} \n".format(
+            "\nCurrent states: {} |  Epoch: {} | Training step: {} | Validation step: {} \n".format(
                 self.color(status, color_key=status), epoch, train_step, valid_step))
 
 

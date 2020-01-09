@@ -22,9 +22,8 @@ from ignite.metrics import Metric
 from torch.utils.data import DataLoader
 
 from kerosene.configs.configs import ModelTrainerConfiguration, RunConfiguration
-from kerosene.events import BaseEvent
-from kerosene.events.publishers.base_publisher import BatchEventPublisherMixin, \
-    EpochEventPublisherMixin, TrainingPhaseEventPublisherMixin, EventPublisher
+from kerosene.events import BaseEvent, Monitor, Frequency, Phase
+from kerosene.events.publishers.base_publisher import EventPublisher
 from kerosene.metrics.gauges import AverageGauge
 from kerosene.metrics.metrics import MetricFactory, to_tensor
 from kerosene.models.models import ModelFactory
@@ -34,6 +33,8 @@ from kerosene.nn.utils.gradients import GradientClippingStrategy, GradientClippi
 from kerosene.optim.optimizers import OptimizerFactory
 from kerosene.optim.schedulers import SchedulerFactory
 from kerosene.training import Status
+from kerosene.training.events import BatchEventPublisherMixin, EpochEventPublisherMixin, \
+    TrainingPhaseEventPublisherMixin
 from kerosene.utils.devices import on_gpu
 
 
@@ -149,6 +150,25 @@ class ModelTrainer(ApexModule):
     @property
     def scheduler(self):
         return self._scheduler
+
+    def step_monitors(self):
+        return {Phase.TRAINING: {Monitor.METRICS: self.step_train_metrics, Monitor.LOSS: self.step_train_loss},
+                Phase.VALIDATION: {Monitor.METRICS: self.step_valid_metrics, Monitor.LOSS: self.step_valid_loss},
+                Phase.TEST: {Monitor.METRICS: self.step_test_metrics, Monitor.LOSS: self.step_test_loss}}
+
+    def epoch_monitors(self):
+        return {Phase.TRAINING: {Monitor.METRICS: self.train_metrics, Monitor.LOSS: self.train_loss},
+                Phase.VALIDATION: {Monitor.METRICS: self.valid_metrics, Monitor.LOSS: self.valid_loss},
+                Phase.TEST: {Monitor.METRICS: self.test_metrics, Monitor.LOSS: self.test_loss}}
+
+    def to_state_dict(self, frequency: Frequency = Frequency.EPOCH,
+                      training_phase: Union[List[Phase], Phase] = Phase.ALL):
+        training_phase = [training_phase] if not isinstance(training_phase, list) else training_phase
+        monitors = self.step_monitors() if frequency == Frequency.STEP else self.epoch_monitors()
+
+        return {"Model": self.model_state,
+                "Optimizer": self.optimizer_state,
+                "Monitors": dict(map(lambda phase: (phase, monitors[phase]), training_phase))}
 
     def is_active(self) -> bool:
         return self._status is not Status.FINALIZED
