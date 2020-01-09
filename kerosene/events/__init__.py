@@ -40,8 +40,8 @@ class Frequency(Enum):
 
 
 class Moment(object):
-    def __init__(self, iteration, frequency: Frequency, phase: Phase):
-        self._datetime = datetime.now()
+    def __init__(self, iteration, frequency: Frequency, phase: Phase, time: datetime = None):
+        self._datetime = datetime.now() if time is None else time
         self._frequency = frequency
         self._iteration = iteration
         self._phase = phase
@@ -96,26 +96,30 @@ class BaseEvent(Enum):
         return hash(self.value)
 
 
-class TemporalEvent(BaseEvent, Moment):
+class TemporalEvent(object):
     def __init__(self, event: BaseEvent, moment: Moment):
-        super().__init__(event.value)
+        self._event = event
         self._moment = moment
 
     @property
-    def datetime(self):
-        return self._moment.datetime
+    def event(self):
+        return self._event
 
     @property
     def frequency(self):
         return self._moment.frequency
 
     @property
-    def iteration(self):
-        return self._moment.iteration
-
-    @property
     def phase(self):
         return self._moment.phase
+
+    @property
+    def datetime(self):
+        return self._moment.datetime
+
+    @property
+    def iteration(self):
+        return self._moment.iteration
 
 
 class BaseVariable(Enum):
