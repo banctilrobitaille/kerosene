@@ -69,7 +69,7 @@ class BatchEventPublisherMixin(object):
             iteration = self.current_test_step
             phase = Phase.TEST
 
-        self.fire(TemporalEvent(Event.ON_BATCH_BEGIN, Moment(iteration, Frequency.STEP, phase)))
+        self.fire(Event.ON_BATCH_BEGIN(Moment(iteration, Frequency.STEP, phase)))
 
     def _on_batch_end(self):
         self.on_batch_end()
@@ -84,37 +84,31 @@ class BatchEventPublisherMixin(object):
             iteration = self.current_test_step
             phase = Phase.TEST
 
-        self.fire(TemporalEvent(Event.ON_BATCH_END, Moment(iteration, Frequency.STEP, phase)))
+        self.fire(Event.ON_BATCH_END(Moment(iteration, Frequency.STEP, phase)))
 
     def _on_train_batch_begin(self):
         self.on_train_batch_begin()
-        self.fire(TemporalEvent(Event.ON_TRAIN_BATCH_BEGIN,
-                                Moment(self.current_train_step, Frequency.STEP, Phase.TRAINING)))
+        self.fire(Event.ON_TRAIN_BATCH_BEGIN(Moment(self.current_train_step, Frequency.STEP, Phase.TRAINING)))
 
     def _on_train_batch_end(self):
         self.on_train_batch_end()
-        self.fire(TemporalEvent(Event.ON_TRAIN_BATCH_END,
-                                Moment(self.current_train_step, Frequency.STEP, Phase.TRAINING)))
+        self.fire(Event.ON_TRAIN_BATCH_END(Moment(self.current_train_step, Frequency.STEP, Phase.TRAINING)))
 
     def _on_valid_batch_begin(self):
         self.on_valid_batch_begin()
-        self.fire(TemporalEvent(Event.ON_VALID_BATCH_BEGIN,
-                                Moment(self.current_valid_step, Frequency.STEP, Phase.VALIDATION)))
+        self.fire(Event.ON_VALID_BATCH_BEGIN(Moment(self.current_valid_step, Frequency.STEP, Phase.VALIDATION)))
 
     def _on_valid_batch_end(self):
         self.on_valid_batch_begin()
-        self.fire(TemporalEvent(Event.ON_VALID_BATCH_END,
-                                Moment(self.current_valid_step, Frequency.STEP, Phase.VALIDATION)))
+        self.fire(Event.ON_VALID_BATCH_END(Moment(self.current_valid_step, Frequency.STEP, Phase.VALIDATION)))
 
     def _on_test_batch_begin(self):
         self.on_test_batch_begin()
-        self.fire(TemporalEvent(Event.ON_TEST_BATCH_BEGIN,
-                                Moment(self.current_test_step, Frequency.STEP, Phase.TEST)))
+        self.fire(Event.ON_TEST_BATCH_BEGIN(Moment(self.current_test_step, Frequency.STEP, Phase.TEST)))
 
     def _on_test_batch_end(self):
         self.on_test_batch_end()
-        self.fire(TemporalEvent(Event.ON_TEST_BATCH_END,
-                                Moment(self.current_test_step, Frequency.STEP, Phase.TEST)))
+        self.fire(Event.ON_TEST_BATCH_END(Moment(self.current_test_step, Frequency.STEP, Phase.TEST)))
 
 
 class EpochEventPublisherMixin(object):
@@ -145,39 +139,39 @@ class EpochEventPublisherMixin(object):
     def _on_epoch_begin(self):
         self._reset_model_trainers()
         self.on_epoch_begin()
-        self.fire(TemporalEvent(Event.ON_EPOCH_BEGIN, Moment(self.epoch, Frequency.EPOCH, Phase.ALL)))
+        self.fire(Event.ON_EPOCH_BEGIN(Moment(self.epoch, Frequency.EPOCH, Phase.ALL)))
 
     def _on_epoch_end(self):
         self.scheduler_step()
         self.on_epoch_end()
-        self.fire(TemporalEvent(Event.ON_EPOCH_END, Moment(self.epoch, Frequency.EPOCH, Phase.ALL)))
+        self.fire(Event.ON_EPOCH_END(Moment(self.epoch, Frequency.EPOCH, Phase.ALL)))
 
     def _on_train_epoch_begin(self):
         self._status = Status.TRAINING
         self.on_train_epoch_begin()
-        self.fire(TemporalEvent(Event.ON_TRAIN_EPOCH_BEGIN, Moment(self.epoch, Frequency.EPOCH, Phase.TRAINING)))
+        self.fire(Event.ON_TRAIN_EPOCH_BEGIN(Moment(self.epoch, Frequency.EPOCH, Phase.TRAINING)))
 
     def _on_train_epoch_end(self):
         self.on_train_epoch_end()
-        self.fire(TemporalEvent(Event.ON_TRAIN_EPOCH_END, Moment(self.epoch, Frequency.EPOCH, Phase.TRAINING)))
+        self.fire(Event.ON_TRAIN_EPOCH_END(Moment(self.epoch, Frequency.EPOCH, Phase.TRAINING)))
 
     def _on_valid_epoch_begin(self):
         self.on_valid_epoch_begin()
-        self.fire(TemporalEvent(Event.ON_VALID_EPOCH_BEGIN, Moment(self.epoch, Frequency.EPOCH, Phase.VALIDATION)))
+        self.fire(Event.ON_VALID_EPOCH_BEGIN(Moment(self.epoch, Frequency.EPOCH, Phase.VALIDATION)))
 
     def _on_valid_epoch_end(self):
         self._current_valid_batch = 0
         self.on_valid_epoch_end()
-        self.fire(TemporalEvent(Event.ON_VALID_EPOCH_END, Moment(self.epoch, Frequency.EPOCH, Phase.VALIDATION)))
+        self.fire(Event.ON_VALID_EPOCH_END(Moment(self.epoch, Frequency.EPOCH, Phase.VALIDATION)))
 
     def _on_test_epoch_begin(self):
         self.on_test_epoch_begin()
-        self.fire(TemporalEvent(Event.ON_TEST_EPOCH_BEGIN, Moment(self.epoch, Frequency.EPOCH, Phase.TEST)))
+        self.fire(Event.ON_TEST_EPOCH_BEGIN(Moment(self.epoch, Frequency.EPOCH, Phase.TEST)))
 
     def _on_test_epoch_end(self):
         self._current_test_batch = 0
         self.on_test_epoch_end()
-        self.fire(TemporalEvent(Event.ON_TEST_EPOCH_END, Moment(self.epoch, Frequency.STEP, Phase.TEST)))
+        self.fire(Event.ON_TEST_EPOCH_END(Moment(self.epoch, Frequency.STEP, Phase.TEST)))
 
 
 class TrainingPhaseEventPublisherMixin(object):
@@ -205,29 +199,29 @@ class TrainingPhaseEventPublisherMixin(object):
     def _on_training_begin(self):
         self.on_training_begin()
         self._status = Status.TRAINING
-        self.fire(TemporalEvent(Event.ON_TRAINING_BEGIN, Moment(0, Frequency.PHASE, Phase.TRAINING)))
+        self.fire(Event.ON_TRAINING_BEGIN(Moment(0, Frequency.PHASE, Phase.TRAINING)))
 
     def _on_training_end(self):
         self.on_training_end()
-        self.fire(TemporalEvent(Event.ON_TRAINING_END, Moment(0, Frequency.PHASE, Phase.TRAINING)))
+        self.fire(Event.ON_TRAINING_END(Moment(0, Frequency.PHASE, Phase.TRAINING)))
 
     def _on_valid_begin(self):
         self.on_valid_begin()
         self._status = Status.VALIDATING
-        self.fire(TemporalEvent(Event.ON_VALID_BEGIN, Moment(0, Frequency.PHASE, Phase.VALIDATION)))
+        self.fire(Event.ON_VALID_BEGIN(Moment(0, Frequency.PHASE, Phase.VALIDATION)))
 
     def _on_valid_end(self):
         self.on_valid_end()
-        self.fire(TemporalEvent(Event.ON_VALID_END, Moment(0, Frequency.PHASE, Phase.VALIDATION)))
+        self.fire(Event.ON_VALID_END(Moment(0, Frequency.PHASE, Phase.VALIDATION)))
 
     def _on_test_begin(self):
         self.on_test_begin()
         self._status = Status.TESTING
-        self.fire(TemporalEvent(Event.ON_TEST_BEGIN, Moment(0, Frequency.PHASE, Phase.TEST)))
+        self.fire(Event.ON_TEST_BEGIN(Moment(0, Frequency.PHASE, Phase.TEST)))
 
     def _on_test_end(self):
         self.on_test_end()
-        self.fire(TemporalEvent(Event.ON_TEST_END, Moment(0, Frequency.PHASE, Phase.TEST)))
+        self.fire(Event.ON_TEST_END(Moment(0, Frequency.PHASE, Phase.TEST)))
 
     def _finalize(self):
         self._status = Status.FINALIZING

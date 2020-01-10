@@ -15,7 +15,7 @@
 # ==============================================================================
 from abc import ABC, abstractmethod
 
-from kerosene.events import BaseEvent
+from kerosene.events import BaseEvent, TemporalEvent
 
 
 class EventPublisher(ABC):
@@ -24,16 +24,16 @@ class EventPublisher(ABC):
 
     @property
     @abstractmethod
-    def state(self):
+    def sender(self):
         raise NotImplementedError()
 
     @abstractmethod
     def with_event_handler(self, handler, event: BaseEvent):
         raise NotImplementedError()
 
-    def fire(self, event: BaseEvent):
-        if event in self._event_handlers.keys():
-            state = self.state
+    def fire(self, temporal_event: TemporalEvent, monitors):
+        if temporal_event.event in self._event_handlers.keys():
+            sender = self.sender
 
-            for handler in self._event_handlers[event]:
-                handler(event, state)
+            for handler in self._event_handlers[temporal_event.event]:
+                handler(temporal_event, sender)

@@ -381,12 +381,20 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
         return len(self._test_data_loader)
 
     @property
-    def state(self):
+    def sender(self):
         return self
 
     @property
     def status(self):
         return self._status
+
+    def get_monitors(self, frequency: Frequency, phase):
+        if frequency == Frequency.STEP:
+            monitors = dict(map(lambda model: (model.name, model.step_monitors()[phase]), self._model_trainers))
+        else:
+            monitors = dict(map(lambda model: (model.name, model.epoch_monitors()[phase]), self._model_trainers))
+
+        return monitors
 
     @abstractmethod
     def train_step(self, inputs, target):
