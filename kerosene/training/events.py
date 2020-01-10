@@ -92,7 +92,8 @@ class BatchEventPublisherMixin(object):
 
     def _on_train_batch_end(self):
         self.on_train_batch_end()
-        self.fire(Event.ON_TRAIN_BATCH_END(Moment(self.current_train_step, Frequency.STEP, Phase.TRAINING)))
+        self.fire(Event.ON_TRAIN_BATCH_END(Moment(self.current_train_step, Frequency.STEP, Phase.TRAINING)),
+                  self.step_monitors(Phase.TRAINING))
 
     def _on_valid_batch_begin(self):
         self.on_valid_batch_begin()
@@ -100,7 +101,8 @@ class BatchEventPublisherMixin(object):
 
     def _on_valid_batch_end(self):
         self.on_valid_batch_begin()
-        self.fire(Event.ON_VALID_BATCH_END(Moment(self.current_valid_step, Frequency.STEP, Phase.VALIDATION)))
+        self.fire(Event.ON_VALID_BATCH_END(Moment(self.current_valid_step, Frequency.STEP, Phase.VALIDATION)),
+                  self.step_monitors(Phase.VALIDATION))
 
     def _on_test_batch_begin(self):
         self.on_test_batch_begin()
@@ -108,7 +110,8 @@ class BatchEventPublisherMixin(object):
 
     def _on_test_batch_end(self):
         self.on_test_batch_end()
-        self.fire(Event.ON_TEST_BATCH_END(Moment(self.current_test_step, Frequency.STEP, Phase.TEST)))
+        self.fire(Event.ON_TEST_BATCH_END(Moment(self.current_test_step, Frequency.STEP, Phase.TEST)),
+                  self.step_monitors(Phase.TEST))
 
 
 class EpochEventPublisherMixin(object):
@@ -144,7 +147,7 @@ class EpochEventPublisherMixin(object):
     def _on_epoch_end(self):
         self.scheduler_step()
         self.on_epoch_end()
-        self.fire(Event.ON_EPOCH_END(Moment(self.epoch, Frequency.EPOCH, Phase.ALL)))
+        self.fire(Event.ON_EPOCH_END(Moment(self.epoch, Frequency.EPOCH, Phase.ALL)), self.epoch_monitors(Phase.ALL))
 
     def _on_train_epoch_begin(self):
         self._status = Status.TRAINING
@@ -153,7 +156,8 @@ class EpochEventPublisherMixin(object):
 
     def _on_train_epoch_end(self):
         self.on_train_epoch_end()
-        self.fire(Event.ON_TRAIN_EPOCH_END(Moment(self.epoch, Frequency.EPOCH, Phase.TRAINING)))
+        self.fire(Event.ON_TRAIN_EPOCH_END(Moment(self.epoch, Frequency.EPOCH, Phase.TRAINING)),
+                  self.epoch_monitors(Phase.TRAINING))
 
     def _on_valid_epoch_begin(self):
         self.on_valid_epoch_begin()
@@ -162,7 +166,8 @@ class EpochEventPublisherMixin(object):
     def _on_valid_epoch_end(self):
         self._current_valid_batch = 0
         self.on_valid_epoch_end()
-        self.fire(Event.ON_VALID_EPOCH_END(Moment(self.epoch, Frequency.EPOCH, Phase.VALIDATION)))
+        self.fire(Event.ON_VALID_EPOCH_END(Moment(self.epoch, Frequency.EPOCH, Phase.VALIDATION)),
+                  self.epoch_monitors(Phase.VALIDATION))
 
     def _on_test_epoch_begin(self):
         self.on_test_epoch_begin()
@@ -171,7 +176,8 @@ class EpochEventPublisherMixin(object):
     def _on_test_epoch_end(self):
         self._current_test_batch = 0
         self.on_test_epoch_end()
-        self.fire(Event.ON_TEST_EPOCH_END(Moment(self.epoch, Frequency.STEP, Phase.TEST)))
+        self.fire(Event.ON_TEST_EPOCH_END(Moment(self.epoch, Frequency.STEP, Phase.TEST)),
+                  self.epoch_monitors(Phase.TEST))
 
 
 class TrainingPhaseEventPublisherMixin(object):

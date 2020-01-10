@@ -281,9 +281,9 @@ class ModelTrainer(ApexModule):
 
     def reset(self):
         [metric_computer.reset() for metric_computer in self._metric_computers.values()]
-        [train_metric.reset() for train_metric in self._train_metrics]
-        [valid_metric.reset() for valid_metric in self._valid_metrics]
-        [test_metric.reset() for test_metric in self._test_metrics]
+        [metric.reset() for metric_name, metric in self._train_metrics.items()]
+        [metric.reset() for metric_name, metric in self._valid_metrics.items()]
+        [metric.reset() for metric_name, metric in self._test_metrics.items()]
         self._train_loss.reset()
         self._valid_loss.reset()
         self._test_loss.reset()
@@ -388,16 +388,15 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
     def status(self):
         return self._status
 
-    def get_all_monitors(self, frequency: Frequency, phases: Union[Phase, List[Phase]]):
+    def step_monitors(self, phases: Union[Phase, List[Phase]]):
         phases = [phases] if not isinstance(phases, list) else phases
+        return dict(map(lambda model: (model.name, {phase: model.step_monitors()[phase] for phase in phases}),
+                        self._model_trainers))
 
-        if frequency == Frequency.STEP:
-            monitors = dict(map(lambda model: (model.name, {phase: model.step_monitors()[phase] for phase in phases}),
-                                self._model_trainers))
-        else:
-            monitors = dict(map(lambda model: (model.name, {phase: model.step_monitors()[phase] for phase in phases}),
-                                self._model_trainers))
-        return monitors
+    def epoch_monitors(self, phases: Union[Phase, List[Phase]]):
+        phases = [phases] if not isinstance(phases, list) else phases
+        return dict(map(lambda model: (model.name, {phase: model.epoch_monitors()[phase] for phase in phases}),
+                        self._model_trainers))
 
     @abstractmethod
     def train_step(self, inputs, target):
@@ -527,8 +526,8 @@ class SimpleTrainer(Trainer):
         model = self._model_trainers[0]
 
         pred = model.forward(inputs)
-        metric = model.compute_metric(pred, target)
-        model.update_train_metric(metric)
+        metric = model.compute_metrics(pred, target)
+        model.update_train_metrics(metric)
         loss = model.compute_and_update_train_loss(pred, target)
 
         model.zero_grad()
@@ -539,16 +538,16 @@ class SimpleTrainer(Trainer):
         model = self._model_trainers[0]
 
         pred = model.forward(inputs)
-        metric = model.compute_metric(pred, target)
-        model.update_valid_metric(metric)
+        metric = model.compute_metrics(pred, target)
+        model.update_valid_metrics(metric)
         model.compute_and_update_valid_loss(pred, target)
 
     def test_step(self, inputs, target):
         model = self._model_trainers[0]
 
         pred = model.forward(inputs)
-        metric = model.compute_metric(pred, target)
-        model.update_test_metric(metric)
+        metric = model.compute_metrics(pred, target)
+        model.update_test_metrics(metric)
         model.compute_and_update_test_loss(pred, target)
 
     def scheduler_step(self):

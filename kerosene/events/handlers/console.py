@@ -18,10 +18,11 @@ from abc import ABC
 from enum import Enum
 from typing import Dict, Union
 
-from kerosene.events import BaseEvent, Phase
+from kerosene.events import BaseEvent, Phase, TemporalEvent
 from kerosene.events.exceptions import UnsupportedEventException
 from kerosene.events.handlers.base_handler import EventHandler
 from kerosene.training import Status, BaseStatus
+from kerosene.training.events import Event
 from kerosene.training.trainers import Trainer
 
 
@@ -69,7 +70,7 @@ class PrintTrainingStatus(ColoredConsoleLogger):
     def __init__(self, every=1, colors: Union[Dict[BaseStatus, ConsoleColors], StatusConsoleColorPalette] = None):
         super().__init__(every, colors)
 
-    def __call__(self, event: BaseEvent, trainer: Trainer):
+    def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
         if event not in self.SUPPORTED_EVENTS:
             raise UnsupportedEventException(event, self.SUPPORTED_EVENTS)
 
