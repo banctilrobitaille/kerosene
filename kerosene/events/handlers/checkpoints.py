@@ -4,7 +4,7 @@ from typing import Callable
 
 import torch
 
-from kerosene.events import Event, MonitorMode
+from kerosene.events import Event, MonitorMode, TemporalEvent
 from kerosene.events.exceptions import UnsupportedEventException
 from kerosene.events.handlers.base_monitor_watcher import MonitorWatcher, MonitorPatienceExceeded
 from kerosene.training.trainers import Trainer
@@ -20,9 +20,9 @@ class Checkpoint(MonitorWatcher):
         super(Checkpoint, self).__init__(monitor_fn, mode, delta, patience=0)
         self._path = path
 
-    def __call__(self, event: Event, trainer: Trainer):
-        if event not in self.SUPPORTED_EVENTS:
-            raise UnsupportedEventException(event, self.SUPPORTED_EVENTS)
+    def __call__(self, temporal_event: TemporalEvent, monitors: dict, trainer: Trainer):
+        if temporal_event.event not in self.SUPPORTED_EVENTS:
+            raise UnsupportedEventException(temporal_event.event, self.SUPPORTED_EVENTS)
 
         for model_trainer in trainer.model_trainers:
             try:

@@ -31,9 +31,9 @@ class EventPublisher(ABC):
     def with_event_handler(self, handler, event: BaseEvent):
         raise NotImplementedError()
 
-    def fire(self, temporal_event: TemporalEvent, monitors):
+    def fire(self, temporal_event: TemporalEvent, monitors: dict):
         if temporal_event.event in self._event_handlers.keys():
             sender = self.sender
 
             for handler in self._event_handlers[temporal_event.event]:
-                handler(temporal_event, sender)
+                handler(temporal_event, monitors, sender)

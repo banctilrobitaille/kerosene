@@ -388,7 +388,7 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
     def status(self):
         return self._status
 
-    def get_monitors(self, frequency: Frequency, phases: Union[Phase, List[Phase]]):
+    def get_all_monitors(self, frequency: Frequency, phases: Union[Phase, List[Phase]]):
         phases = [phases] if not isinstance(phases, list) else phases
 
         if frequency == Frequency.STEP:

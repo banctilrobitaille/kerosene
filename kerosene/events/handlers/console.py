@@ -18,7 +18,7 @@ from abc import ABC
 from enum import Enum
 from typing import Dict, Union
 
-from kerosene.events import BaseEvent, Event
+from kerosene.events import BaseEvent, Phase
 from kerosene.events.exceptions import UnsupportedEventException
 from kerosene.events.handlers.base_handler import EventHandler
 from kerosene.training import Status, BaseStatus
@@ -40,9 +40,9 @@ class ConsoleColors(Enum):
 
 class StatusConsoleColorPalette(Dict[Status, ConsoleColors]):
     DEFAULT = {
-        Status.TRAINING: ConsoleColors.GREEN,
-        Status.VALIDATING: ConsoleColors.BLUE,
-        Status.TESTING: ConsoleColors.PURPLE
+        Phase.TRAINING: ConsoleColors.GREEN,
+        Phase.VALIDATION: ConsoleColors.BLUE,
+        Phase.TEST: ConsoleColors.PURPLE
     }
 
 
