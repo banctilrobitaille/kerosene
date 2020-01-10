@@ -358,7 +358,8 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
 
     @property
     def current_test_step(self):
-        return self._current_epoch * len(self._test_data_loader) + self._current_test_batch
+        return self._current_epoch * len(
+            self._test_data_loader) + self._current_test_batch if self._test_data_loader is not None else 0
 
     @property
     def epoch(self):
