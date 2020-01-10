@@ -15,7 +15,7 @@
 # ==============================================================================
 from abc import ABC, abstractmethod
 
-from kerosene.events import Moment
+from kerosene.events import TemporalEvent
 
 
 class EventHandler(ABC):
@@ -27,12 +27,12 @@ class EventHandler(ABC):
     def every(self):
         return self._every
 
-    def should_handle(self, moment: Moment):
+    def should_handle(self, event: TemporalEvent):
         if iter == 0 and self._every != 1:
             return False
         else:
-            return moment.iteration % self._every == 0
+            return event.iteration % self._every == 0
 
     @abstractmethod
-    def __call__(self, temporal_event, monitors, sender):
+    def __call__(self, temporal_event: TemporalEvent, monitors, sender):
         raise NotImplementedError()

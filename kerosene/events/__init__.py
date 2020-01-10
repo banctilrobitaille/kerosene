@@ -121,6 +121,13 @@ class TemporalEvent(object):
     def iteration(self):
         return self._moment.iteration
 
+    def __eq__(self, other):
+        if isinstance(other, BaseEvent):
+            return self.event == other
+        elif isinstance(other, TemporalEvent):
+            return self._event == other.event and self.frequency == other.frequency and \
+                   self.phase == other.phase and self.datetime == other.datetime and self.iteration == other.iteration
+
 
 class BaseVariable(Enum):
     def __str__(self):
