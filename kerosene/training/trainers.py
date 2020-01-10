@@ -389,15 +389,25 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
     def status(self):
         return self._status
 
-    def step_monitors(self, phases: Union[Phase, List[Phase]]):
-        phases = [phases] if not isinstance(phases, list) else phases
-        return dict(map(lambda model: (model.name, {phase: model.step_monitors()[phase] for phase in phases}),
-                        self._model_trainers))
+    def step_monitors(self, phase: Phase):
+        if phase != Phase.ALL:
+            monitors = dict(
+                map(lambda model: (model.name, {phase: model.step_monitors()[phase]}), self._model_trainers))
+        else:
+            monitors = dict(
+                map(lambda model: (model.name, model.step_monitors()), self._model_trainers))
 
-    def epoch_monitors(self, phases: Union[Phase, List[Phase]]):
-        phases = [phases] if not isinstance(phases, list) else phases
-        return dict(map(lambda model: (model.name, {phase: model.epoch_monitors()[phase] for phase in phases}),
-                        self._model_trainers))
+        return monitors
+
+    def epoch_monitors(self, phase: Phase):
+        if phase != Phase.ALL:
+            monitors = dict(
+                map(lambda model: (model.name, {phase: model.epoch_monitors()[phase]}), self._model_trainers))
+        else:
+            monitors = dict(
+                map(lambda model: (model.name, model.epoch_monitors()), self._model_trainers))
+
+        return monitors
 
     @abstractmethod
     def train_step(self, inputs, target):
