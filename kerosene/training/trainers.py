@@ -388,12 +388,15 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
     def status(self):
         return self._status
 
-    def get_monitors(self, frequency: Frequency, phase):
-        if frequency == Frequency.STEP:
-            monitors = dict(map(lambda model: (model.name, model.step_monitors()[phase]), self._model_trainers))
-        else:
-            monitors = dict(map(lambda model: (model.name, model.epoch_monitors()[phase]), self._model_trainers))
+    def get_monitors(self, frequency: Frequency, phases: Union[Phase, List[Phase]]):
+        phases = [phases] if not isinstance(phases, list) else phases
 
+        if frequency == Frequency.STEP:
+            monitors = dict(map(lambda model: (model.name, {phase: model.step_monitors()[phase] for phase in phases}),
+                                self._model_trainers))
+        else:
+            monitors = dict(map(lambda model: (model.name, {phase: model.step_monitors()[phase] for phase in phases}),
+                                self._model_trainers))
         return monitors
 
     @abstractmethod
