@@ -32,6 +32,20 @@ class Event(BaseEvent):
 
 
 class BatchEventPublisherMixin(object):
+    @property
+    def iteration_and_phase(self):
+        if self.status is Status.TRAINING:
+            iteration = self.current_train_step
+            phase = Phase.TRAINING
+        elif self.status is Status.VALIDATING:
+            iteration = self.current_valid_step
+            phase = Phase.VALIDATION
+        else:
+            iteration = self.current_test_step
+            phase = Phase.TEST
+
+        return iteration, phase
+
     def on_batch_begin(self):
         pass
 
@@ -59,32 +73,16 @@ class BatchEventPublisherMixin(object):
     def _on_batch_begin(self):
         self.on_batch_begin()
 
-        if self.status is Status.TRAINING:
-            iteration = self.current_train_step
-            phase = Phase.TRAINING
-        elif self.status is Status.VALIDATING:
-            iteration = self.current_valid_step
-            phase = Phase.VALIDATION
-        else:
-            iteration = self.current_test_step
-            phase = Phase.TEST
+        iteration, phase = self.iteration_and_phase
 
         self.fire(Event.ON_BATCH_BEGIN(Moment(iteration, Frequency.STEP, phase)))
 
     def _on_batch_end(self):
         self.on_batch_end()
 
-        if self.status is Status.TRAINING:
-            iteration = self.current_train_step
-            phase = Phase.TRAINING
-        elif self.status is Status.VALIDATING:
-            iteration = self.current_valid_step
-            phase = Phase.VALIDATION
-        else:
-            iteration = self.current_test_step
-            phase = Phase.TEST
+        iteration, phase = self.iteration_and_phase
 
-        self.fire(Event.ON_BATCH_END(Moment(iteration, Frequency.STEP, phase)))
+        self.fire(Event.ON_BATCH_END(Moment(iteration, Frequency.STEP, phase)), self.step_monitors(phase))
 
     def _on_train_batch_begin(self):
         self.on_train_batch_begin()
@@ -115,6 +113,17 @@ class BatchEventPublisherMixin(object):
 
 
 class EpochEventPublisherMixin(object):
+    @property
+    def iteration_and_phase(self):
+        if self.status is Status.TRAINING:
+            phase = Phase.TRAINING
+        elif self.status is Status.VALIDATING:
+            phase = Phase.VALIDATION
+        else:
+            phase = Phase.TEST
+
+        return self.epoch, phase
+
     def on_epoch_begin(self):
         pass
 
@@ -142,12 +151,18 @@ class EpochEventPublisherMixin(object):
     def _on_epoch_begin(self):
         self._reset_model_trainers()
         self.on_epoch_begin()
-        self.fire(Event.ON_EPOCH_BEGIN(Moment(self.epoch, Frequency.EPOCH, Phase.ALL)))
+
+        iteration, phase = self.iteration_and_phase
+
+        self.fire(Event.ON_EPOCH_BEGIN(Moment(iteration, Frequency.EPOCH, phase)))
 
     def _on_epoch_end(self):
         self.scheduler_step()
         self.on_epoch_end()
-        self.fire(Event.ON_EPOCH_END(Moment(self.epoch, Frequency.EPOCH, Phase.ALL)), self.epoch_monitors(Phase.ALL))
+
+        iteration, phase = self.iteration_and_phase
+
+        self.fire(Event.ON_EPOCH_END(Moment(iteration, Frequency.EPOCH, phase)), self.epoch_monitors(phase))
 
     def _on_train_epoch_begin(self):
         self._status = Status.TRAINING
@@ -230,7 +245,7 @@ class TrainingPhaseEventPublisherMixin(object):
         self.fire(Event.ON_TEST_END(Moment(0, Frequency.PHASE, Phase.TEST)))
 
     def _finalize(self):
-        self._status = Status.FINALIZING
+        for model_trainer in self.model_trainers:
+            model_trainer.finalize()
         self.finalize()
-        self.fire(Event.ON_FINALIZE)
-        self._status = Status.FINALIZED
+        self.status = Status.FINALIZED

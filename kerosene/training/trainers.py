@@ -302,8 +302,6 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
                  test_data_loader: Union[DataLoader, None], model_trainers: Union[List[ModelTrainer], ModelTrainer],
                  run_config: RunConfiguration):
         super().__init__()
-
-        self._status = Status.INITIALIZING
         self._name = name
 
         self._train_data_loader = train_data_loader
@@ -325,8 +323,6 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
                 model_trainer.to(self._device)
             model_trainer.initialize(amp_id, len(self._model_trainers), run_config.use_amp, run_config.amp_opt_level,
                                      self._device)
-
-        self._status = Status.INITIALIZED
 
     @property
     def name(self):
@@ -389,6 +385,10 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
     def status(self):
         return self._status
 
+    @status.setter
+    def status(self, value):
+        self._status = value
+
     def step_monitors(self, phase: Phase):
         if phase != Phase.ALL:
             monitors = dict(
@@ -437,15 +437,20 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
                 self._on_train_epoch_begin()
                 self._train_epoch()
                 self._on_train_epoch_end()
+                self._on_epoch_end()
                 self._on_valid_begin()
+                self._on_epoch_begin()
                 self._on_valid_epoch_begin()
                 self._validate_epoch()
                 self._on_valid_epoch_end()
+                self._on_epoch_end()
                 self._on_valid_end()
                 self._on_test_begin()
+                self._on_epoch_begin()
                 self._on_test_epoch_begin()
                 self._test_epoch()
                 self._on_test_epoch_end()
+                self._on_epoch_end()
                 self._on_test_end()
                 self._on_epoch_end()
             else:
@@ -522,13 +527,6 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
 
     def _at_least_one_model_is_active(self):
         return any(model_trainer.is_active for model_trainer in self._model_trainers)
-
-    def _finalize(self):
-        self._status = Status.FINALIZING
-        for model_trainer in self._model_trainers:
-            model_trainer.finalize()
-        self.finalize()
-        self._status = Status.FINALIZED
 
 
 class SimpleTrainer(Trainer):

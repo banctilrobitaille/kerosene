@@ -23,5 +23,4 @@ class Status(BaseStatus):
     TRAINING = "Training"
     VALIDATING = "Validating"
     TESTING = "Testing"
-    FINALIZING = "Finalizing"
     FINALIZED = "Finalized"
