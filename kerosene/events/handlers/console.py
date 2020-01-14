@@ -18,7 +18,7 @@ from abc import ABC
 from enum import Enum
 from typing import Dict, Union
 
-from kerosene.events import BaseEvent, Phase, TemporalEvent
+from kerosene.events import Phase, TemporalEvent
 from kerosene.events.exceptions import UnsupportedEventException
 from kerosene.events.handlers.base_handler import EventHandler
 from kerosene.training import Status, BaseStatus
@@ -87,33 +87,19 @@ class PrintTrainingStatus(ColoredConsoleLogger):
 class PrintModelTrainersStatus(BaseConsoleLogger):
     SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END]
 
-    def __call__(self, event: BaseEvent, trainer: Trainer):
+    def __init__(self, every=1):
+        super().__init__(every)
+        self._monitors = {}
+
+    def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
         if event not in self.SUPPORTED_EVENTS:
             raise UnsupportedEventException(event, self.SUPPORTED_EVENTS)
 
-        status = "\nModel: {}, Train Loss: {}, Validation Loss: {},  Train Metric: {}, Valid Metric: {} \n"
+        if self.should_handle(event):
+            for model, monitor in monitors.items():
+                if model in self._monitors:
+                    self._monitors[model].update(monitor)
+                else:
+                    self._monitors[model] = monitor
 
-        if self.should_handle_epoch_data(event, trainer):
-            self.LOGGER.info("".join(list(map(
-                lambda model_trainer: status.format(model_trainer.name,
-                                                    model_trainer.train_loss.item(),
-                                                    model_trainer.valid_loss.item(),
-                                                    model_trainer.train_metrics.item(),
-                                                    model_trainer.valid_metrics.item()),
-                trainer.model_trainers))))
-        elif self.should_handle_train_step_data(event, trainer):
-            self.LOGGER.info("".join(list(map(
-                lambda model_trainer: status.format(model_trainer.name,
-                                                    model_trainer.step_train_loss.item(),
-                                                    model_trainer.step_valid_loss.item(),
-                                                    model_trainer.step_train_metrics.item(),
-                                                    model_trainer.step_valid_metrics.item()),
-                trainer.model_trainers))))
-        elif self.should_handle_valid_step_data(event, trainer):
-            self.LOGGER.info("".join(list(map(
-                lambda model_trainer: status.format(model_trainer.name,
-                                                    model_trainer.step_train_loss.item(),
-                                                    model_trainer.step_valid_loss.item(),
-                                                    model_trainer.step_train_metrics.item(),
-                                                    model_trainer.step_valid_metrics.item()),
-                trainer.model_trainers))))
+                self.LOGGER.info("Model {}, {}".format(model, self._monitors[model]))
