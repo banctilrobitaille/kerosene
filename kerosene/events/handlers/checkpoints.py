@@ -27,7 +27,7 @@ class Checkpoint(MonitorWatcher):
                     value = self._monitor_fn(model_trainer)
                     self.watch(model_trainer.name, value)
                 except MonitorPatienceExceeded as e:
-                    self._save_model(model_trainer.name, model_trainer.model_state, trainer.epoch)
+                    self._save_model(model_trainer.name, model_trainer.model_state, event.iteration)
                     self._save_optimizer(model_trainer.name, model_trainer.optimizer_state)
 
     def _save_model(self, model_name, model_state, epoch_num):
