@@ -36,7 +36,7 @@ class EventHandler(ABC):
 
     def should_handle(self, event: TemporalEvent):
         if (self.supported_events is not None) and (event not in self.supported_events):
-            raise UnsupportedEventException(event, self.supported_events)
+            raise UnsupportedEventException(self.supported_events, event)
 
         if iter == 0 and self._every != 1:
             return False

@@ -128,6 +128,9 @@ class TemporalEvent(object):
             return self._event == other.event and self.frequency == other.frequency and \
                    self.phase == other.phase and self.datetime == other.datetime and self.iteration == other.iteration
 
+    def __str__(self):
+        return str(self.event)
+
 
 class BaseVariable(Enum):
     def __str__(self):
