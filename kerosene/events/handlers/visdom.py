@@ -82,7 +82,7 @@ class PlotLosses(BaseVisdomHandler):
                            params={'opts': {'xlabel': str(event.frequency),
                                             'ylabel': "Loss",
                                             'title': "{} {} per {}".format(model_name, "Loss", str(event.frequency)),
-                                            'name': str(event.phase)}})]
+                                            'name': str(event.phase), 'legend': [str(event.phase)]}})]
 
 
 class PlotMetrics(BaseVisdomHandler):
