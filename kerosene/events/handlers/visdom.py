@@ -18,7 +18,7 @@ from typing import Union, List
 
 from kerosene.events import TemporalEvent, Monitor, BaseEvent
 from kerosene.events.handlers.base_handler import EventHandler
-from kerosene.loggers.visdom import PlotFrequency, PlotType
+from kerosene.loggers.visdom import PlotType
 from kerosene.loggers.visdom.visdom import VisdomLogger, VisdomData
 from kerosene.training.events import Event
 from kerosene.training.trainers import Trainer, ModelTrainer
@@ -125,32 +125,14 @@ class PlotCustomVariables(BaseVisdomHandler):
         data = None
 
         if self.should_handle(event):
-            pass
-
-        if self.should_handle_epoch_data(event, trainer.epoch):
-            data = self.create_epoch_visdom_data(trainer)
-        elif self.should_handle_step_data(event, trainer.current_train_step):
-            data = self.create_train_batch_visdom_data(trainer)
-        elif self.should_handle_step_data(event, trainer.current_valid_step):
-            data = self.create_valid_batch_visdom_data(trainer)
+            data = self.create_visdom_data(event, trainer)
 
         if data is not None:
             self.visdom_logger(data)
 
-    def create_visdom_data(self):
-        pass
-
-    def create_epoch_visdom_data(self, trainer: Trainer):
-        return [VisdomData(trainer.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_EPOCH,
-                           [trainer.epoch], trainer.custom_variables[self._variable_name], self._params)]
-
-    def create_train_batch_visdom_data(self, trainer: Trainer):
-        return [VisdomData(trainer.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_STEP,
-                           [trainer.current_train_step], trainer.custom_variables[self._variable_name], self._params)]
-
-    def create_valid_batch_visdom_data(self, trainer: Trainer):
-        return [VisdomData(trainer.name, self._variable_name, self._plot_type, PlotFrequency.EVERY_STEP,
-                           [trainer.current_valid_step], trainer.custom_variables[self._variable_name], self._params)]
+    def create_visdom_data(self, event: TemporalEvent, trainer):
+        return [VisdomData(trainer.name, self._variable_name, self._plot_type, event.frequency,
+                           [event.iteration], trainer.custom_variables[self._variable_name], self._params)]
 
 
 class PlotLR(BaseVisdomHandler):
