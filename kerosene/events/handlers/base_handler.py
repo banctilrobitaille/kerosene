@@ -14,20 +14,30 @@
 # limitations under the License.
 # ==============================================================================
 from abc import ABC, abstractmethod
+from typing import List, Union
 
-from kerosene.events import TemporalEvent
+from kerosene.events import TemporalEvent, BaseEvent
+from kerosene.events.exceptions import UnsupportedEventException
 
 
 class EventHandler(ABC):
 
-    def __init__(self, every=1):
+    def __init__(self, supported_events: List[Union[BaseEvent, TemporalEvent]] = None, every=1):
         self._every = every
+        self._supported_events = supported_events
 
     @property
     def every(self):
         return self._every
 
+    @property
+    def supported_events(self):
+        return self._supported_events
+
     def should_handle(self, event: TemporalEvent):
+        if (self.supported_events is not None) and (event not in self.supported_events):
+            raise UnsupportedEventException(event, self.supported_events)
+
         if iter == 0 and self._every != 1:
             return False
         else:

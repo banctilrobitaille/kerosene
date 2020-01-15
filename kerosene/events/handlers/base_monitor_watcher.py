@@ -1,7 +1,7 @@
 from abc import ABC
-from typing import Dict
+from typing import Dict, List, Union
 
-from kerosene.events import MonitorMode
+from kerosene.events import MonitorMode, BaseEvent, TemporalEvent
 from kerosene.events.handlers.base_handler import EventHandler
 
 
@@ -39,8 +39,9 @@ class MonitorInspection(object):
 
 
 class MonitorWatcher(EventHandler, ABC):
-    def __init__(self, monitor_fn, mode: MonitorMode, min_delta, patience):
-        super().__init__()
+    def __init__(self, monitor_fn, mode: MonitorMode, min_delta, patience, every=1,
+                 supported_events: List[Union[BaseEvent, TemporalEvent]] = None):
+        super().__init__(supported_events, every)
         self._monitor_fn = monitor_fn
         self._mode = mode
         self._min_delta = min_delta

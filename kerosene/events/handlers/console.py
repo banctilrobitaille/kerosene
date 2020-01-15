@@ -16,10 +16,9 @@
 import logging
 from abc import ABC
 from enum import Enum
-from typing import Dict, Union
+from typing import Dict, Union, List
 
-from kerosene.events import Phase, TemporalEvent
-from kerosene.events.exceptions import UnsupportedEventException
+from kerosene.events import Phase, TemporalEvent, BaseEvent
 from kerosene.events.handlers.base_handler import EventHandler
 from kerosene.training import Status, BaseStatus
 from kerosene.training.events import Event
@@ -50,14 +49,15 @@ class StatusConsoleColorPalette(Dict[Status, ConsoleColors]):
 class BaseConsoleLogger(EventHandler, ABC):
     LOGGER = logging.getLogger("ConsoleLogger")
 
-    def __init__(self, every=1):
-        super(BaseConsoleLogger, self).__init__(every)
+    def __init__(self, supported_events: List[Union[BaseEvent, TemporalEvent]] = None, every=1):
+        super(BaseConsoleLogger, self).__init__(supported_events, every)
 
 
 class ColoredConsoleLogger(BaseConsoleLogger, ABC):
 
-    def __init__(self, every=1, colors: Dict[object, ConsoleColors] = None):
-        super().__init__(every)
+    def __init__(self, supported_events: List[Union[BaseEvent, TemporalEvent]] = None, every=1,
+                 colors: Dict[object, ConsoleColors] = None):
+        super().__init__(supported_events, every)
         self._colors = colors if colors is not None else {}
 
     def color(self, text, color_key):
@@ -68,12 +68,9 @@ class PrintTrainingStatus(ColoredConsoleLogger):
     SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
 
     def __init__(self, every=1, colors: Union[Dict[BaseStatus, ConsoleColors], StatusConsoleColorPalette] = None):
-        super().__init__(every, colors)
+        super().__init__(self.SUPPORTED_EVENTS, every, colors)
 
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
-        if event not in self.SUPPORTED_EVENTS:
-            raise UnsupportedEventException(event, self.SUPPORTED_EVENTS)
-
         if self.should_handle(event):
             self.print_status(event.phase, trainer.epoch, trainer.current_train_step, trainer.current_valid_step,
                               trainer.current_test_step)
@@ -88,13 +85,10 @@ class PrintModelTrainersStatus(BaseConsoleLogger):
     SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END]
 
     def __init__(self, every=1):
-        super().__init__(every)
+        super().__init__(self.SUPPORTED_EVENTS, every)
         self._monitors = {}
 
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
-        if event not in self.SUPPORTED_EVENTS:
-            raise UnsupportedEventException(event, self.SUPPORTED_EVENTS)
-
         if self.should_handle(event):
             for model, monitor in monitors.items():
                 if model in self._monitors:

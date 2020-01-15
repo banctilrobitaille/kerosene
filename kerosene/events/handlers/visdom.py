@@ -14,8 +14,9 @@
 # limitations under the License.
 # ==============================================================================
 from abc import ABC
+from typing import Union, List
 
-from kerosene.events import TemporalEvent, Monitor
+from kerosene.events import TemporalEvent, Monitor, BaseEvent
 from kerosene.events.handlers.base_handler import EventHandler
 from kerosene.loggers.visdom import PlotFrequency, PlotType
 from kerosene.loggers.visdom.visdom import VisdomLogger, VisdomData
@@ -24,8 +25,8 @@ from kerosene.training.trainers import Trainer, ModelTrainer
 
 
 class BaseVisdomHandler(EventHandler, ABC):
-    def __init__(self, visdom_logger: VisdomLogger, every=1):
-        super().__init__(every)
+    def __init__(self, supported_events: List[Union[BaseEvent, TemporalEvent]], visdom_logger: VisdomLogger, every=1):
+        super().__init__(supported_events, every)
         self._visdom_logger = visdom_logger
 
     @property
@@ -44,14 +45,11 @@ class PlotMonitors(BaseVisdomHandler):
                         Event.ON_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
-        super().__init__(visdom_logger, every)
+        super().__init__(self.SUPPORTED_EVENTS, visdom_logger, every)
         self._plot_losses = PlotLosses(visdom_logger, every)
         self._plot_metrics = PlotMetrics(visdom_logger, every)
 
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
-
         if self.should_handle(event):
             self._plot_losses(event, monitors, trainer)
             self._plot_metrics(event, monitors, trainer)
@@ -66,11 +64,9 @@ class PlotLosses(BaseVisdomHandler):
                         Event.ON_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
-        super().__init__(visdom_logger, every)
+        super().__init__(self.SUPPORTED_EVENTS, visdom_logger, every)
 
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
         data = None
 
         if self.should_handle(event):
@@ -130,11 +126,9 @@ class PlotMetrics(BaseVisdomHandler):
                         Event.ON_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
-        super().__init__(visdom_logger, every)
+        super().__init__(self.SUPPORTED_EVENTS, visdom_logger, every)
 
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
         data = None
 
         if self.should_handle(event):
@@ -158,14 +152,12 @@ class PlotCustomVariables(BaseVisdomHandler):
                         Event.ON_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, variable_name, plot_type: PlotType, params, every=1):
-        super().__init__(visdom_logger, every)
+        super().__init__(self.SUPPORTED_EVENTS, visdom_logger, every)
         self._variable_name = variable_name
         self._plot_type = plot_type
         self._params = params
 
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
         data = None
 
         if self.should_handle(event):
@@ -201,11 +193,9 @@ class PlotLR(BaseVisdomHandler):
     SUPPORTED_EVENTS = [Event.ON_EPOCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
-        super().__init__(visdom_logger, every)
+        super().__init__(self.SUPPORTED_EVENTS, visdom_logger, every)
 
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
         data = None
 
         if self.should_handle(event):
@@ -233,11 +223,9 @@ class PlotGradientFlow(BaseVisdomHandler):
     SUPPORTED_EVENTS = [Event.ON_TRAIN_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
-        super().__init__(visdom_logger, every)
+        super().__init__(self.SUPPORTED_EVENTS, visdom_logger, every)
 
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
-        assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
-            self.SUPPORTED_EVENTS)
         data = None
 
         if self.should_handle_step_data(event, trainer.current_train_step):
