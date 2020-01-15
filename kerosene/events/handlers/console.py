@@ -65,7 +65,8 @@ class ColoredConsoleLogger(BaseConsoleLogger, ABC):
 
 
 class PrintTrainingStatus(ColoredConsoleLogger):
-    SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END,
+                        Event.ON_TEST_BATCH_END]
 
     def __init__(self, every=1, colors: Union[Dict[BaseStatus, ConsoleColors], StatusConsoleColorPalette] = None):
         super().__init__(self.SUPPORTED_EVENTS, every, colors)
@@ -82,7 +83,8 @@ class PrintTrainingStatus(ColoredConsoleLogger):
 
 
 class PrintModelTrainersStatus(BaseConsoleLogger):
-    SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END]
+    SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END,
+                        Event.ON_TEST_BATCH_END]
 
     def __init__(self, every=1):
         super().__init__(self.SUPPORTED_EVENTS, every)
