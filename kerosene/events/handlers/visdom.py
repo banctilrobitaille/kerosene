@@ -15,10 +15,11 @@
 # ==============================================================================
 from abc import ABC
 
-from kerosene.events import BaseEvent, Event
+from kerosene.events import TemporalEvent, Monitor
 from kerosene.events.handlers.base_handler import EventHandler
 from kerosene.loggers.visdom import PlotFrequency, PlotType
 from kerosene.loggers.visdom.visdom import VisdomLogger, VisdomData
+from kerosene.training.events import Event
 from kerosene.training.trainers import Trainer, ModelTrainer
 
 
@@ -31,24 +32,21 @@ class BaseVisdomHandler(EventHandler, ABC):
     def visdom_logger(self):
         return self._visdom_logger
 
-    def should_handle_epoch_data(self, event, epoch):
-        return (event in [Event.ON_EPOCH_BEGIN, Event.ON_EPOCH_END]) and (epoch % self._every == 0)
-
-    def should_handle_step_data(self, event, step):
-        return (event in [Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_BEGIN,
-                          Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]) and (step % self._every == 0)
+    def create_visdom_data(self, *args, **kwargs):
+        raise NotImplementedError()
 
     def flatten(self, list_of_visdom_data):
         return [item for sublist in list_of_visdom_data for item in sublist]
 
 
 class PlotAllModelStateVariables(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END, Event.ON_TEST_BATCH_END,
+                        Event.ON_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(visdom_logger, every)
 
-    def __call__(self, event: BaseEvent, trainer: Trainer):
+    def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
             self.SUPPORTED_EVENTS)
         data = None
@@ -91,15 +89,19 @@ class PlotAllModelStateVariables(BaseVisdomHandler):
 
 
 class PlotLosses(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END, Event.ON_TEST_BATCH_END,
+                        Event.ON_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(visdom_logger, every)
 
-    def __call__(self, event: BaseEvent, trainer: Trainer):
+    def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
             self.SUPPORTED_EVENTS)
         data = None
+
+        if self.should_handle(event):
+            pass
 
         if self.should_handle_epoch_data(event, trainer.epoch):
             data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
@@ -115,6 +117,9 @@ class PlotLosses(BaseVisdomHandler):
 
         if data is not None:
             self.visdom_logger(self.flatten(data))
+
+    def create_visdom_data(self):
+        pass
 
     @staticmethod
     def create_epoch_visdom_data(epoch, model_trainer: ModelTrainer):
@@ -148,70 +153,36 @@ class PlotLosses(BaseVisdomHandler):
 
 
 class PlotMetrics(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END, Event.ON_TEST_BATCH_END,
+                        Event.ON_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(visdom_logger, every)
 
-    def __call__(self, event: Event, trainer: Trainer):
+    def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
             self.SUPPORTED_EVENTS)
         data = None
 
-        if self.should_handle_epoch_data(event, trainer.epoch):
-            data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
-                            trainer.model_trainers))
-        elif self.should_handle_step_data(event, trainer.current_train_step):
-            data = list(
-                map(lambda model_state: self.create_train_batch_visdom_data(trainer.current_train_step, model_state),
-                    trainer.model_trainers))
-        elif self.should_handle_step_data(event, trainer.current_valid_step):
-            data = list(
-                map(lambda model_state: self.create_valid_batch_visdom_data(trainer.current_valid_step, model_state),
-                    trainer.model_trainers))
+        if self.should_handle(event):
+            for model_name, monitor in monitors.items():
+                data = self.create_visdom_data(event, model_name, monitor[event.phase][Monitor.METRICS])
 
         if data is not None:
-            self.visdom_logger(self.flatten(data))
+            self.visdom_logger(data)
 
-    @staticmethod
-    def create_epoch_visdom_data(epoch, model_trainer: ModelTrainer):
-        return [
-            VisdomData(model_trainer.name, train_metric_name, PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH,
-                       [[epoch, epoch]],
-                       [[train_metric, valid_metric]],
-                       params={'opts': {'xlabel': str(PlotFrequency.EVERY_EPOCH), 'ylabel': train_metric_name,
-                                        'title': "{} {} per {}".format(model_trainer.name, train_metric_name,
-                                                                       str(PlotFrequency.EVERY_EPOCH)),
-                                        'legend': ["Training",
-                                                   "Validation"]}}) for
-            (train_metric_name, train_metric), (valid_metric_name, valid_metric) in
-            zip(model_trainer.train_metrics.items(), model_trainer.valid_metrics.items())]
-
-    @staticmethod
-    def create_train_batch_visdom_data(step, model_trainer: ModelTrainer):
-        return [VisdomData(model_trainer.name, step_train_metric_name, PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           [step], step_train_metric,
-                           params={'opts': {'xlabel': str(PlotFrequency.EVERY_STEP),
-                                            'ylabel': step_train_metric_name,
-                                            'title': "{} {} per {}".format(model_trainer.name, step_train_metric_name,
-                                                                           str(PlotFrequency.EVERY_STEP)),
-                                            'legend': [model_trainer.name]}}) for
-                (step_train_metric_name, step_train_metric) in model_trainer.step_train_metrics.items()]
-
-    @staticmethod
-    def create_valid_batch_visdom_data(step, model_trainer: ModelTrainer):
-        return [VisdomData(model_trainer.name, step_valid_metric_name, PlotType.LINE_PLOT, PlotFrequency.EVERY_STEP,
-                           [step], step_valid_metric,
-                           params={'opts': {'xlabel': str(PlotFrequency.EVERY_STEP),
-                                            'ylabel': "Metric",
-                                            'title': "{} {} per {}".format(model_trainer.name, step_valid_metric_name,
-                                                                           str(PlotFrequency.EVERY_STEP)),
-                                            'legend': [model_trainer.name]}}) for
-                (step_valid_metric_name, step_valid_metric) in model_trainer.step_valid_metrics.items()]
+    def create_visdom_data(self, event, model_name, monitors):
+        return [VisdomData(model_name, metric_name, PlotType.LINE_PLOT, event.frequency, [[event.iteration]],
+                           [[metric_value]], params={'opts': {'xlabel': str(event.frequency), 'ylabel': metric_name,
+                                                              'title': "{} {} per {}".format(model_name, metric_name,
+                                                                                             str(event.frequency)),
+                                                              'name': str(event.phase), 'legend': [str(event.phase)]}})
+                for metric_name, metric_value in monitors.items()]
 
 
 class PlotCustomVariables(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END, Event.ON_TEST_BATCH_END,
+                        Event.ON_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, variable_name, plot_type: PlotType, params, every=1):
         super().__init__(visdom_logger, every)
@@ -219,10 +190,13 @@ class PlotCustomVariables(BaseVisdomHandler):
         self._plot_type = plot_type
         self._params = params
 
-    def __call__(self, event: Event, trainer: Trainer):
+    def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
             self.SUPPORTED_EVENTS)
         data = None
+
+        if self.should_handle(event):
+            pass
 
         if self.should_handle_epoch_data(event, trainer.epoch):
             data = self.create_epoch_visdom_data(trainer)
@@ -253,7 +227,7 @@ class PlotLR(BaseVisdomHandler):
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(visdom_logger, every)
 
-    def __call__(self, event: Event, trainer: Trainer):
+    def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
             self.SUPPORTED_EVENTS)
         data = None
@@ -282,7 +256,7 @@ class PlotGradientFlow(BaseVisdomHandler):
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(visdom_logger, every)
 
-    def __call__(self, event: BaseEvent, trainer: Trainer):
+    def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
         assert event in self.SUPPORTED_EVENTS, "Unsupported event provided. Only {} are permitted.".format(
             self.SUPPORTED_EVENTS)
         data = None

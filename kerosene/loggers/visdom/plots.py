@@ -70,7 +70,8 @@ class LinePlot(VisdomPlot):
         if self._window is None:
             self._window = self._visdom.line(X=visdom_data.x, Y=visdom_data.y, **visdom_data.params)
         else:
-            self._visdom.line(X=visdom_data.x, Y=visdom_data.y, win=self._window, update='append')
+            self._visdom.line(X=visdom_data.x, Y=visdom_data.y, win=self._window, update='append',
+                              name=visdom_data.params['opts']['name'])
 
 
 class PiePlot(VisdomPlot):
