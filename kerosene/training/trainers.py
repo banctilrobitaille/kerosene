@@ -452,7 +452,6 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
                 self._on_test_epoch_end()
                 self._on_epoch_end()
                 self._on_test_end()
-                self._on_epoch_end()
             else:
                 self._finalize()
 
