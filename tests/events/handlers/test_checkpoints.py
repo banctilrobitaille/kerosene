@@ -11,9 +11,10 @@ from ignite.metrics import Accuracy
 from torch import nn
 from torch.optim import Optimizer, lr_scheduler
 
-from kerosene.events import Event, MonitorMode
+from kerosene.events import  MonitorMode
 from kerosene.events.handlers.checkpoints import Checkpoint
 from kerosene.nn.utils.gradients import GradientClippingStrategy
+from kerosene.training.events import Event
 from kerosene.training.trainers import SimpleTrainer, ModelTrainer
 
 
