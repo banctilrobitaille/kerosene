@@ -154,7 +154,8 @@ class PlotCustomVariables(BaseVisdomHandler):
 
 
 class PlotLR(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END, Event.ON_TEST_BATCH_END,
+                        Event.ON_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(self.SUPPORTED_EVENTS, visdom_logger, every)
@@ -163,23 +164,20 @@ class PlotLR(BaseVisdomHandler):
         data = None
 
         if self.should_handle(event):
-            pass
-
-        if self.should_handle_epoch_data(event, trainer.epoch):
-            data = list(map(lambda model_state: self.create_epoch_visdom_data(trainer.epoch, model_state),
-                            trainer.model_trainers))
+            data = list(map(
+                lambda model_trainer: self.create_visdom_data(event, model_trainer), trainer.model_trainers))
 
         if data is not None:
             self.visdom_logger(data)
 
-    @staticmethod
-    def create_epoch_visdom_data(epoch, model_trainer: ModelTrainer):
-        return VisdomData(model_trainer.name, "Learning Rate", PlotType.LINE_PLOT, PlotFrequency.EVERY_EPOCH, [epoch],
+    def create_visdom_data(self, event, model_trainer: ModelTrainer):
+        return VisdomData(model_trainer.name, "Learning Rate", PlotType.LINE_PLOT, event.frequency, [event.iteration],
                           model_trainer.optimizer_lr,
-                          params={'opts': {'xlabel': str(PlotFrequency.EVERY_EPOCH),
+                          params={'opts': {'xlabel': str(event.frequency),
                                            'ylabel': "Learning Rate",
                                            'title': "{} {} per {}".format(model_trainer.name, "Learning Rate",
-                                                                          str(PlotFrequency.EVERY_EPOCH)),
+                                                                          str(event.frequency)),
+                                           'name': model_trainer.name,
                                            'legend': [model_trainer.name]}})
 
 
