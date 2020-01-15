@@ -181,8 +181,9 @@ class PlotLR(BaseVisdomHandler):
                                            'legend': [model_trainer.name]}})
 
 
-class PlotGradientFlow(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_TRAIN_BATCH_END]
+class PlotAvgGradientPerLayer(BaseVisdomHandler):
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END, Event.ON_TEST_BATCH_END,
+                        Event.ON_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, every=1):
         super().__init__(self.SUPPORTED_EVENTS, visdom_logger, every)
@@ -190,13 +191,14 @@ class PlotGradientFlow(BaseVisdomHandler):
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
         data = None
 
-        if self.should_handle_step_data(event, trainer.current_train_step):
-            data = list(map(lambda model_trainer: self.create_visdom_data(model_trainer), trainer.model_trainers))
+        if self.should_handle(event):
+            data = list(
+                map(lambda model_trainer: self.create_visdom_data(event, model_trainer), trainer.model_trainers))
 
         if data is not None:
             self.visdom_logger(data)
 
-    def create_visdom_data(self, model_trainer: ModelTrainer):
+    def create_visdom_data(self, event: TemporalEvent, model_trainer: ModelTrainer):
         avg_grads, layers = [], []
 
         for n, p in model_trainer.named_parameters():
@@ -207,9 +209,8 @@ class PlotGradientFlow(BaseVisdomHandler):
                 else:
                     avg_grads.append(0)
 
-        return VisdomData(model_trainer.name, "Gradient Flow", PlotType.BAR_PLOT, PlotFrequency.EVERY_EPOCH, y=layers,
+        return VisdomData(model_trainer.name, "Gradient Flow", PlotType.BAR_PLOT, event.frequency, y=layers,
                           x=avg_grads, params={'opts': {'xlabel': "Layers", 'ylabel': "Avg. Gradients",
                                                         'title': "{} {} per {}".format(model_trainer.name,
-                                                                                       "Gradient Flow",
-                                                                                       "Layer"),
+                                                                                       "Avg. Gradient", "Layer"),
                                                         'marginbottom': 200}})
