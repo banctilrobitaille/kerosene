@@ -267,13 +267,13 @@ class ModelTrainer(ApexModule):
                                                    list(self._step_train_metrics.values())):
             train_metric.update(step_train_metric)
 
-    def update_valid_metrics(self, metric):
+    def update_valid_metrics(self, metric: dict):
         self._step_valid_metrics = metric
         for valid_metric, step_valid_metric in zip(list(self._valid_metrics.values()),
                                                    list(self._step_valid_metrics.values())):
             valid_metric.update(step_valid_metric)
 
-    def update_test_metrics(self, metric):
+    def update_test_metrics(self, metric: dict):
         self._step_test_metrics = metric
         for test_metric, step_test_metric in zip(list(self._test_metrics.values()),
                                                  list(self._step_test_metrics.values())):
