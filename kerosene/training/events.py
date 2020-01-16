@@ -157,7 +157,6 @@ class EpochEventPublisherMixin(object):
         self.fire(Event.ON_EPOCH_BEGIN(Moment(epoch, Frequency.EPOCH, phase)))
 
     def _on_epoch_end(self):
-        self.scheduler_step()
         self.on_epoch_end()
 
         epoch, phase = self.epoch_and_phase
@@ -224,6 +223,7 @@ class TrainingPhaseEventPublisherMixin(object):
 
     def _on_training_end(self):
         self.on_training_end()
+        self.scheduler_step()
         self.fire(Event.ON_TRAINING_END(Moment(0, Frequency.PHASE, Phase.TRAINING)))
 
     def _on_valid_begin(self):
