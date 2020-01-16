@@ -82,7 +82,7 @@ class PrintTrainingStatus(ColoredConsoleLogger):
                 self.color(status, color_key=status), epoch, train_step, valid_step, test_step))
 
 
-class PrintModelTrainersStatus(BaseConsoleLogger):
+class PrintMonitors(BaseConsoleLogger):
     SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END,
                         Event.ON_TEST_BATCH_END]
 

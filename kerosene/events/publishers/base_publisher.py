@@ -33,7 +33,5 @@ class EventPublisher(ABC):
 
     def fire(self, temporal_event: TemporalEvent, monitors: dict = None):
         if temporal_event.event in self._event_handlers.keys():
-            sender = self.sender
-
             for handler in self._event_handlers[temporal_event.event]:
-                handler(temporal_event, monitors, sender)
+                handler(temporal_event, monitors, self.sender)
