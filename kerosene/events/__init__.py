@@ -1,7 +1,88 @@
+from datetime import datetime
 from enum import Enum
 
 
+class Phase(Enum):
+    TRAINING = "Training"
+    VALIDATION = "Validation"
+    TEST = "Test"
+    ALL = [TRAINING, VALIDATION, TEST]
+
+    def __str__(self):
+        return self.value
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self.value == other
+        elif isinstance(other, Phase):
+            return self.value == other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class Frequency(Enum):
+    STEP = "Step"
+    EPOCH = "Epoch"
+    PHASE = "Phase"
+
+    def __str__(self):
+        return self.value
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self.value == other
+        elif isinstance(other, Frequency):
+            return self.value == other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+
+class Moment(object):
+    def __init__(self, iteration, frequency: Frequency, phase: Phase, time: datetime = None):
+        self._datetime = datetime.now() if time is None else time
+        self._frequency = frequency
+        self._iteration = iteration
+        self._phase = phase
+
+    @property
+    def datetime(self):
+        return self._datetime
+
+    @datetime.setter
+    def datetime(self, value):
+        self._datetime = value
+
+    @property
+    def frequency(self):
+        return self._frequency
+
+    @frequency.setter
+    def frequency(self, value):
+        self._frequency = value
+
+    @property
+    def iteration(self):
+        return self._iteration
+
+    @iteration.setter
+    def iteration(self, value):
+        self._iteration = value
+
+    @property
+    def phase(self):
+        return self._phase
+
+    @phase.setter
+    def phase(self, value):
+        self._phase = value
+
+
 class BaseEvent(Enum):
+    def __init__(self, value):
+        self._value_ = value
+
     def __str__(self):
         return self.value
 
@@ -15,48 +96,40 @@ class BaseEvent(Enum):
         return hash(self.value)
 
 
-class Event(BaseEvent):
-    ON_TRAINING_BEGIN = "training_begin"
-    ON_TRAINING_END = "training_end"
-    ON_VALID_BEGIN = "valid_begin"
-    ON_VALID_END = "valid_end"
-    ON_TEST_BEGIN = "test_begin"
-    ON_TEST_END = "test_end"
-    ON_EPOCH_BEGIN = "epoch_begin"
-    ON_EPOCH_END = "epoch_end"
-    ON_TRAIN_EPOCH_BEGIN = "train_epoch_begin"
-    ON_TRAIN_EPOCH_END = "train_epoch_end"
-    ON_VALID_EPOCH_BEGIN = "valid_epoch_begin"
-    ON_VALID_EPOCH_END = "valid_epoch_end"
-    ON_TEST_EPOCH_BEGIN = "test_epoch_begin"
-    ON_TEST_EPOCH_END = "test_epoch_end"
-    ON_BATCH_BEGIN = "batch_begin"
-    ON_TRAIN_BATCH_BEGIN = "train_batch_begin"
-    ON_TRAIN_BATCH_END = "train_batch_end"
-    ON_VALID_BATCH_BEGIN = "valid_batch_begin"
-    ON_VALID_BATCH_END = "valid_batch_end"
-    ON_TEST_BATCH_BEGIN = "test_batch_begin"
-    ON_TEST_BATCH_END = "test_batch_end"
-    ON_BATCH_END = "batch_end"
-    ON_FINALIZE = "finalizing"
+class TemporalEvent(object):
+    def __init__(self, event: BaseEvent, moment: Moment):
+        self._event = event
+        self._moment = moment
 
-    @staticmethod
-    def epoch_events():
-        return [Event.ON_EPOCH_BEGIN, Event.ON_TRAIN_EPOCH_BEGIN, Event.ON_TRAIN_EPOCH_END, Event.ON_VALID_EPOCH_BEGIN,
-                Event.ON_VALID_EPOCH_END, Event.ON_EPOCH_END, Event.ON_TEST_EPOCH_BEGIN, Event.ON_TEST_BATCH_BEGIN,
-                Event.ON_TEST_BATCH_END]
+    @property
+    def event(self):
+        return self._event
 
-    @staticmethod
-    def train_batch_events():
-        return [Event.ON_BATCH_BEGIN, Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_BATCH_END]
+    @property
+    def frequency(self):
+        return self._moment.frequency
 
-    @staticmethod
-    def valid_batch_events():
-        return [Event.ON_BATCH_BEGIN, Event.ON_VALID_BATCH_BEGIN, Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]
+    @property
+    def phase(self):
+        return self._moment.phase
 
-    @staticmethod
-    def test_batch_events():
-        return [Event.ON_BATCH_BEGIN, Event.ON_TEST_BATCH_BEGIN, Event.ON_TEST_BATCH_END, Event.ON_BATCH_END]
+    @property
+    def datetime(self):
+        return self._moment.datetime
+
+    @property
+    def iteration(self):
+        return self._moment.iteration
+
+    def __eq__(self, other):
+        if isinstance(other, BaseEvent):
+            return self.event == other
+        elif isinstance(other, TemporalEvent):
+            return self._event == other.event and self.frequency == other.frequency and \
+                   self.phase == other.phase and self.datetime == other.datetime and self.iteration == other.iteration
+
+    def __str__(self):
+        return str(self.event)
 
 
 class BaseVariable(Enum):
@@ -74,10 +147,12 @@ class BaseVariable(Enum):
 
 
 class Monitor(BaseVariable):
+    LOSS = "loss"
+    METRICS = "metrics"
+
     TRAIN_LOSS = "train_loss"
     VALID_LOSS = "valid_loss"
     TEST_LOSS = "test_loss"
-
     TRAIN_METRICS = "train_metrics"
     VALID_METRICS = "valid_metrics"
     TEST_METRICS = "test_metrics"

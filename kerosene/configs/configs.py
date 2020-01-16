@@ -48,9 +48,10 @@ class DatasetConfiguration(Configuration):
 
 
 class ModelTrainerConfiguration(Configuration):
+
     def __init__(self, model_name, model_type, model_params, optimizer_types, optimizer_params, scheduler_types,
-                 scheduler_params, criterion_type, criterion_params, metric_type, metric_params, gradient_clipping_func,
-                 gradient_clipping_params):
+                 scheduler_params, criterion_type, criterion_params, metric_types, metric_params,
+                 gradient_clipping_strategy, gradient_clipping_params):
         self._model_name = model_name
         self._model_type = model_type
         self._model_params = model_params
@@ -64,10 +65,10 @@ class ModelTrainerConfiguration(Configuration):
         self._criterion_type = criterion_type
         self._criterion_params = criterion_params
 
-        self._metric_type = metric_type
+        self._metric_types = metric_types
         self._metric_params = metric_params
 
-        self._gradient_clipping_func = gradient_clipping_func
+        self._gradient_clipping_strategy = gradient_clipping_strategy
         self._gradient_clipping_params = gradient_clipping_params
 
     @property
@@ -107,16 +108,16 @@ class ModelTrainerConfiguration(Configuration):
         return self._criterion_params
 
     @property
-    def metric_type(self):
-        return self._metric_type
+    def metric_types(self):
+        return self._metric_types
 
     @property
     def metric_params(self):
         return self._metric_params
 
     @property
-    def gradient_clipping_func(self):
-        return self._gradient_clipping_func
+    def gradient_clipping_strategy(self):
+        return self._gradient_clipping_strategy
 
     @property
     def gradient_clipping_params(self):
@@ -131,7 +132,8 @@ class ModelTrainerConfiguration(Configuration):
                        [scheduler["type"] for scheduler in config_dict["schedulers"]],
                        [scheduler.get("params") for scheduler in config_dict["schedulers"]],
                        config_dict["criterion"]["type"], config_dict["criterion"].get("params"),
-                       config_dict["metric"]["type"], config_dict["metric"].get("params"),
+                       [metric["type"] for metric in config_dict["metrics"]],
+                       [metric.get("params") for metric in config_dict["metrics"]],
                        config_dict.get("gradients", {}).get("clipping_strategy"),
                        config_dict.get("gradients", {}).get("params"))
         except KeyError as e:

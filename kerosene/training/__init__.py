@@ -12,6 +12,9 @@ class BaseStatus(Enum):
         elif isinstance(other, BaseStatus):
             return self.value == other.value
 
+    def __hash__(self):
+        return hash(self.value)
+
 
 class Status(BaseStatus):
     INITIALIZING = "Initializing"
@@ -20,8 +23,4 @@ class Status(BaseStatus):
     TRAINING = "Training"
     VALIDATING = "Validating"
     TESTING = "Testing"
-    FINALIZING = "Finalizing"
     FINALIZED = "Finalized"
-
-    def __hash__(self):
-        return hash(self.value)

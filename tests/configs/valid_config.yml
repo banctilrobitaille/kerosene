@@ -32,8 +32,15 @@ models:
           patience: 3
     criterion:
       type: CrossEntropyLoss
-    metric:
-      type: Accuracy
+    metrics:
+      - type: Dice
+        params:
+          num_classes: 4
+          reduction: !!null
+          ignore_index: 0
+          average: !!null
+          weight: !!null
+      - type: Accuracy
     gradients:
       clipping_strategy: "norm"
       params:
