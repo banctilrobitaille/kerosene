@@ -17,7 +17,7 @@ from kerosene.events.handlers.visdom.config import VisdomConfiguration
 from kerosene.events.handlers.visdom.visdom import VisdomLogger
 from kerosene.events.preprocessors.visdom import PlotAllModelStateVariables
 from kerosene.training.trainers import ModelTrainerFactory
-from tests.functionals.distributed.models import SimpleNet
+from tests.functionals.models import SimpleNet
 from tests.functionals.distributed.mnist_trainer import MNISTTrainer
 
 

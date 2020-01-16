@@ -14,7 +14,7 @@
 # limitations under the License.
 # ==============================================================================
 from enum import Enum
-from typing import Union, Tuple, List
+from typing import Union, Tuple
 
 import torch
 from ignite.metrics import Accuracy, Precision, MeanAbsoluteError, MeanPairwiseDistance, MeanSquaredError, Recall, \
@@ -265,3 +265,10 @@ class GeneralizedDice(Metric):
             return MetricsLambda(remove_index, dice)
         else:
             return dice
+
+
+def to_tensor(metric_value):
+    if not isinstance(metric_value, torch.Tensor):
+        return torch.tensor([metric_value])
+    else:
+        return metric_value

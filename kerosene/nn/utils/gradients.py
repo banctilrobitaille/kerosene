@@ -14,14 +14,12 @@
 # limitations under the License.
 # ==============================================================================
 
+import abc
+from enum import Enum
 from typing import Union, Callable, Iterable
 
 import torch
-from torch.nn.utils import clip_grad_norm_
-from torch.nn.utils import clip_grad_value_
-
-from enum import Enum
-import abc
+from torch.nn.utils import clip_grad_norm_, clip_grad_value_
 
 
 class GradientClippingStrategyType(Enum):
@@ -80,7 +78,6 @@ class GradientClippingStrategyFactory(object):
         }
 
     def create(self, clipping_strategy: Union[str, GradientClippingStrategyType], params):
-
         if clipping_strategy is not None:
             return self._clipping_strategies[str(clipping_strategy)](**params)
         else:

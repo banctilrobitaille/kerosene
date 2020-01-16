@@ -1,8 +1,6 @@
 import unittest
 
-import torch
 from hamcrest import *
-from torch import nn
 
 from kerosene.nn.utils.gradients import GradientClippingStrategyFactory, GradientClippingStrategyType, \
     GradientClippingStrategy
