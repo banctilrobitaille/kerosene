@@ -41,20 +41,22 @@ from kerosene.utils.devices import on_gpu
 class ModelTrainer(ApexModule):
     LOGGER = logging.getLogger("ModelTrainer")
 
-    def __init__(self, model_name, model, criterion, optimizer, scheduler, metric_computers: Dict[str, Metric],
+    def __init__(self, model_name, model, criterions, optimizer, scheduler, metric_computers: Dict[str, Metric],
                  gradient_clipping_strategy: GradientClippingStrategy = None):
         super(ModelTrainer, self).__init__(model, optimizer)
         self._model_name = model_name
 
-        self._criterion = criterion
+        self._criterions = criterions
         self._scheduler = scheduler
         self._metric_computers = metric_computers
         self._gradient_clipping_strategy = gradient_clipping_strategy
 
-        self._step_train_loss = torch.Tensor().new_zeros((1,))
-        self._step_valid_loss = torch.Tensor().new_zeros((1,))
-        self._step_test_loss = torch.Tensor().new_zeros((1,))
-
+        self._step_train_loss = {criterion: torch.Tensor().new_zeros((1,)) for
+                                 criterion in criterions.keys()}
+        self._step_valid_loss = {criterion: torch.Tensor().new_zeros((1,)) for
+                                 criterion in criterions.keys()}
+        self._step_test_loss = {criterion: torch.Tensor().new_zeros((1,)) for
+                                criterion in criterions.keys()}
         self._step_train_metrics = {metric_name: torch.Tensor().new_zeros((1,)) for
                                     metric_name in metric_computers.keys()}
         self._step_valid_metrics = {metric_name: torch.Tensor().new_zeros((1,)) for
@@ -62,9 +64,9 @@ class ModelTrainer(ApexModule):
         self._step_test_metrics = {metric_name: torch.Tensor().new_zeros((1,)) for
                                    metric_name in metric_computers.keys()}
 
-        self._train_loss = AverageGauge()
-        self._valid_loss = AverageGauge()
-        self._test_loss = AverageGauge()
+        self._train_loss = {criterion: AverageGauge() for criterion in criterions.keys()}
+        self._valid_loss = {criterion: AverageGauge() for criterion in criterions.keys()}
+        self._test_loss = {criterion: AverageGauge() for criterion in criterions.keys()}
 
         self._train_metrics = {metric_name: AverageGauge() for metric_name in metric_computers.keys()}
         self._valid_metrics = {metric_name: AverageGauge() for metric_name in metric_computers.keys()}
@@ -78,15 +80,18 @@ class ModelTrainer(ApexModule):
 
     @property
     def step_train_loss(self):
-        return torch.tensor([self._step_train_loss]).cpu()
+        return {loss_name: to_tensor(step_train_loss).cpu() for loss_name, step_train_loss in
+                self._step_train_loss.items()}
 
     @property
     def step_valid_loss(self):
-        return torch.tensor([self._step_valid_loss]).cpu()
+        return {loss_name: to_tensor(step_valid_loss).cpu() for loss_name, step_valid_loss in
+                self._step_valid_loss.items()}
 
     @property
     def step_test_loss(self):
-        return torch.tensor([self._step_test_loss]).cpu()
+        return {loss_name: to_tensor(step_test_loss).cpu() for loss_name, step_test_loss in
+                self._step_test_loss.items()}
 
     @property
     def step_train_metrics(self):
@@ -105,15 +110,18 @@ class ModelTrainer(ApexModule):
 
     @property
     def train_loss(self):
-        return torch.tensor([self._train_loss.compute()]).cpu()
+        return {loss_name: to_tensor(train_loss.compute()).cpu() for loss_name, train_loss in
+                self._train_loss.items()}
 
     @property
     def valid_loss(self):
-        return torch.tensor([self._valid_loss.compute()]).cpu()
+        return {loss_name: to_tensor(train_loss.compute()).cpu() for loss_name, train_loss in
+                self._train_loss.items()}
 
     @property
     def test_loss(self):
-        return torch.tensor([self._test_loss.compute()]).cpu()
+        return {loss_name: to_tensor(train_loss.compute()).cpu() for loss_name, train_loss in
+                self._train_loss.items()}
 
     @property
     def train_metrics(self):
@@ -145,7 +153,7 @@ class ModelTrainer(ApexModule):
 
     @property
     def criterion(self):
-        return self._criterion
+        return self._criterions
 
     @property
     def scheduler(self):
@@ -216,38 +224,51 @@ class ModelTrainer(ApexModule):
         for param in self.parameters():
             param.requires_grad = True
 
-    def compute_and_update_train_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
-        self._step_train_loss = self._criterion(pred, target)
+    def compute_and_update_train_loss(self, name, pred, target) -> Union[ApexLoss, torch.Tensor]:
+        self._step_train_loss[name] = self._criterions[name](pred, target)
+        self._train_loss[name].update(self._step_train_loss[name])
+
+        return ApexLoss(self._amp_id, self._step_train_loss[name], self._optimizer) if self.use_amp else \
+            self._step_train_loss[name]
+
+    def compute_and_update_train_losses(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
+        self._step_train_loss = self._criterions(pred, target)
         self._train_loss.update(self._step_train_loss)
 
         return ApexLoss(self._amp_id, self._step_train_loss, self._optimizer) if self.use_amp else self._step_train_loss
 
-    def compute_and_update_valid_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
-        self._step_valid_loss = self._criterion(pred, target)
+    def compute_and_update_valid_loss(self, name, pred, target) -> Union[ApexLoss, torch.Tensor]:
+        self._step_valid_loss = self._criterions(pred, target)
         self._valid_loss.update(self._step_valid_loss)
 
         return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
 
-    def compute_and_update_test_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
-        self._step_test_loss = self._criterion(pred, target)
+    def compute_and_update_valid_losses(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
+        self._step_valid_loss = self._criterions(pred, target)
+        self._valid_loss.update(self._step_valid_loss)
+
+        return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
+
+    def compute_and_update_test_loss(self, name, pred, target) -> Union[ApexLoss, torch.Tensor]:
+        self._step_test_loss = self._criterions(pred, target)
         self._test_loss.update(self._step_test_loss)
 
         return ApexLoss(self._amp_id, self._step_test_loss, self._optimizer) if self.use_amp else self._step_test_loss
 
-    def compute_loss(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
-        loss = self._criterion(pred, target)
+    def compute_loss(self, name, pred, target) -> Union[ApexLoss, torch.Tensor]:
+        loss = self._criterions(pred, target)
 
         return ApexLoss(self._amp_id, loss, self._optimizer) if self.use_amp else loss
 
-    def update_train_loss(self, loss) -> None:
+    def update_train_loss(self, name, loss) -> None:
         self._step_train_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
         self._train_loss.update(self._step_train_loss)
 
-    def update_valid_loss(self, loss) -> None:
+    def update_valid_loss(self, name, loss) -> None:
         self._step_valid_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
         self._valid_loss.update(self._step_valid_loss)
 
-    def update_test_loss(self, loss) -> None:
+    def update_test_loss(self, name, loss) -> None:
         self._step_test_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
         self._test_loss.update(self._step_test_loss)
 
