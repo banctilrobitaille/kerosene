@@ -18,7 +18,7 @@ import logging
 import torch
 import yaml
 
-from kerosene.configs.configs import ModelTrainerConfiguration, TrainerConfiguration
+from kerosene.configs.configs import ModelConfiguration, TrainerConfiguration
 
 
 class CustomYamlParser(object):
@@ -54,8 +54,8 @@ class YamlConfigurationParser(object):
                 config = CustomYamlParser().safe_load(config_file)
 
                 model_trainer_configs = list(
-                    map(lambda model_name: ModelTrainerConfiguration.from_dict(model_name,
-                                                                               config["models"][model_name]),
+                    map(lambda model_name: ModelConfiguration.from_dict(model_name,
+                                                                        config["models"][model_name]),
                         config["models"]))
 
                 model_trainer_configs = model_trainer_configs if len(model_trainer_configs) > 1 else \

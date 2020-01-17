@@ -19,16 +19,21 @@ models:
         factor: 0.1
         patience: 3
     criterion:
-      type: CrossEntropyLoss
+      cycle:
+        type: "L1Loss"
+      gan:
+        type: "MSELoss"
     metrics:
-      - type: Dice
+      Dice:
+        type: Dice
         params:
           num_classes: 4
           reduction: !!null
           ignore_index: 0
           average: !!null
           weight: !!null
-      - type: Accuracy
+      Accuracy:
+        type: Accuracy
     gradients:
       clipping_strategy: 'norm'
       params:

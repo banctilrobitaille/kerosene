@@ -21,7 +21,7 @@ import torch
 from ignite.metrics import Metric
 from torch.utils.data import DataLoader
 
-from kerosene.configs.configs import ModelTrainerConfiguration, RunConfiguration
+from kerosene.configs.configs import ModelConfiguration, RunConfiguration
 from kerosene.events import BaseEvent, Monitor, Frequency, Phase
 from kerosene.events.publishers.base_publisher import EventPublisher
 from kerosene.metrics.gauges import AverageGauge
@@ -577,32 +577,33 @@ class ModelTrainerFactory(object):
         assert (self._model is not None) or (
                 self._model_factory is not None), "A model or a model factory must be provided !"
 
-    def create(self, model_trainer_configs: Union[List[ModelTrainerConfiguration], ModelTrainerConfiguration]):
+    def create(self, model_trainer_configs: Union[List[ModelConfiguration], ModelConfiguration]):
         model_trainer_configs = [model_trainer_configs] if isinstance(model_trainer_configs,
-                                                                      ModelTrainerConfiguration) else model_trainer_configs
+                                                                      ModelConfiguration) else model_trainer_configs
         model_trainers = list(
             map(lambda model_trainer_config: self._create(model_trainer_config), model_trainer_configs))
 
         return model_trainers if len(model_trainers) > 1 else model_trainers[0]
 
-    def _create(self, model_trainer_config: ModelTrainerConfiguration):
-        model = self._model if self._model is not None else self._model_factory.create(
-            model_trainer_config.model_type,
-            model_trainer_config.model_params)
-        optimizer = self._optimizer_factory.create(model_trainer_config.optimizer_type,
+    def _create(self, model_config: ModelConfiguration):
+        model = self._model if self._model is not None else self._model_factory.create(model_config.type,
+                                                                                       model_config.params)
+        optimizer = self._optimizer_factory.create(model_config.optimizer_type,
                                                    model.parameters(),
-                                                   model_trainer_config.optimizer_params)
-        scheduler = self._scheduler_factory.create(model_trainer_config.scheduler_type, optimizer,
-                                                   model_trainer_config.scheduler_params)
-        criterion = self._criterion_factory.create(model_trainer_config.criterion_type,
-                                                   model_trainer_config.criterion_params)
+                                                   model_config.optimizer_params)
+        scheduler = self._scheduler_factory.create(model_config.scheduler_type, optimizer,
+                                                   model_config.scheduler_params)
 
-        metrics = {metric_type: self._metric_factory.create(model_trainer_config.metric_types[i],
-                                                            model_trainer_config.metric_params[i]) for i, metric_type in
-                   enumerate(model_trainer_config.metric_types)}
+        criterions = {
+            criterion_config.name: self._criterion_factory.create(criterion_config.type, criterion_config.params) for
+            criterion_config in model_config.criterions_configs}
+
+        metrics = {
+            metric_config.name: self._criterion_factory.create(metric_config.type, metric_config.params) for
+            metric_config in model_config.metrics_configs}
 
         gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(
-            model_trainer_config.gradient_clipping_strategy, model_trainer_config.gradient_clipping_params)
+            model_config.gradient_clipping_strategy, model_config.gradient_clipping_params)
 
-        return ModelTrainer(model_trainer_config.model_name, model, criterion, optimizer, scheduler, metrics,
+        return ModelTrainer(model_config.name, model, criterions, optimizer, scheduler, metrics,
                             gradient_clipping_strategy)

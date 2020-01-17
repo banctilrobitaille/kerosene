@@ -2,13 +2,13 @@ import unittest
 
 from hamcrest import *
 
-from kerosene.configs.configs import ModelTrainerConfiguration
+from kerosene.configs.configs import ModelConfiguration
 from kerosene.configs.exceptions import InvalidConfigurationError
 from kerosene.configs.parsers import YamlConfigurationParser
 
 
 class TestModelTrainerConfiguration(unittest.TestCase):
-    VALID_CONFIG_FILE_PATH = "tests/config/valid_config.yml"
+    VALID_CONFIG_FILE_PATH = "valid_config.yml"
     INVALID_CONFIG_FILE_PATH = "tests/config/invalid_config.yml"
 
     MODELS_CONFIG_YML_TAG = "models"
@@ -44,8 +44,8 @@ class TestModelTrainerConfiguration(unittest.TestCase):
                                                                    {'type': self.SIMPLE_NET_METRIC_TYPE_2}],
                                                        'gradients': self.SIMPLE_NET_GRADIENT_CLIPPING}}
         config_dict = YamlConfigurationParser.parse_section(self.VALID_CONFIG_FILE_PATH, self.MODELS_CONFIG_YML_TAG)
-        model_trainer_config = ModelTrainerConfiguration.from_dict(self.SIMPLE_NET_NAME,
-                                                                   config_dict[self.SIMPLE_NET_NAME])
+        model_trainer_config = ModelConfiguration.from_dict(self.SIMPLE_NET_NAME,
+                                                            config_dict[self.SIMPLE_NET_NAME])
 
         assert_that(config_dict, equal_to(expected_config_dict))
 
@@ -61,6 +61,6 @@ class TestModelTrainerConfiguration(unittest.TestCase):
     def test_should_throw_on_invalid_model_trainer_config(self):
         config_dict = YamlConfigurationParser.parse_section(self.INVALID_CONFIG_FILE_PATH, self.MODELS_CONFIG_YML_TAG)
 
-        assert_that(calling(ModelTrainerConfiguration.from_dict).with_args(self.SIMPLE_NET_NAME,
-                                                                           config_dict[self.SIMPLE_NET_NAME]),
+        assert_that(calling(ModelConfiguration.from_dict).with_args(self.SIMPLE_NET_NAME,
+                                                                    config_dict[self.SIMPLE_NET_NAME]),
                     raises(InvalidConfigurationError))

@@ -7,7 +7,7 @@ from mockito import mock, verify, spy
 from torch import nn
 from torch.optim import Optimizer, lr_scheduler
 
-from kerosene.configs.configs import ModelTrainerConfiguration, RunConfiguration
+from kerosene.configs.configs import ModelConfiguration, RunConfiguration
 from kerosene.configs.parsers import YamlConfigurationParser
 from kerosene.nn.utils.gradients import GradientClippingStrategy
 from kerosene.training.trainers import ModelTrainer, ModelTrainerFactory
@@ -195,8 +195,8 @@ class ModelTrainerFactoryTest(unittest.TestCase):
 
     def setUp(self) -> None:
         config_dict = YamlConfigurationParser.parse_section(self.VALID_CONFIG_FILE_PATH, self.MODELS_CONFIG_YML_TAG)
-        self._model_trainer_config = ModelTrainerConfiguration.from_dict(self.SIMPLE_NET_NAME,
-                                                                         config_dict[self.SIMPLE_NET_NAME])
+        self._model_trainer_config = ModelConfiguration.from_dict(self.SIMPLE_NET_NAME,
+                                                                  config_dict[self.SIMPLE_NET_NAME])
         self._run_config = RunConfiguration()
         self._model = nn.Conv2d(1, 32, (3, 3))
 
