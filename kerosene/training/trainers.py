@@ -51,23 +51,16 @@ class ModelTrainer(ApexModule):
         self._metric_computers = metric_computers
         self._gradient_clipping_strategy = gradient_clipping_strategy
 
-        self._step_train_loss = {criterion: torch.Tensor().new_zeros((1,)) for
-                                 criterion in criterions.keys()}
-        self._step_valid_loss = {criterion: torch.Tensor().new_zeros((1,)) for
-                                 criterion in criterions.keys()}
-        self._step_test_loss = {criterion: torch.Tensor().new_zeros((1,)) for
-                                criterion in criterions.keys()}
-        self._step_train_metrics = {metric_name: torch.Tensor().new_zeros((1,)) for
-                                    metric_name in metric_computers.keys()}
-        self._step_valid_metrics = {metric_name: torch.Tensor().new_zeros((1,)) for
-                                    metric_name in metric_computers.keys()}
-        self._step_test_metrics = {metric_name: torch.Tensor().new_zeros((1,)) for
-                                   metric_name in metric_computers.keys()}
+        self._step_train_loss = {criterion: torch.Tensor().new_zeros((1,)) for criterion in criterions.keys()}
+        self._step_valid_loss = {criterion: torch.Tensor().new_zeros((1,)) for criterion in criterions.keys()}
+        self._step_test_loss = {criterion: torch.Tensor().new_zeros((1,)) for criterion in criterions.keys()}
+        self._step_train_metrics = {metric: torch.Tensor().new_zeros((1,)) for metric in metric_computers.keys()}
+        self._step_valid_metrics = {metric: torch.Tensor().new_zeros((1,)) for metric in metric_computers.keys()}
+        self._step_test_metrics = {metric: torch.Tensor().new_zeros((1,)) for metric in metric_computers.keys()}
 
         self._train_loss = {criterion: AverageGauge() for criterion in criterions.keys()}
         self._valid_loss = {criterion: AverageGauge() for criterion in criterions.keys()}
         self._test_loss = {criterion: AverageGauge() for criterion in criterions.keys()}
-
         self._train_metrics = {metric_name: AverageGauge() for metric_name in metric_computers.keys()}
         self._valid_metrics = {metric_name: AverageGauge() for metric_name in metric_computers.keys()}
         self._test_metrics = {metric_name: AverageGauge() for metric_name in metric_computers.keys()}
@@ -116,12 +109,12 @@ class ModelTrainer(ApexModule):
     @property
     def valid_loss(self):
         return {loss_name: to_tensor(train_loss.compute()).cpu() for loss_name, train_loss in
-                self._train_loss.items()}
+                self._valid_loss.items()}
 
     @property
     def test_loss(self):
         return {loss_name: to_tensor(train_loss.compute()).cpu() for loss_name, train_loss in
-                self._train_loss.items()}
+                self._test_loss.items()}
 
     @property
     def train_metrics(self):
@@ -152,7 +145,7 @@ class ModelTrainer(ApexModule):
         return self._model.state_dict()
 
     @property
-    def criterion(self):
+    def criterions(self):
         return self._criterions
 
     @property
@@ -207,11 +200,13 @@ class ModelTrainer(ApexModule):
 
     def scheduler_step(self) -> None:
         if self._scheduler is not None:
-            self._scheduler.step(self._train_loss.compute())
+            self._scheduler.step(sum(list(map(lambda loss: loss.compute(), self._train_loss.values()))))
 
     def to(self, device: Optional[Union[int, torch.device]] = ..., dtype=..., non_blocking: bool = ...):
         self.model.to(device)
-        self.criterion.to(device)
+
+        for criterion in self.criterions.values():
+            criterion.to(device)
 
     def zero_grad(self) -> None:
         self._optimizer.zero_grad()
@@ -231,29 +226,46 @@ class ModelTrainer(ApexModule):
         return ApexLoss(self._amp_id, self._step_train_loss[name], self._optimizer) if self.use_amp else \
             self._step_train_loss[name]
 
-    def compute_and_update_train_losses(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
-        self._step_train_loss = self._criterions(pred, target)
-        self._train_loss.update(self._step_train_loss)
-
-        return ApexLoss(self._amp_id, self._step_train_loss, self._optimizer) if self.use_amp else self._step_train_loss
+    def compute_and_update_train_losses(self, pred, target) -> Dict[str, Union[ApexLoss, torch.Tensor]]:
+        losses = {}
+        for name, criterion in self._criterions.items():
+            self._step_train_loss[name] = criterion(pred, target)
+            self._train_loss[name].update(self._step_train_loss[name])
+            losses[name] = ApexLoss(self._amp_id, self._step_train_loss[name],
+                                    self._optimizer) if self.use_amp else self._step_train_loss[name]
+        return losses
 
     def compute_and_update_valid_loss(self, name, pred, target) -> Union[ApexLoss, torch.Tensor]:
-        self._step_valid_loss = self._criterions(pred, target)
-        self._valid_loss.update(self._step_valid_loss)
+        self._step_valid_loss[name] = self._criterions[name](pred, target)
+        self._valid_loss[name].update(self._step_valid_loss[name])
 
-        return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
+        return ApexLoss(self._amp_id, self._step_valid_loss[name], self._optimizer) if self.use_amp else \
+            self._step_valid_loss[name]
 
-    def compute_and_update_valid_losses(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
-        self._step_valid_loss = self._criterions(pred, target)
-        self._valid_loss.update(self._step_valid_loss)
-
-        return ApexLoss(self._amp_id, self._step_valid_loss, self._optimizer) if self.use_amp else self._step_valid_loss
+    def compute_and_update_valid_losses(self, pred, target) -> Dict[str, Union[ApexLoss, torch.Tensor]]:
+        losses = {}
+        for name, criterion in self._criterions.items():
+            self._step_valid_loss[name] = criterion(pred, target)
+            self._valid_loss[name].update(self._step_valid_loss[name])
+            losses[name] = ApexLoss(self._amp_id, self._step_valid_loss[name],
+                                    self._optimizer) if self.use_amp else self._step_valid_loss[name]
+        return losses
 
     def compute_and_update_test_loss(self, name, pred, target) -> Union[ApexLoss, torch.Tensor]:
-        self._step_test_loss = self._criterions(pred, target)
-        self._test_loss.update(self._step_test_loss)
+        self._step_test_loss[name] = self._criterions[name](pred, target)
+        self._test_loss[name].update(self._step_test_loss[name])
 
-        return ApexLoss(self._amp_id, self._step_test_loss, self._optimizer) if self.use_amp else self._step_test_loss
+        return ApexLoss(self._amp_id, self._step_test_loss[name], self._optimizer) if self.use_amp else \
+            self._step_test_loss[name]
+
+    def compute_and_update_test_losses(self, pred, target) -> Dict[str, Union[ApexLoss, torch.Tensor]]:
+        losses = {}
+        for name, criterion in self._criterions.items():
+            self._step_test_loss[name] = criterion(pred, target)
+            self._test_loss[name].update(self._step_test_loss[name])
+            losses[name] = ApexLoss(self._amp_id, self._step_test_loss[name],
+                                    self._optimizer) if self.use_amp else self._step_test_loss[name]
+        return losses
 
     def compute_loss(self, name, pred, target) -> Union[ApexLoss, torch.Tensor]:
         loss = self._criterions(pred, target)
@@ -305,9 +317,9 @@ class ModelTrainer(ApexModule):
         [metric.reset() for metric_name, metric in self._train_metrics.items()]
         [metric.reset() for metric_name, metric in self._valid_metrics.items()]
         [metric.reset() for metric_name, metric in self._test_metrics.items()]
-        self._train_loss.reset()
-        self._valid_loss.reset()
-        self._test_loss.reset()
+        [loss.reset() for loss_name, loss in self._train_loss.items()]
+        [loss.reset() for loss_name, loss in self._valid_loss.items()]
+        [loss.reset() for loss_name, loss in self._test_loss.items()]
 
     def finalize(self) -> None:
         self._status = Status.FINALIZED
@@ -620,7 +632,7 @@ class ModelTrainerFactory(object):
             criterion_config in model_config.criterions_configs}
 
         metrics = {
-            metric_config.name: self._criterion_factory.create(metric_config.type, metric_config.params) for
+            metric_config.name: self._metric_factory.create(metric_config.type, metric_config.params) for
             metric_config in model_config.metrics_configs}
 
         gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(

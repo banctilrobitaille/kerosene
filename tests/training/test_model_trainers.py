@@ -5,7 +5,9 @@ from hamcrest import *
 from ignite.metrics import Accuracy, Metric, Recall
 from mockito import mock, verify, spy
 from torch import nn
-from torch.optim import Optimizer, lr_scheduler
+from torch.nn.modules.loss import _Loss
+from torch.optim import SGD
+from torch.optim import lr_scheduler
 
 from kerosene.configs.configs import ModelConfiguration, RunConfiguration
 from kerosene.configs.parsers import YamlConfigurationParser
@@ -13,12 +15,12 @@ from kerosene.nn.utils.gradients import GradientClippingStrategy
 from kerosene.training.trainers import ModelTrainer, ModelTrainerFactory
 from tests.constants import *
 from tests.functionals.models import SimpleNet
-from torch.optim import SGD
 
 
 # noinspection PyUnresolvedReferences
 class ModelTrainerTest(unittest.TestCase):
     MODEL_NAME = "Harry Potter"
+    LOSS_NAME = "CrossEntropy"
 
     def setUp(self) -> None:
         self._model = SimpleNet()
@@ -29,7 +31,7 @@ class ModelTrainerTest(unittest.TestCase):
         self._recall_computer_mock = spy(Recall())
         self._gradient_clipping_strategy = None
 
-        self._model_trainer = ModelTrainer(self.MODEL_NAME, self._model, self._criterion_mock,
+        self._model_trainer = ModelTrainer(self.MODEL_NAME, self._model, {self.LOSS_NAME: self._criterion_mock},
                                            self._optimizer_mock, self._scheduler_mock,
                                            {"Accuracy": self._accuracy_computer_mock,
                                             "Recall": self._recall_computer_mock}, self._gradient_clipping_strategy)
@@ -57,12 +59,12 @@ class ModelTrainerTest(unittest.TestCase):
         assert_that(self._model_trainer.test_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.step_valid_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.step_test_metrics["Accuracy"], equal_to(ZERO))
-        assert_that(self._model_trainer.step_train_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.step_valid_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.step_test_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.train_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.valid_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.test_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.step_train_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.step_valid_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.step_test_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.train_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.valid_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.test_loss, equal_to({self.LOSS_NAME: ZERO}))
 
     def test_should_compute_valid_metric_and_update_state(self):
         metric = self._model_trainer.compute_metrics(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
@@ -81,12 +83,12 @@ class ModelTrainerTest(unittest.TestCase):
         assert_that(self._model_trainer.test_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.step_train_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.step_test_metrics["Accuracy"], equal_to(ZERO))
-        assert_that(self._model_trainer.step_train_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.step_valid_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.step_test_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.train_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.valid_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.test_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.step_train_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.step_valid_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.step_test_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.train_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.valid_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.test_loss, equal_to({self.LOSS_NAME: ZERO}))
 
     def test_should_compute_test_metric_and_update_state(self):
         metric = self._model_trainer.compute_metrics(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
@@ -106,24 +108,28 @@ class ModelTrainerTest(unittest.TestCase):
         assert_that(self._model_trainer.valid_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.step_train_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.step_valid_metrics["Accuracy"], equal_to(ZERO))
-        assert_that(self._model_trainer.step_train_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.step_valid_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.step_test_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.train_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.valid_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.test_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.step_train_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.step_valid_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.step_test_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.train_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.valid_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.test_loss, equal_to({self.LOSS_NAME: ZERO}))
 
     def test_should_compute_train_loss_and_update_state(self):
-        loss = self._model_trainer.compute_and_update_train_loss(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
+        loss = self._model_trainer.compute_and_update_train_loss(self.LOSS_NAME, MODEL_PREDICTION_CLASS_0,
+                                                                 TARGET_CLASS_0)
 
         assert_that(loss._loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
-        assert_that(self._model_trainer.step_train_loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
-        assert_that(self._model_trainer.train_loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.step_train_loss[self.LOSS_NAME],
+                    close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.train_loss[self.LOSS_NAME], close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
 
-        loss = self._model_trainer.compute_and_update_train_loss(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_1)
+        loss = self._model_trainer.compute_and_update_train_loss(self.LOSS_NAME, MODEL_PREDICTION_CLASS_0,
+                                                                 TARGET_CLASS_1)
         assert_that(loss._loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
-        assert_that(self._model_trainer.step_train_loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
-        assert_that(self._model_trainer.train_loss, close_to(AVERAGED_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.step_train_loss[self.LOSS_NAME],
+                    close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.train_loss[self.LOSS_NAME], close_to(AVERAGED_BINARY_CROSS_ENTROPY_LOSS, DELTA))
 
         assert_that(self._model_trainer.train_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.valid_metrics["Accuracy"], equal_to(ZERO))
@@ -131,22 +137,26 @@ class ModelTrainerTest(unittest.TestCase):
         assert_that(self._model_trainer.step_train_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.step_valid_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.step_test_metrics["Accuracy"], equal_to(ZERO))
-        assert_that(self._model_trainer.step_valid_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.step_test_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.valid_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.test_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.step_valid_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.step_test_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.valid_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.test_loss, equal_to({self.LOSS_NAME: ZERO}))
 
     def test_should_compute_valid_loss_and_update_state(self):
-        loss = self._model_trainer.compute_and_update_valid_loss(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
+        loss = self._model_trainer.compute_and_update_valid_loss(self.LOSS_NAME, MODEL_PREDICTION_CLASS_0,
+                                                                 TARGET_CLASS_0)
 
         assert_that(loss._loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
-        assert_that(self._model_trainer.step_valid_loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
-        assert_that(self._model_trainer.valid_loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.step_valid_loss[self.LOSS_NAME],
+                    close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.valid_loss[self.LOSS_NAME], close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
 
-        loss = self._model_trainer.compute_and_update_valid_loss(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_1)
+        loss = self._model_trainer.compute_and_update_valid_loss(self.LOSS_NAME, MODEL_PREDICTION_CLASS_0,
+                                                                 TARGET_CLASS_1)
         assert_that(loss._loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
-        assert_that(self._model_trainer.step_valid_loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
-        assert_that(self._model_trainer.valid_loss, close_to(AVERAGED_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.step_valid_loss[self.LOSS_NAME],
+                    close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.valid_loss[self.LOSS_NAME], close_to(AVERAGED_BINARY_CROSS_ENTROPY_LOSS, DELTA))
 
         assert_that(self._model_trainer.train_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.valid_metrics["Accuracy"], equal_to(ZERO))
@@ -155,22 +165,25 @@ class ModelTrainerTest(unittest.TestCase):
         assert_that(self._model_trainer.step_valid_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.step_test_metrics["Accuracy"], equal_to(ZERO))
 
-        assert_that(self._model_trainer.step_train_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.step_test_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.train_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.test_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.step_train_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.step_test_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.train_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.test_loss, equal_to({self.LOSS_NAME: ZERO}))
 
     def test_should_compute_test_loss_and_update_state(self):
-        loss = self._model_trainer.compute_and_update_test_loss(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_0)
+        loss = self._model_trainer.compute_and_update_test_loss(self.LOSS_NAME, MODEL_PREDICTION_CLASS_0,
+                                                                TARGET_CLASS_0)
 
         assert_that(loss._loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
-        assert_that(self._model_trainer.step_test_loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
-        assert_that(self._model_trainer.test_loss, close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.step_test_loss[self.LOSS_NAME],
+                    close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.test_loss[self.LOSS_NAME], close_to(MINIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
 
-        loss = self._model_trainer.compute_and_update_test_loss(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_1)
-        assert_that(loss._loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
-        assert_that(self._model_trainer.step_test_loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
-        assert_that(self._model_trainer.test_loss, close_to(AVERAGED_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        loss = self._model_trainer.compute_and_update_test_losses(MODEL_PREDICTION_CLASS_0, TARGET_CLASS_1)
+        assert_that(loss[self.LOSS_NAME]._loss, close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.step_test_loss[self.LOSS_NAME],
+                    close_to(MAXIMUM_BINARY_CROSS_ENTROPY_LOSS, DELTA))
+        assert_that(self._model_trainer.test_loss[self.LOSS_NAME], close_to(AVERAGED_BINARY_CROSS_ENTROPY_LOSS, DELTA))
 
         assert_that(self._model_trainer.train_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.valid_metrics["Accuracy"], equal_to(ZERO))
@@ -178,14 +191,14 @@ class ModelTrainerTest(unittest.TestCase):
         assert_that(self._model_trainer.step_train_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.step_valid_metrics["Accuracy"], equal_to(ZERO))
         assert_that(self._model_trainer.step_test_metrics["Accuracy"], equal_to(ZERO))
-        assert_that(self._model_trainer.step_train_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.step_valid_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.train_loss, equal_to(ZERO))
-        assert_that(self._model_trainer.valid_loss, equal_to(ZERO))
+        assert_that(self._model_trainer.step_train_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.step_valid_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.train_loss, equal_to({self.LOSS_NAME: ZERO}))
+        assert_that(self._model_trainer.valid_loss, equal_to({self.LOSS_NAME: ZERO}))
 
 
 class ModelTrainerFactoryTest(unittest.TestCase):
-    VALID_CONFIG_FILE_PATH = "tests/config/valid_config.yml"
+    VALID_CONFIG_FILE_PATH = "..\\config\\valid_config.yml"
     MODELS_CONFIG_YML_TAG = "models"
     SIMPLE_NET_NAME = "SimpleNet"
 
@@ -204,7 +217,9 @@ class ModelTrainerFactoryTest(unittest.TestCase):
         model_trainer = ModelTrainerFactory(model=self._model).create(self._model_trainer_config)
         assert_that(model_trainer, instance_of(ModelTrainer))
         assert_that(model_trainer.name, is_(self.SIMPLE_NET_NAME))
-        assert_that(model_trainer.criterion, instance_of(torch.nn.CrossEntropyLoss))
+        assert_that(len(model_trainer.criterions), is_(2))
+        [assert_that(model_trainer.criterions[criterion], instance_of(_Loss)) for criterion in
+         model_trainer.criterions.keys()]
         assert_that(model_trainer.optimizer, instance_of(torch.optim.SGD))
         assert_that(model_trainer.scheduler, instance_of(torch.optim.lr_scheduler.ReduceLROnPlateau))
         assert_that(len(model_trainer._metric_computers.keys()), is_(2))
