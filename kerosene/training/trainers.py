@@ -569,10 +569,11 @@ class SimpleTrainer(Trainer):
         pred = model.forward(inputs)
         metric = model.compute_metrics(pred, target)
         model.update_train_metrics(metric)
-        loss = model.compute_and_update_train_loss(pred, target)
+        losses = model.compute_and_update_train_losses(pred, target)
 
         model.zero_grad()
-        loss.backward()
+        for loss in losses.values():
+            loss.backward()
         model.step()
 
     def validate_step(self, inputs, target):
@@ -581,7 +582,7 @@ class SimpleTrainer(Trainer):
         pred = model.forward(inputs)
         metric = model.compute_metrics(pred, target)
         model.update_valid_metrics(metric)
-        model.compute_and_update_valid_loss(pred, target)
+        model.compute_and_update_valid_losses(pred, target)
 
     def test_step(self, inputs, target):
         model = self._model_trainers[0]
@@ -589,7 +590,7 @@ class SimpleTrainer(Trainer):
         pred = model.forward(inputs)
         metric = model.compute_metrics(pred, target)
         model.update_test_metrics(metric)
-        model.compute_and_update_test_loss(pred, target)
+        model.compute_and_update_test_losses(pred, target)
 
     def scheduler_step(self):
         self._model_trainers[0].scheduler_step()
