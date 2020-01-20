@@ -167,12 +167,16 @@ class RunConfiguration(Configuration):
         return self._amp_opt_level
 
     @property
-    def devices(self):
-        return self._devices
-
-    @property
     def local_rank(self):
         return self._local_rank
+
+    @property
+    def world_size(self):
+        return self._world_size
+
+    @property
+    def devices(self):
+        return self._devices
 
     @property
     def device(self):
@@ -198,7 +202,7 @@ class RunConfiguration(Configuration):
                 if os.environ.get("WORLD_SIZE") is None:
                     os.environ["WORLD_SIZE"] = str(self._world_size)
                 torch.distributed.init_process_group(backend='nccl', init_method='env://',
-                                                     world_size=os.environ["WORLD_SIZE"], rank=self._local_rank)
+                                                     world_size=int(os.environ["WORLD_SIZE"]), rank=self._local_rank)
             else:
                 raise Exception("NCCL not available and required for multi-GPU training.")
 
