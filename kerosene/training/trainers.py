@@ -221,7 +221,7 @@ class ModelTrainer(ApexModule):
 
     def compute_and_update_train_loss(self, name, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_train_loss[name] = self._criterions[name](pred, target)
-        self._train_loss[name].update(self._step_train_loss[name])
+        self._train_loss[name].update(self._step_train_loss[name].item())
 
         return ApexLoss(self._amp_id, self._step_train_loss[name], self._optimizer) if self.use_amp else \
             self._step_train_loss[name]
@@ -230,14 +230,14 @@ class ModelTrainer(ApexModule):
         losses = {}
         for name, criterion in self._criterions.items():
             self._step_train_loss[name] = criterion(pred, target)
-            self._train_loss[name].update(self._step_train_loss[name])
+            self._train_loss[name].update(self._step_train_loss[name].item())
             losses[name] = ApexLoss(self._amp_id, self._step_train_loss[name],
                                     self._optimizer) if self.use_amp else self._step_train_loss[name]
         return losses
 
     def compute_and_update_valid_loss(self, name, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_valid_loss[name] = self._criterions[name](pred, target)
-        self._valid_loss[name].update(self._step_valid_loss[name])
+        self._valid_loss[name].update(self._step_valid_loss[name].item())
 
         return ApexLoss(self._amp_id, self._step_valid_loss[name], self._optimizer) if self.use_amp else \
             self._step_valid_loss[name]
@@ -246,14 +246,14 @@ class ModelTrainer(ApexModule):
         losses = {}
         for name, criterion in self._criterions.items():
             self._step_valid_loss[name] = criterion(pred, target)
-            self._valid_loss[name].update(self._step_valid_loss[name])
+            self._valid_loss[name].update(self._step_valid_loss[name].item())
             losses[name] = ApexLoss(self._amp_id, self._step_valid_loss[name],
                                     self._optimizer) if self.use_amp else self._step_valid_loss[name]
         return losses
 
     def compute_and_update_test_loss(self, name, pred, target) -> Union[ApexLoss, torch.Tensor]:
         self._step_test_loss[name] = self._criterions[name](pred, target)
-        self._test_loss[name].update(self._step_test_loss[name])
+        self._test_loss[name].update(self._step_test_loss[name].item())
 
         return ApexLoss(self._amp_id, self._step_test_loss[name], self._optimizer) if self.use_amp else \
             self._step_test_loss[name]
@@ -262,27 +262,49 @@ class ModelTrainer(ApexModule):
         losses = {}
         for name, criterion in self._criterions.items():
             self._step_test_loss[name] = criterion(pred, target)
-            self._test_loss[name].update(self._step_test_loss[name])
+            self._test_loss[name].update(self._step_test_loss[name].item())
             losses[name] = ApexLoss(self._amp_id, self._step_test_loss[name],
                                     self._optimizer) if self.use_amp else self._step_test_loss[name]
         return losses
 
     def compute_loss(self, name, pred, target) -> Union[ApexLoss, torch.Tensor]:
-        loss = self._criterions(pred, target)
+        loss = self._criterions[name](pred, target)
 
         return ApexLoss(self._amp_id, loss, self._optimizer) if self.use_amp else loss
 
+    def compute_losses(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
+        losses = {}
+        for name, criterion in self._criterions.items():
+            loss = criterion(pred, target)
+            losses[name] = ApexLoss(self._amp_id, loss, self._optimizer) if self.use_amp else loss
+        return losses
+
     def update_train_loss(self, name, loss) -> None:
-        self._step_train_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
-        self._train_loss.update(self._step_train_loss)
+        self._step_train_loss[name] = loss if not isinstance(loss, ApexLoss) else loss.loss
+        self._train_loss[name].update(self._step_train_loss[name].item())
+
+    def update_train_losses(self, losses) -> None:
+        for name, value in losses.items():
+            self._step_train_loss[name] = value if not isinstance(value, ApexLoss) else value.loss
+            self._train_loss[name].update(self._step_train_loss[name].item())
 
     def update_valid_loss(self, name, loss) -> None:
-        self._step_valid_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
-        self._valid_loss.update(self._step_valid_loss)
+        self._step_valid_loss[name] = loss if not isinstance(loss, ApexLoss) else loss.loss
+        self._valid_loss[name].update(self._step_valid_loss[name].item())
+
+    def update_valid_losses(self, losses) -> None:
+        for name, value in losses.items():
+            self._step_valid_loss[name] = value if not isinstance(value, ApexLoss) else value.loss
+            self._valid_loss[name].update(self._step_valid_loss[name].item())
 
     def update_test_loss(self, name, loss) -> None:
-        self._step_test_loss = loss if not isinstance(loss, ApexLoss) else loss.loss
-        self._test_loss.update(self._step_test_loss)
+        self._step_test_loss[name] = loss if not isinstance(loss, ApexLoss) else loss.loss
+        self._test_loss[name].update(self._step_test_loss[name.item()])
+
+    def update_test_losses(self, losses) -> None:
+        for name, value in losses.items():
+            self._step_test_loss[name] = value if not isinstance(value, ApexLoss) else value.loss
+            self._test_loss[name].update(self._step_test_loss[name].item())
 
     def compute_metrics(self, pred, target):
         metrics = dict()
