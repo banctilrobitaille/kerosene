@@ -153,9 +153,12 @@ class ModelTrainer(ApexModule):
         return self._scheduler
 
     def step_monitors(self):
-        return {Phase.TRAINING: {Monitor.METRICS: self.step_train_metrics, Monitor.LOSS: self.step_train_loss},
-                Phase.VALIDATION: {Monitor.METRICS: self.step_valid_metrics, Monitor.LOSS: self.step_valid_loss},
-                Phase.TEST: {Monitor.METRICS: self.step_test_metrics, Monitor.LOSS: self.step_test_loss}}
+        return {Phase.TRAINING: {Monitor.METRICS: self.step_train_metrics,
+                                 Monitor.LOSS: {name: value.item() for name, value in self.step_train_loss.items()}},
+                Phase.VALIDATION: {Monitor.METRICS: self.step_valid_metrics,
+                                   Monitor.LOSS: {name: value.item() for name, value in self.step_valid_loss.items()}},
+                Phase.TEST: {Monitor.METRICS: self.step_test_metrics,
+                             Monitor.LOSS: {name: value.item() for name, value in self.step_test_loss.items()}}}
 
     def epoch_monitors(self):
         return {Phase.TRAINING: {Monitor.METRICS: self.train_metrics, Monitor.LOSS: self.train_loss},
