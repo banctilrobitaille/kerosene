@@ -491,11 +491,13 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
 
         for self._current_epoch in range(0, nb_epoch):
             if self._at_least_one_model_is_active():
+                self._on_training_begin()
                 self._on_epoch_begin()
                 self._on_train_epoch_begin()
                 self._train_epoch()
                 self._on_train_epoch_end()
                 self._on_epoch_end()
+                self._on_training_end()
                 self._on_valid_begin()
                 self._on_epoch_begin()
                 self._on_valid_epoch_begin()
@@ -512,8 +514,6 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
                 self._on_test_end()
             else:
                 self._finalize()
-
-        self._on_training_end()
 
     def with_event_handler(self, handler, event: BaseEvent):
         if event in self._event_handlers.keys():
