@@ -1,7 +1,7 @@
 #  <img src="/icons/oil.png" width="90" vertical-align="bottom">Kerosene
 > Kerosene is a high-level deep Learning framework for fast and clean research development with Pytorch - <b>[see the doc for more details.](https://kerosene.readthedocs.io/en/latest/)</b>. Kerosene let you focus on your model and data by providing clean and readable code for training, visualizing and debugging your achitecture without forcing you to implement rigid interface for your model.
 
-## Key features
+## Out of The Box Features
 - [X] Basic training logic and user defined trainers
 - [X] Fine grained event system with multiple handlers
 - [X] Multiple metrics and criterions support
