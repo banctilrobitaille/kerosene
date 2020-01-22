@@ -10,7 +10,7 @@
 - [X] Automatic Visdom logging
 - [X] Integrated <b>[Ignite](https://github.com/pytorch/ignite)</b> metrics and <b>[Pytorch](https://github.com/pytorch/pytorch)</b> criterions
 
-## Native Kerosene Events
+## Events
 
 | Event  | Description |
 | ------------- | ------------- |
@@ -38,7 +38,7 @@
 | ON_TEST_BATCH_END   | At the end of each test batch  |
 | ON_FINALIZE   | Before the end of the process  |
 
-## Native Kerosene Handlers
+## Handlers
 - [X] PrintTrainingStatus (Console)
 - [X] PrintMonitors (Console)
 - [X] PlotMonitors (Visdom)
