@@ -26,8 +26,8 @@ if __name__ == "__main__":
     trainer = SimpleTrainer("MNIST Trainer", train_loader, test_loader, None, model_trainer,
                             RunConfiguration(use_amp=False)) \
         .with_event_handler(PlotMonitors(every=500, visdom_logger=visdom_logger), Event.ON_BATCH_END) \
+        .with_event_handler(PlotAvgGradientPerLayer(every=500, visdom_logger=visdom_logger), Event.ON_TRAIN_BATCH_END) \
         .with_event_handler(PrintTrainingStatus(every=100), Event.ON_BATCH_END) \
-        .with_event_handler(PlotAvgGradientPerLayer(visdom_logger, every=100), Event.ON_TRAIN_BATCH_END) \
         .train(training_config.nb_epochs)
 ```
 
