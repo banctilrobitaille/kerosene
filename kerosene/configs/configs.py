@@ -16,6 +16,7 @@
 import abc
 import os
 from socket import socket
+from typing import List
 
 import torch
 
@@ -30,14 +31,14 @@ from kerosene.configs.exceptions import InvalidConfigurationError
 from kerosene.utils.devices import get_devices, on_multiple_gpus, num_gpus, on_cpu
 
 
-class Configuration(object):
+class HtmlConfiguration(object):
 
     @abc.abstractmethod
     def to_html(self):
         raise NotImplementedError()
 
 
-class DatasetConfiguration(Configuration):
+class DatasetConfiguration(HtmlConfiguration):
     def __init__(self, config_dict):
         for key in config_dict:
             setattr(self, key, config_dict[key])
@@ -47,40 +48,53 @@ class DatasetConfiguration(Configuration):
         return "<h2>Dataset Configuration</h2> \n {}".format(configuration_values)
 
 
-class ModelTrainerConfiguration(Configuration):
-    def __init__(self, model_name, model_type, model_params, optimizer_type, optimizer_params, scheduler_type,
-                 scheduler_params, criterion_type, criterion_params, metric_types, metric_params,
-                 gradient_clipping_strategy, gradient_clipping_params):
-        self._model_name = model_name
-        self._model_type = model_type
-        self._model_params = model_params
+class Configuration(object):
+    def __init__(self, name, type, params):
+        self._name = name
+        self._type = type
+        self._params = params
 
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+
+    @property
+    def type(self):
+        return self._type
+
+    @type.setter
+    def type(self, value):
+        self._type = value
+
+    @property
+    def params(self):
+        return self._params
+
+    @params.setter
+    def params(self, value):
+        self._params = value
+
+
+class ModelConfiguration(Configuration, HtmlConfiguration):
+    def __init__(self, model_name, model_type, model_params, optimizer_type, optimizer_params, scheduler_type,
+                 scheduler_params, criterions_configs: List[Configuration], metrics_configs: List[Configuration],
+                 gradient_clipping_strategy, gradient_clipping_params):
+        super().__init__(model_name, model_type, model_params)
         self._optimizer_type = optimizer_type
         self._optimizer_params = optimizer_params
 
         self._scheduler_type = scheduler_type
         self._scheduler_params = scheduler_params
 
-        self._criterion_type = criterion_type
-        self._criterion_params = criterion_params
-
-        self._metric_types = metric_types
-        self._metric_params = metric_params
+        self._criterions_configs = criterions_configs
+        self._metrics_configs = metrics_configs
 
         self._gradient_clipping_strategy = gradient_clipping_strategy
         self._gradient_clipping_params = gradient_clipping_params
-
-    @property
-    def model_name(self):
-        return self._model_name
-
-    @property
-    def model_type(self):
-        return self._model_type
-
-    @property
-    def model_params(self):
-        return self._model_params
 
     @property
     def optimizer_type(self):
@@ -99,20 +113,12 @@ class ModelTrainerConfiguration(Configuration):
         return self._scheduler_params
 
     @property
-    def criterion_type(self):
-        return self._criterion_type
+    def criterions_configs(self):
+        return self._criterions_configs
 
     @property
-    def criterion_params(self):
-        return self._criterion_params
-
-    @property
-    def metric_types(self):
-        return self._metric_types
-
-    @property
-    def metric_params(self):
-        return self._metric_params
+    def metrics_configs(self):
+        return self._metrics_configs
 
     @property
     def gradient_clipping_strategy(self):
@@ -128,9 +134,12 @@ class ModelTrainerConfiguration(Configuration):
             return cls(model_name, config_dict["type"], config_dict.get("params"),
                        config_dict["optimizer"]["type"], config_dict["optimizer"].get("params"),
                        config_dict["scheduler"]["type"], config_dict["scheduler"].get("params"),
-                       config_dict["criterion"]["type"], config_dict["criterion"].get("params"),
-                       [metric["type"] for metric in config_dict["metrics"]],
-                       [metric.get("params") for metric in config_dict["metrics"]],
+                       list(map(lambda criterion: Configuration(criterion, config_dict["criterion"][criterion]["type"],
+                                                                config_dict["criterion"][criterion].get("params")),
+                                config_dict["criterion"].keys())),
+                       list(map(lambda metric: Configuration(metric, config_dict["metrics"][metric]["type"],
+                                                             config_dict["metrics"][metric].get("params")),
+                                config_dict["metrics"].keys())),
                        config_dict.get("gradients", {}).get("clipping_strategy"),
                        config_dict.get("gradients", {}).get("params"))
         except KeyError as e:
@@ -139,10 +148,10 @@ class ModelTrainerConfiguration(Configuration):
 
     def to_html(self):
         configuration_values = '\n'.join("<p>%s: %s</p>" % item for item in vars(self).items())
-        return "<h2>Model Configuration \n </h2><h4>{}</h4> \n {}".format(self._model_name, configuration_values)
+        return "<h2>Model Configuration \n </h2><h4>{}</h4> \n {}".format(self.name, configuration_values)
 
 
-class RunConfiguration(Configuration):
+class RunConfiguration(HtmlConfiguration):
 
     def __init__(self, use_amp: bool = True, amp_opt_level: str = 'O1', local_rank: int = 0,
                  world_size: int = num_gpus()):
@@ -211,7 +220,7 @@ class RunConfiguration(Configuration):
         return "<h2>Run Configuration</h2> \n {}".format(configuration_values)
 
 
-class TrainerConfiguration(Configuration):
+class TrainerConfiguration(HtmlConfiguration):
     def __init__(self, config_dict):
         for key in config_dict:
             setattr(self, key, config_dict[key])

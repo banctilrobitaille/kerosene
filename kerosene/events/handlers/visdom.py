@@ -77,12 +77,13 @@ class PlotLosses(BaseVisdomHandler):
             self.visdom_logger(data)
 
     def create_visdom_data(self, event, model_name, monitors):
-        return [VisdomData(model_name, "Loss", PlotType.LINE_PLOT, event.frequency,
-                           [[event.iteration]], [[monitors]],
-                           params={'opts': {'xlabel': str(event.frequency),
-                                            'ylabel': "Loss",
-                                            'title': "{} {} per {}".format(model_name, "Loss", str(event.frequency)),
-                                            'name': str(event.phase), 'legend': [str(event.phase)]}})]
+        return [VisdomData(model_name, loss_name, PlotType.LINE_PLOT, event.frequency, [[event.iteration]],
+                           [[loss_value]], params={'opts': {'xlabel': str(event.frequency), 'ylabel': loss_name,
+                                                            'title': "{} {} per {}".format(model_name, loss_name,
+                                                                                           str(event.frequency)),
+                                                            'name': str(event.phase),
+                                                            'legend': [str(event.phase)]}})
+                for loss_name, loss_value in monitors.items()]
 
 
 class PlotMetrics(BaseVisdomHandler):

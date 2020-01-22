@@ -267,8 +267,8 @@ class GeneralizedDice(Metric):
             return dice
 
 
-def to_tensor(metric_value):
-    if not isinstance(metric_value, torch.Tensor):
-        return torch.tensor([metric_value])
+def to_tensor(value):
+    if not isinstance(value, torch.Tensor):
+        return torch.tensor([value])
     else:
-        return metric_value
+        return value
