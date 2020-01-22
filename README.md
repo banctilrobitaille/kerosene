@@ -11,29 +11,32 @@
 - [X] Integrated <b>[Ignite](https://github.com/pytorch/ignite)</b> metrics and <b>[Pytorch](https://github.com/pytorch/pytorch)</b> criterions
 
 ## Native Kerosene Events
-- [X] ON_TRAINING_BEGIN 
-- [X] ON_TRAINING_END
-- [X] ON_VALID_BEGIN
-- [X] ON_VALID_END 
-- [X] ON_TEST_BEGIN
-- [X] ON_TEST_END 
-- [X] ON_EPOCH_BEGIN
-- [X] ON_EPOCH_END 
-- [X] ON_TRAIN_EPOCH_BEGIN 
-- [X] ON_TRAIN_EPOCH_END 
-- [X] ON_VALID_EPOCH_BEGIN 
-- [X] ON_VALID_EPOCH_END 
-- [X] ON_TEST_EPOCH_BEGIN 
-- [X] ON_TEST_EPOCH_END
-- [X] ON_BATCH_BEGIN 
-- [X] ON_TRAIN_BATCH_BEGIN 
-- [X] ON_TRAIN_BATCH_END 
-- [X] ON_VALID_BATCH_BEGIN
-- [X] ON_VALID_BATCH_END 
-- [X] ON_TEST_BATCH_BEGIN 
-- [X] ON_TEST_BATCH_END 
-- [X] ON_BATCH_END
-- [X] ON_FINALIZE 
+
+| Event  | Description |
+| ------------- | ------------- |
+| ON_TRAINING_BEGIN  | At the beginning of the training phase  |
+| ON_TRAINING_END  | At the end of the training phase  |
+| ON_VALID_BEGIN  | At the beginning of the validation phase  |
+| ON_VALID_END   | At the end of the validation phase  |
+| ON_TEST_BEGIN  | At the beginning of the test phase  |
+| ON_TEST_END   | At the end of the test phase  |
+| ON_EPOCH_BEGIN  | At the beginning of each epoch (training, validation, test)   |
+| ON_EPOCH_END   | At the end of each epoch (training, validation, test)   |
+| ON_TRAIN_EPOCH_BEGIN   | At the beginning of each training epoch |
+| ON_TRAIN_EPOCH_END   | At the end of each training epoch  |
+| ON_VALID_EPOCH_BEGIN   | At the beginning of each validation epoch   |
+| ON_VALID_EPOCH_END   | At the end of each validation epoch  |
+| ON_TEST_EPOCH_BEGIN   | At the beginning of each test epoch   |
+| ON_TEST_EPOCH_END | At the end of each test epoch  |
+| ON_BATCH_BEGIN   | At the beginning of each batch (training, validation, test)  |
+| ON_BATCH_END  | At the end of each batch (training, validation, test)   |
+| ON_TRAIN_BATCH_BEGIN   | At the beginning of each train batch   |
+| ON_TRAIN_BATCH_END   | At the end of each train batch  |
+| ON_VALID_BATCH_BEGIN  | At the beginning of each validation batch   |
+| ON_VALID_BATCH_END  | At the end of each validation batch  |
+| ON_TEST_BATCH_BEGIN   | At the beginning of each test batch   |
+| ON_TEST_BATCH_END   | At the end of each test batch  |
+| ON_FINALIZE   | Before the end of the process  |
 
 ## Native Kerosene Handlers
 - [X] PrintTrainingStatus (Console)
