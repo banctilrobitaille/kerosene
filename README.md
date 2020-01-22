@@ -1,5 +1,51 @@
 #  <img src="/icons/oil.png" width="90" vertical-align="bottom">Kerosene
-> Deep Learning framework for fast and clean research development with Pytorch - <b>[see the doc for more details.](https://kerosene.readthedocs.io/en/latest/)</b>
+> Kerosene is a high-level deep Learning framework for fast and clean research development with Pytorch - <b>[see the doc for more details.](https://kerosene.readthedocs.io/en/latest/)</b>. Kerosene let you focus on your model and data by providing clean and readable code for training, visualizing and debugging your achitecture without forcing you to implement rigid interface for your model.
+
+## Key features
+- [X] Basic training logic and user defined trainers
+- [X] Fine grained event system with multiple handlers
+- [X] Multiple metrics and criterions support
+- [X] Automatic configuration parsing and model instantiation
+- [X] Automatic support of mixed precision with <b>[Apex](https://github.com/NVIDIA/apex)</b> and dataparallel training
+- [X] Automatic Visdom logging
+- [X] Integrated <b>[Ignite](https://github.com/pytorch/ignite)</b> metrics and <b>[Pytorch](https://github.com/pytorch/pytorch)</b> criterions
+
+## Native Kerosene Events
+- [X] ON_TRAINING_BEGIN 
+- [X] ON_TRAINING_END
+- [X] ON_VALID_BEGIN
+- [X] ON_VALID_END 
+- [X] ON_TEST_BEGIN
+- [X] ON_TEST_END 
+- [X] ON_EPOCH_BEGIN
+- [X] ON_EPOCH_END 
+- [X] ON_TRAIN_EPOCH_BEGIN 
+- [X] ON_TRAIN_EPOCH_END 
+- [X] ON_VALID_EPOCH_BEGIN 
+- [X] ON_VALID_EPOCH_END 
+- [X] ON_TEST_EPOCH_BEGIN 
+- [X] ON_TEST_EPOCH_END
+- [X] ON_BATCH_BEGIN 
+- [X] ON_TRAIN_BATCH_BEGIN 
+- [X] ON_TRAIN_BATCH_END 
+- [X] ON_VALID_BATCH_BEGIN
+- [X] ON_VALID_BATCH_END 
+- [X] ON_TEST_BATCH_BEGIN 
+- [X] ON_TEST_BATCH_END 
+- [X] ON_BATCH_END
+- [X] ON_FINALIZE 
+
+## Native Kerosene Handlers
+- [X] PrintTrainingStatus (Console)
+- [X] PrintMonitors (Console)
+- [X] PlotMonitors (Visdom)
+- [X] PlotLosses (Visdom)
+- [X] PlotMetrics (Visdom)
+- [X] PlotCustomVariables (Visdom)
+- [X] PlotLR (Visdom)
+- [X] PlotAvgGradientPerLayer (Visdom)
+- [X] Checkpoint 
+- [X] EarlyStopping
 
 ## MNIST Example
  > Here is a simple example that shows how easy and clean it is to train a simple network. In very few lines of code, the model is trained using mixed precision and you got Visdom + Console logging automatically. See full example there: [MNIST-Kerosene](https://github.com/banctilrobitaille/kerosene-mnist)
