@@ -23,8 +23,7 @@ if __name__ == "__main__":
     model_trainer = ModelTrainerFactory(model=SimpleNet()).create(model_trainer_config)
 
     # Train with the training strategy
-    trainer = SimpleTrainer("MNIST Trainer", train_loader, test_loader, None, model_trainer,
-                            RunConfiguration(use_amp=False)) \
+    SimpleTrainer("MNIST Trainer", train_loader, test_loader, None, model_trainer, RunConfiguration(use_amp=False)) \
         .with_event_handler(PlotMonitors(every=500, visdom_logger=visdom_logger), Event.ON_BATCH_END) \
         .with_event_handler(PlotAvgGradientPerLayer(every=500, visdom_logger=visdom_logger), Event.ON_TRAIN_BATCH_END) \
         .with_event_handler(PrintTrainingStatus(every=100), Event.ON_BATCH_END) \
