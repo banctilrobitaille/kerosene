@@ -14,30 +14,35 @@
 # limitations under the License.
 # ==============================================================================
 from abc import ABC, abstractmethod
+from typing import List, Union
 
-from kerosene.events import Event
+from kerosene.events import TemporalEvent, BaseEvent
+from kerosene.events.exceptions import UnsupportedEventException
 
 
 class EventHandler(ABC):
 
-    def __init__(self, every=1):
+    def __init__(self, supported_events: List[Union[BaseEvent, TemporalEvent]] = None, every=1):
         self._every = every
+        self._supported_events = supported_events
 
     @property
     def every(self):
         return self._every
 
-    def should_handle_epoch_data(self, event, trainer):
-        return (event in [Event.ON_EPOCH_BEGIN, Event.ON_EPOCH_END, Event.ON_TRAIN_EPOCH_BEGIN,
-                          Event.ON_TRAIN_EPOCH_END, Event.ON_VALID_EPOCH_BEGIN, Event.ON_VALID_EPOCH_END]) and (
-                           trainer.epoch % self._every == 0)
+    @property
+    def supported_events(self):
+        return self._supported_events
 
-    def should_handle_step_data(self, event, trainer):
-        if event in [Event.ON_TRAIN_BATCH_BEGIN, Event.ON_TRAIN_BATCH_END, Event.ON_BATCH_END]:
-            return trainer.current_train_step % self._every == 0
-        elif event in [Event.ON_VALID_BATCH_BEGIN, Event.ON_VALID_BATCH_END, Event.ON_BATCH_END]:
-            return trainer.current_valid_step % self._every == 0
+    def should_handle(self, event: TemporalEvent):
+        if (self.supported_events is not None) and (event not in self.supported_events):
+            raise UnsupportedEventException(self.supported_events, event)
+
+        if iter == 0 and self._every != 1:
+            return False
+        else:
+            return event.iteration % self._every == 0
 
     @abstractmethod
-    def __call__(self, *inputs):
+    def __call__(self, temporal_event: TemporalEvent, monitors, sender):
         raise NotImplementedError()

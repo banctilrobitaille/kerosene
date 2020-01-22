@@ -1,7 +1,7 @@
 from abc import ABC
-from typing import Dict
+from typing import Dict, List, Union
 
-from kerosene.events import BaseVariable, MonitorMode, Monitor
+from kerosene.events import MonitorMode, BaseEvent, TemporalEvent
 from kerosene.events.handlers.base_handler import EventHandler
 
 
@@ -39,22 +39,18 @@ class MonitorInspection(object):
 
 
 class MonitorWatcher(EventHandler, ABC):
-    def __init__(self, monitor: BaseVariable, mode: MonitorMode = MonitorMode.AUTO, min_delta=0.01, patience=3):
-        assert isinstance(monitor,
-                          Monitor) or mode is not MonitorMode.AUTO, "Auto mode is not allowed with custom variables"
-
-        self._monitor = monitor
+    def __init__(self, monitor_fn, mode: MonitorMode, min_delta, patience, every=1,
+                 supported_events: List[Union[BaseEvent, TemporalEvent]] = None):
+        super().__init__(supported_events, every)
+        self._monitor_fn = monitor_fn
         self._mode = mode
         self._min_delta = min_delta
         self._patience = patience
         self._monitor_values: Dict[str, MonitorInspection] = {}
 
-        if mode is MonitorMode.AUTO:
-            self._mode = MonitorWatcher.get_mode_for(monitor)
-
     @property
-    def monitor(self):
-        return self._monitor
+    def monitor_fn(self):
+        return self._monitor_fn
 
     @property
     def mode(self):
@@ -81,13 +77,9 @@ class MonitorWatcher(EventHandler, ABC):
             else:
                 delta = current_monitor_value - self._monitor_values[source_name].value
 
-            if delta >= self._min_delta:
+            if delta <= self._min_delta:
                 self._monitor_values[source_name].with_value(current_monitor_value).reset_inspection_num()
             else:
                 self._monitor_values[source_name].add_inspection()
                 if self._monitor_values[source_name].inspection_num >= self._patience:
                     raise MonitorPatienceExceeded()
-
-    @staticmethod
-    def get_mode_for(monitor: Monitor):
-        return MonitorMode.MIN if monitor.is_loss() else MonitorMode.MAX

@@ -19,7 +19,7 @@ from typing import List
 import torch
 from torch.utils.data import DataLoader
 
-from kerosene.config.trainers import RunConfiguration
+from kerosene.configs.configs import RunConfiguration
 from kerosene.training.trainers import ModelTrainer
 from kerosene.training.trainers import Trainer
 from kerosene.utils.devices import on_single_device
@@ -39,7 +39,7 @@ class MNISTTrainer(Trainer):
 
         pred = model.forward(inputs)
         model.compute_train_metric(pred, target)
-        loss = model.compute_train_loss(pred, target)
+        loss = model.compute_and_update_train_loss(pred, target)
 
         model.zero_grad()
         loss.backward()
@@ -54,7 +54,7 @@ class MNISTTrainer(Trainer):
 
         pred = model.forward(inputs)
         model.compute_valid_metric(pred, target)
-        model.compute_valid_loss(pred, target)
+        model.compute_and_update_valid_loss(pred, target)
 
     def scheduler_step(self):
         self._model_trainers[0].scheduler_step()

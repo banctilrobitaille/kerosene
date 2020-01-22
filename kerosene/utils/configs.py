@@ -13,12 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from kerosene.events.handlers.base_handler import EventHandler
+from typing import List
+
+from kerosene.configs.configs import HtmlConfiguration
 
 
-class Experiment(EventHandler):
-    def __init__(self, name):
-        self._name = name
-
-    def __call__(self, *inputs):
-        pass
+def configs_to_html(configs: List[HtmlConfiguration]):
+    return list(map(lambda config: config.to_html(), configs))

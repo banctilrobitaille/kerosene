@@ -47,3 +47,10 @@ class VisdomData(object):
 
     def __hash__(self):
         return hash(self._source_name + self._variable_name + str(self._plot_frequency) + str(self._plot_type))
+
+    def __str__(self):
+        return "Source: {} Variable: {} Plot Type: {} Frequency: {} x: {} y: {}".format(self.source_name,
+                                                                                        self.variable_name,
+                                                                                        str(self.plot_type),
+                                                                                        str(self.plot_frequency),
+                                                                                        self.x, self.y)
