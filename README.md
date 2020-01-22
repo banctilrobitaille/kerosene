@@ -17,18 +17,17 @@ if __name__ == "__main__":
     test_loader = DataLoader(torchvision.datasets.MNIST('./files/', train=False, download=True, transform=Compose(
         [ToTensor(), Normalize((0.1307,), (0.3081,))])), batch_size=training_config.batch_size_valid, shuffle=True)
 
-    # Initialize the loggers
     visdom_logger = VisdomLogger(VisdomConfiguration.from_yml(CONFIG_FILE_PATH))
 
     # Initialize the model trainers
-    model_trainer = ModelTrainerFactory(model=SimpleNet()).create(model_trainer_config, RunConfiguration(use_amp=False))
+    model_trainer = ModelTrainerFactory(model=SimpleNet()).create(model_trainer_config)
 
     # Train with the training strategy
-    trainer = SimpleTrainer("MNIST Trainer", train_loader, test_loader, model_trainer) \
+    trainer = SimpleTrainer("MNIST Trainer", train_loader, test_loader, None, model_trainer,
+                            RunConfiguration(use_amp=False)) \
+        .with_event_handler(PlotMonitors(every=500, visdom_logger=visdom_logger), Event.ON_BATCH_END) \
         .with_event_handler(PrintTrainingStatus(every=100), Event.ON_BATCH_END) \
-        .with_event_handler(PrintModelTrainersStatus(every=100), Event.ON_BATCH_END) \
-        .with_event_handler(PlotAllModelStateVariables(visdom_logger), Event.ON_EPOCH_END) \
-        .with_event_handler(PlotGradientFlow(visdom_logger, every=100), Event.ON_TRAIN_BATCH_END) \
+        .with_event_handler(PlotAvgGradientPerLayer(visdom_logger, every=100), Event.ON_TRAIN_BATCH_END) \
         .train(training_config.nb_epochs)
 ```
 
