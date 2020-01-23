@@ -1,5 +1,14 @@
 #  <img src="/icons/oil.png" width="90" vertical-align="bottom">Kerosene
-> Deep Learning framework for fast and clean research development with Pytorch - <b>[see the doc for more details.](https://kerosene.readthedocs.io/en/latest/)</b>
+> Kerosene is a high-level deep Learning framework for fast and clean research development with Pytorch - <b>[see the doc for more details.](https://kerosene.readthedocs.io/en/latest/)</b>. Kerosene let you focus on your model and data by providing clean and readable code for training, visualizing and debugging your achitecture without forcing you to implement rigid interface for your model.
+
+## Out of The Box Features
+- [X] Basic training logic and user defined trainers
+- [X] Fine grained event system with multiple handlers
+- [X] Multiple metrics and criterions support
+- [X] Automatic configuration parsing and model instantiation
+- [X] Automatic support of mixed precision with <b>[Apex](https://github.com/NVIDIA/apex)</b> and dataparallel training
+- [X] Automatic Visdom logging
+- [X] Integrated <b>[Ignite](https://github.com/pytorch/ignite)</b> metrics and <b>[Pytorch](https://github.com/pytorch/pytorch)</b> criterions
 
 ## MNIST Example
  > Here is a simple example that shows how easy and clean it is to train a simple network. In very few lines of code, the model is trained using mixed precision and you got Visdom + Console logging automatically. See full example there: [MNIST-Kerosene](https://github.com/banctilrobitaille/kerosene-mnist)
@@ -17,20 +26,58 @@ if __name__ == "__main__":
     test_loader = DataLoader(torchvision.datasets.MNIST('./files/', train=False, download=True, transform=Compose(
         [ToTensor(), Normalize((0.1307,), (0.3081,))])), batch_size=training_config.batch_size_valid, shuffle=True)
 
-    # Initialize the loggers
     visdom_logger = VisdomLogger(VisdomConfiguration.from_yml(CONFIG_FILE_PATH))
 
     # Initialize the model trainers
-    model_trainer = ModelTrainerFactory(model=SimpleNet()).create(model_trainer_config, RunConfiguration(use_amp=False))
+    model_trainer = ModelTrainerFactory(model=SimpleNet()).create(model_trainer_config)
 
     # Train with the training strategy
-    trainer = SimpleTrainer("MNIST Trainer", train_loader, test_loader, model_trainer) \
+    SimpleTrainer("MNIST Trainer", train_loader, test_loader, None, model_trainer, RunConfiguration(use_amp=False)) \
+        .with_event_handler(PlotMonitors(every=500, visdom_logger=visdom_logger), Event.ON_BATCH_END) \
+        .with_event_handler(PlotAvgGradientPerLayer(every=500, visdom_logger=visdom_logger), Event.ON_TRAIN_BATCH_END) \
         .with_event_handler(PrintTrainingStatus(every=100), Event.ON_BATCH_END) \
-        .with_event_handler(PrintModelTrainersStatus(every=100), Event.ON_BATCH_END) \
-        .with_event_handler(PlotAllModelStateVariables(visdom_logger), Event.ON_EPOCH_END) \
-        .with_event_handler(PlotGradientFlow(visdom_logger, every=100), Event.ON_TRAIN_BATCH_END) \
         .train(training_config.nb_epochs)
 ```
+
+## Events
+
+| Event  | Description |
+| ------------- | ------------- |
+| ON_TRAINING_BEGIN  | At the beginning of the training phase  |
+| ON_TRAINING_END  | At the end of the training phase  |
+| ON_VALID_BEGIN  | At the beginning of the validation phase  |
+| ON_VALID_END   | At the end of the validation phase  |
+| ON_TEST_BEGIN  | At the beginning of the test phase  |
+| ON_TEST_END   | At the end of the test phase  |
+| ON_EPOCH_BEGIN  | At the beginning of each epoch (training, validation, test)   |
+| ON_EPOCH_END   | At the end of each epoch (training, validation, test)   |
+| ON_TRAIN_EPOCH_BEGIN   | At the beginning of each training epoch |
+| ON_TRAIN_EPOCH_END   | At the end of each training epoch  |
+| ON_VALID_EPOCH_BEGIN   | At the beginning of each validation epoch   |
+| ON_VALID_EPOCH_END   | At the end of each validation epoch  |
+| ON_TEST_EPOCH_BEGIN   | At the beginning of each test epoch   |
+| ON_TEST_EPOCH_END | At the end of each test epoch  |
+| ON_BATCH_BEGIN   | At the beginning of each batch (training, validation, test)  |
+| ON_BATCH_END  | At the end of each batch (training, validation, test)   |
+| ON_TRAIN_BATCH_BEGIN   | At the beginning of each train batch   |
+| ON_TRAIN_BATCH_END   | At the end of each train batch  |
+| ON_VALID_BATCH_BEGIN  | At the beginning of each validation batch   |
+| ON_VALID_BATCH_END  | At the end of each validation batch  |
+| ON_TEST_BATCH_BEGIN   | At the beginning of each test batch   |
+| ON_TEST_BATCH_END   | At the end of each test batch  |
+| ON_FINALIZE   | Before the end of the process  |
+
+## Handlers
+- [X] PrintTrainingStatus (Console)
+- [X] PrintMonitors (Console)
+- [X] PlotMonitors (Visdom)
+- [X] PlotLosses (Visdom)
+- [X] PlotMetrics (Visdom)
+- [X] PlotCustomVariables (Visdom)
+- [X] PlotLR (Visdom)
+- [X] PlotAvgGradientPerLayer (Visdom)
+- [X] Checkpoint 
+- [X] EarlyStopping
 
 ## Contributing
 

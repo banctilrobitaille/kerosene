@@ -94,8 +94,7 @@ class Dice(Metric):
             reduction (str): The type of reduction to apply (e.g. 'mean').
             ignore_index (int, optional): To ignore an index in Dice computation.
             output_transform (callable, optional): a callable that is used to transform the
-                :class:`~ignite.engine.Engine`'s `process_function`'s output into the
-                form expected by the metric. This can be useful if, for example, you have a multi-output model and
+                output into the form expected by the metric. This can be useful if, for example, you have a multi-output model and
                 you want to compute the metric with respect to one of the outputs.
         """
         if reduction not in self.SUPPORTED_REDUCTIONS:
@@ -187,8 +186,7 @@ class GeneralizedDice(Metric):
             reduction (str): The type of reduction to apply (e.g. 'mean').
             ignore_index (int, optional): To ignore an index in Dice computation.
             output_transform (callable, optional): a callable that is used to transform the
-                :class:`~ignite.engine.Engine`'s `process_function`'s output into the
-                form expected by the metric. This can be useful if, for example, you have a multi-output model and
+                output into the form expected by the metric. This can be useful if, for example, you have a multi-output model and
                 you want to compute the metric with respect to one of the outputs.
         """
         if reduction not in self.SUPPORTED_REDUCTIONS:
