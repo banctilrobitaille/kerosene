@@ -198,7 +198,7 @@ class ModelTrainerTest(unittest.TestCase):
 
 
 class ModelTrainerFactoryTest(unittest.TestCase):
-    VALID_CONFIG_FILE_PATH = "config\\valid_config.yml"
+    VALID_CONFIG_FILE_PATH = "configs\\valid_config.yml"
     MODELS_CONFIG_YML_TAG = "models"
     SIMPLE_NET_NAME = "SimpleNet"
 
