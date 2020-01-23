@@ -25,7 +25,7 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self._model_mock = mockito.mock(nn.Module)
-        self._criterion_mock = mockito.mock(nn.CrossEntropyLoss)
+        self._criterion_mock = {"BCE": mockito.mock(nn.CrossEntropyLoss)}
         self._optimizer_mock = mockito.mock(Optimizer)
         self._scheduler_mock = mockito.mock(lr_scheduler)
         self._metric_computer_mock = {"Accuracy": mockito.mock(Accuracy)}
