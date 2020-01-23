@@ -132,8 +132,8 @@ class PlotCustomVariables(BaseVisdomHandler):
             self.visdom_logger(data)
 
     def create_visdom_data(self, event: TemporalEvent, trainer):
-        if self._plot_type == PlotType.LINE_PLOT and "name" not in self._params.keys():
-            self._params['name'] = str(event.phase)
+        if self._plot_type == PlotType.LINE_PLOT and "name" not in self._params['opts'].keys():
+            self._params['opts']['name'] = str(event.phase)
 
         return [VisdomData(trainer.name, self._variable_name, self._plot_type, event.frequency,
                            [event.iteration], trainer.custom_variables[self._variable_name], self._params)]
