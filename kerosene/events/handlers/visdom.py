@@ -113,8 +113,8 @@ class PlotMetrics(BaseVisdomHandler):
 
 
 class PlotCustomVariables(BaseVisdomHandler):
-    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END, Event.ON_TEST_BATCH_END,
-                        Event.ON_BATCH_END]
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_EPOCH_END, Event.ON_VALID_EPOCH_END, Event.ON_TEST_EPOCH_END,
+                        Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END, Event.ON_TEST_BATCH_END, Event.ON_BATCH_END]
 
     def __init__(self, visdom_logger: VisdomLogger, variable_name, plot_type: PlotType, params, every=1):
         super().__init__(self.SUPPORTED_EVENTS, visdom_logger, every)
