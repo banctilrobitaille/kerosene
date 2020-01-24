@@ -246,6 +246,7 @@ class VisdomPlotFactory(object):
             PlotType.CONTOUR_PLOT: ContourPlot,
             PlotType.QUIVER_PLOT: QuiverPlot,
             PlotType.MESH_PLOT: MeshPlot
+            PlotType.MATPLOTLIB_PLOT: MatplotlibPlot
         }
 
     def create_plot(self, visdom, plot_type: PlotType):
