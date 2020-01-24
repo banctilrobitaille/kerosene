@@ -245,7 +245,7 @@ class VisdomPlotFactory(object):
             PlotType.SURFACE_PLOT: SurfacePlot,
             PlotType.CONTOUR_PLOT: ContourPlot,
             PlotType.QUIVER_PLOT: QuiverPlot,
-            PlotType.MESH_PLOT: MeshPlot
+            PlotType.MESH_PLOT: MeshPlot,
             PlotType.MATPLOTLIB_PLOT: MatplotlibPlot
         }
 
