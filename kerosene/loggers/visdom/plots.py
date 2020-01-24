@@ -224,7 +224,7 @@ class MatplotlibPlot(VisdomPlot):
         if self._window is None:
             self._window = self._visdom.matplot(plot=visdom_data.y, **visdom_data.params)
         else:
-            self._visdom.matplot(plot=visdom_data.y, **visdom_data.params)
+            self._visdom.matplot(plot=visdom_data.y, win=self._window, **visdom_data.params)
 
 
 class VisdomPlotFactory(object):
