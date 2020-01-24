@@ -275,7 +275,7 @@ class ModelTrainer(ApexModule):
 
         return ApexLoss(self._amp_id, loss, self._optimizer) if self.use_amp else loss
 
-    def compute_losses(self, pred, target) -> Union[ApexLoss, torch.Tensor]:
+    def compute_losses(self, pred, target) -> Dict[str, Union[ApexLoss, torch.Tensor]]:
         losses = {}
         for name, criterion in self._criterions.items():
             loss = criterion(pred, target)
@@ -302,7 +302,7 @@ class ModelTrainer(ApexModule):
 
     def update_test_loss(self, name, loss) -> None:
         self._step_test_loss[name] = loss if not isinstance(loss, ApexLoss) else loss.loss
-        self._test_loss[name].update(self._step_test_loss[name.item()])
+        self._test_loss[name].update(self._step_test_loss[name].item())
 
     def update_test_losses(self, losses) -> None:
         for name, value in losses.items():
