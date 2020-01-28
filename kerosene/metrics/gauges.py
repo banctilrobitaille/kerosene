@@ -38,6 +38,13 @@ class AverageGauge(Gauge):
         self._sum = 0.0
         self._count = 0
 
+    @property
+    def count(self):
+        return self._count
+
+    def has_been_updated(self):
+        return True if self._count > 0 else False
+
     def update(self, value, n=1):
         self._value = value
         self._sum += value * n

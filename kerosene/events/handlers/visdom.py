@@ -67,11 +67,11 @@ class PlotLosses(BaseVisdomHandler):
         super().__init__(self.SUPPORTED_EVENTS, visdom_logger, every)
 
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
-        data = None
+        data = list()
 
         if self.should_handle(event):
             for model_name, monitor in monitors.items():
-                data = self.create_visdom_data(event, model_name, monitor[event.phase][Monitor.LOSS])
+                data.extend(self.create_visdom_data(event, model_name, monitor[event.phase][Monitor.LOSS]))
 
         if data is not None:
             self.visdom_logger(data)
@@ -94,11 +94,11 @@ class PlotMetrics(BaseVisdomHandler):
         super().__init__(self.SUPPORTED_EVENTS, visdom_logger, every)
 
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
-        data = None
+        data = list()
 
         if self.should_handle(event):
             for model_name, monitor in monitors.items():
-                data = self.create_visdom_data(event, model_name, monitor[event.phase][Monitor.METRICS])
+                data.extend(self.create_visdom_data(event, model_name, monitor[event.phase][Monitor.METRICS]))
 
         if data is not None:
             self.visdom_logger(data)
