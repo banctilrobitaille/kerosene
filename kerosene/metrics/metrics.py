@@ -13,30 +13,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from enum import Enum
 from typing import Union, Tuple
 
 import torch
-from ignite.metrics import Accuracy, Precision, MeanAbsoluteError, MeanPairwiseDistance, MeanSquaredError, Recall, \
-    RootMeanSquaredError, TopKCategoricalAccuracy, IoU, mIoU, Metric, ConfusionMatrix, MetricsLambda
+from enum import Enum
+from ignite.metrics import Accuracy, Average, Precision, MeanAbsoluteError, MeanPairwiseDistance, MeanSquaredError, \
+    Recall, RootMeanSquaredError, TopKCategoricalAccuracy, IoU, mIoU, Metric, ConfusionMatrix, MetricsLambda, \
+    Fbeta, GeometricAverage
 
 from kerosene.utils.constants import EPSILON
 from kerosene.utils.tensors import flatten, to_onehot
 
 
 class MetricType(Enum):
-    Dice = "Dice"
-    GeneralizedDice = "GeneralizedDice"
     Accuracy = "Accuracy"
-    Precision = "Precision"
+    Average = "Average"
+    ConfusionMatrix = "ConfusionMatrix"
+    DiceCoefficient = "Dice"
+    Fbeta = "Fbeta"
+    GeneralizedDice = "GeneralizedDice"
+    GeometricAverage = "GeometricAverage"
+    IoU = "IoU"
+    mIoU = "mIoU"
     MeanAbsoluteError = "MeanAbsoluteError"
     MeanPairwiseDistance = "MeanPairwiseDistance"
     MeanSquaredError = "MeanSquaredError"
+    Precision = "Precision"
     Recall = "Recall"
     RootMeanSquaredError = "RootMeanSquaredError"
     TopKCategoricalAccuracy = "TopKCategoricalAccuracy"
-    IoU = "IoU"
-    mIoU = "mIoU"
+    VariableAccumulation = "VariableAccumulation"
 
     def __str__(self):
         return self.value
@@ -46,18 +52,21 @@ class MetricFactory(object):
     def __init__(self):
         self._metrics = {
             "Accuracy": Accuracy,
-            "Precision": Precision,
+            "Average": Average,
+            "ConfusionMatrix": ConfusionMatrix,
+            "Dice": Dice,
+            "Fbeta": Fbeta,
+            "GeneralizedDice": GeneralizedDice,
+            "GeometricAverage": GeometricAverage,
+            "IoU": IoU,
+            "mIoU": mIoU,
             "MeanAbsoluteError": MeanAbsoluteError,
             "MeanPairwiseDistance": MeanPairwiseDistance,
             "MeanSquaredError": MeanSquaredError,
+            "Precision": Precision,
             "Recall": Recall,
             "RootMeanSquaredError": RootMeanSquaredError,
-            "TopKCategoricalAccuracy": TopKCategoricalAccuracy,
-            "IoU": IoU,
-            "mIoU": mIoU,
-            "Dice": Dice,
-            "GeneralizedDice": GeneralizedDice
-
+            "TopKCategoricalAccuracy": TopKCategoricalAccuracy
         }
 
     def create(self, metric_type: Union[str, MetricType], params):
