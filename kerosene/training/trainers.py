@@ -140,6 +140,11 @@ class ModelTrainer(ApexModule):
         for param_group in self._optimizer.param_groups:
             return torch.tensor([param_group["lr"]])
 
+    @optimizer_lr.setter
+    def optimizer_lr(self, lr):
+        for param_group in self._optimizer.param_groups:
+            param_group["lr"] = lr
+
     @property
     def model_state(self):
         return self._model.state_dict()
