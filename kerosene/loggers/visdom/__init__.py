@@ -17,6 +17,7 @@ class PlotType(Enum):
     CONTOUR_PLOT = "Contour Plot"
     QUIVER_PLOT = "Quiver Plot"
     MESH_PLOT = "Mesh Plot"
+    MATPLOTLIB_PLOT = "Matplotlib Plot"
 
     def __str__(self):
         return self.value

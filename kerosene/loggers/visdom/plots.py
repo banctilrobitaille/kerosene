@@ -216,6 +216,17 @@ class BarPlot(VisdomPlot):
             self._visdom.bar(X=visdom_data.x, Y=visdom_data.y, win=self._window, **visdom_data.params)
 
 
+class MatplotlibPlot(VisdomPlot):
+    def __init__(self, visdom):
+        super().__init__(visdom)
+
+    def update(self, visdom_data: VisdomData):
+        if self._window is None:
+            self._window = self._visdom.matplot(plot=visdom_data.y, **visdom_data.params)
+        else:
+            self._visdom.matplot(plot=visdom_data.y, win=self._window, **visdom_data.params)
+
+
 class VisdomPlotFactory(object):
 
     def __init__(self):
@@ -234,7 +245,8 @@ class VisdomPlotFactory(object):
             PlotType.SURFACE_PLOT: SurfacePlot,
             PlotType.CONTOUR_PLOT: ContourPlot,
             PlotType.QUIVER_PLOT: QuiverPlot,
-            PlotType.MESH_PLOT: MeshPlot
+            PlotType.MESH_PLOT: MeshPlot,
+            PlotType.MATPLOTLIB_PLOT: MatplotlibPlot
         }
 
     def create_plot(self, visdom, plot_type: PlotType):
