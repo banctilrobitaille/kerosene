@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+from datetime import timedelta
+
 import abc
 import os
 from socket import socket
@@ -211,6 +213,7 @@ class RunConfiguration(HtmlConfiguration):
                 if os.environ.get("WORLD_SIZE") is None:
                     os.environ["WORLD_SIZE"] = str(self._world_size)
                 torch.distributed.init_process_group(backend='nccl', init_method='env://',
+                                                     timeout=timedelta(minutes=60),
                                                      world_size=int(os.environ["WORLD_SIZE"]), rank=self._local_rank)
             else:
                 raise Exception("NCCL not available and required for multi-GPU training.")
