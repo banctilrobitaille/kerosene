@@ -19,6 +19,7 @@ from typing import Dict, Union, List, Optional
 
 import torch
 from ignite.metrics import Metric
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
 from kerosene.configs.configs import ModelConfiguration, RunConfiguration
@@ -208,7 +209,10 @@ class ModelTrainer(ApexModule):
 
     def scheduler_step(self) -> None:
         if self._scheduler is not None:
-            self._scheduler.step(sum(list(map(lambda loss: loss.compute(), self._train_loss.values()))))
+            if isinstance(self._scheduler, ReduceLROnPlateau):
+                self._scheduler.step(sum(list(map(lambda loss: loss.compute(), self._train_loss.values()))))
+            else:
+                self._scheduler.step()
 
     def to(self, device: Optional[Union[int, torch.device]] = ..., dtype=..., non_blocking: bool = ...):
         self.model.to(device)
