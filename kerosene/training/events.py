@@ -178,7 +178,6 @@ class EpochEventPublisherMixin(object):
         self.fire(Event.ON_VALID_EPOCH_BEGIN(Moment(self.epoch, Frequency.EPOCH, Phase.VALIDATION)))
 
     def _on_valid_epoch_end(self):
-        self._current_valid_batch = 0
         self.on_valid_epoch_end()
         self.fire(Event.ON_VALID_EPOCH_END(Moment(self.epoch, Frequency.EPOCH, Phase.VALIDATION)),
                   self.epoch_monitors(Phase.VALIDATION))
@@ -188,6 +187,7 @@ class EpochEventPublisherMixin(object):
         self.fire(Event.ON_TEST_EPOCH_BEGIN(Moment(self.epoch, Frequency.EPOCH, Phase.TEST)))
 
     def _on_test_epoch_end(self):
+        self._current_valid_batch = 0
         self._current_test_batch = 0
         self.on_test_epoch_end()
         self.fire(Event.ON_TEST_EPOCH_END(Moment(self.epoch, Frequency.STEP, Phase.TEST)),
