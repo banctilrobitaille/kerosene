@@ -19,6 +19,7 @@ from typing import Dict, Union, List, Optional
 
 import torch
 from ignite.metrics import Metric
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 
 from kerosene.configs.configs import ModelConfiguration, RunConfiguration
@@ -208,7 +209,10 @@ class ModelTrainer(ApexModule):
 
     def scheduler_step(self) -> None:
         if self._scheduler is not None:
-            self._scheduler.step(sum(list(map(lambda loss: loss.compute(), self._train_loss.values()))))
+            if isinstance(self._scheduler, ReduceLROnPlateau):
+                self._scheduler.step(sum(list(map(lambda loss: loss.compute(), self._train_loss.values()))))
+            else:
+                self._scheduler.step()
 
     def to(self, device: Optional[Union[int, torch.device]] = ..., dtype=..., non_blocking: bool = ...):
         self.model.to(device)
@@ -314,6 +318,13 @@ class ModelTrainer(ApexModule):
             self._step_test_loss[name] = value if not isinstance(value, ApexLoss) else value.loss
             self._test_loss[name].update(self._step_test_loss[name].item())
 
+    def compute_metric(self, name, pred, target):
+        self._metric_computers[name].update((pred, target))
+        metric = self._metric_computers[name].compute()
+        self._metric_computers[name].reset()
+
+        return metric
+
     def compute_metrics(self, pred, target):
         metrics = dict()
         for metric_name, metric_computer in self._metric_computers.items():
@@ -324,17 +335,29 @@ class ModelTrainer(ApexModule):
 
         return metrics
 
+    def update_train_metric(self, name, metric):
+        self._step_train_metrics[name] = metric
+        self._train_metrics[name].update(metric)
+
     def update_train_metrics(self, metrics: dict):
         self._step_train_metrics = metrics
         for train_metric, step_train_metric in zip(list(self._train_metrics.values()),
                                                    list(self._step_train_metrics.values())):
             train_metric.update(step_train_metric)
 
+    def update_valid_metric(self, name, metric):
+        self._step_valid_metrics[name] = metric
+        self._valid_metrics[name].update(metric)
+
     def update_valid_metrics(self, metric: dict):
         self._step_valid_metrics = metric
         for valid_metric, step_valid_metric in zip(list(self._valid_metrics.values()),
                                                    list(self._step_valid_metrics.values())):
             valid_metric.update(step_valid_metric)
+
+    def update_test_metric(self, name, metric):
+        self._step_test_metrics[name] = metric
+        self._test_metrics[name].update(metric)
 
     def update_test_metrics(self, metric: dict):
         self._step_test_metrics = metric
