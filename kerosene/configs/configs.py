@@ -82,10 +82,11 @@ class Configuration(object):
 
 
 class ModelConfiguration(Configuration, HtmlConfiguration):
-    def __init__(self, model_name, model_type, model_params, optimizer_type, optimizer_params, scheduler_type,
+    def __init__(self, model_name, model_type, model_params, path, optimizer_type, optimizer_params, scheduler_type,
                  scheduler_params, criterions_configs: List[Configuration], metrics_configs: List[Configuration],
                  gradient_clipping_strategy, gradient_clipping_params):
         super().__init__(model_name, model_type, model_params)
+        self._path = path
         self._optimizer_type = optimizer_type
         self._optimizer_params = optimizer_params
 
@@ -97,6 +98,10 @@ class ModelConfiguration(Configuration, HtmlConfiguration):
 
         self._gradient_clipping_strategy = gradient_clipping_strategy
         self._gradient_clipping_params = gradient_clipping_params
+
+    @property
+    def path(self):
+        return self._path
 
     @property
     def optimizer_type(self):
@@ -133,7 +138,7 @@ class ModelConfiguration(Configuration, HtmlConfiguration):
     @classmethod
     def from_dict(cls, model_name, config_dict):
         try:
-            return cls(model_name, config_dict["type"], config_dict.get("params"),
+            return cls(model_name, config_dict["type"], config_dict.get("params"), config_dict.get("path", None),
                        config_dict["optimizer"]["type"], config_dict["optimizer"].get("params"),
                        config_dict["scheduler"]["type"], config_dict["scheduler"].get("params"),
                        list(map(lambda criterion: Configuration(criterion, config_dict["criterion"][criterion]["type"],

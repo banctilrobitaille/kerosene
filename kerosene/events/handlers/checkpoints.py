@@ -41,5 +41,5 @@ class Checkpoint(MonitorWatcher):
             os.makedirs(os.path.join(self._path, model_name))
         torch.save({"epoch_num": epoch_num,
                     "model_state_dict": model_state,
-                    "optimizer_state": optimizer_states},
+                    "optimizer_state_dict": optimizer_states},
                    os.path.join(self._path, model_name, model_name + CHECKPOINT_EXT))
