@@ -1,4 +1,4 @@
-#  <img src="/icons/oil.png" width="90" vertical-align="bottom">Kerosene
+#  <img src="https://raw.githubusercontent.com/banctilrobitaille/kerosene/master/icons/oil.png" width="90" vertical-align="bottom">Kerosene
 > Kerosene is a high-level deep Learning framework for fast and clean research development with Pytorch - <b>[see the doc for more details.](https://kerosene.readthedocs.io/en/latest/)</b>. Kerosene let you focus on your model and data by providing clean and readable code for training, visualizing and debugging your achitecture without forcing you to implement rigid interface for your model.
 
 ## Out of The Box Features
