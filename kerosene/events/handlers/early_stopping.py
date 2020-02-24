@@ -12,9 +12,9 @@ class EarlyStopping(MonitorWatcher):
         super(EarlyStopping, self).__init__(monitor_fn, mode, min_delta, patience)
 
     def __call__(self, temporal_event: TemporalEvent, monitors, trainer: Trainer):
-        for model_trainer in trainer.model_trainers:
+        for model in trainer.models:
             try:
-                value = self._monitor_fn(model_trainer)
-                self.watch(model_trainer.name, value)
+                value = self._monitor_fn(model)
+                self.watch(model.name, value)
             except MonitorPatienceExceeded as e:
-                model_trainer.finalize()
+                model.finalize()

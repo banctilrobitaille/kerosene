@@ -71,9 +71,9 @@ class ApexLoss(object):
 
     def mean(self):
         return ApexLoss(self._loss_id, torch.mean(self._loss), self._optimizer)
-        
+
     def item(self):
-    	return self._loss.item()
+        return self._loss.item()
 
     def __add__(self, other):
         if isinstance(other, (Tensor, int, float)):
@@ -145,20 +145,20 @@ class ApexLoss(object):
 
 
 class ApexModule(ABC, nn.Module):
-    def __init__(self, model, optimizer, amp_id=0, use_amp=True):
+    def __init__(self, module, optimizer, amp_id=0, use_amp=True):
         super().__init__()
         self._amp_id = amp_id
         self._use_amp = use_amp
-        self._model = model
+        self._module = module
         self._optimizer = optimizer
 
     @property
-    def model(self):
-        return self._model
+    def module(self):
+        return self._module
 
-    @model.setter
-    def model(self, value):
-        self._model = value
+    @module.setter
+    def module(self, value):
+        self._module = value
 
     @property
     def optimizer(self):
@@ -177,9 +177,9 @@ class ApexModule(ABC, nn.Module):
         self._use_amp = use_amp
 
         if APEX_AVAILABLE and self._use_amp:
-            self._model, self._optimizer = amp.initialize(
-                self._model, self._optimizer, opt_level=amp_opt_level, num_losses=num_losses)
+            self._module, self._optimizer = amp.initialize(
+                self._module, self._optimizer, opt_level=amp_opt_level, num_losses=num_losses)
             if on_multiple_gpus(get_devices()):
-                self._model = ApexDDP(self._model, delay_allreduce=True)
+                self._module = ApexDDP(self._module, delay_allreduce=True)
         if not APEX_AVAILABLE and on_multiple_gpus(get_devices()):
-            self._model = DDP(self._model, device_ids=[device])
+            self._module = DDP(self._module, device_ids=[device])

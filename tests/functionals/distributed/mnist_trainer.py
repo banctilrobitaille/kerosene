@@ -20,22 +20,22 @@ import torch
 from torch.utils.data import DataLoader
 
 from kerosene.configs.configs import RunConfiguration
-from kerosene.training.trainers import ModelTrainer
+from kerosene.training.trainers import Model
 from kerosene.training.trainers import Trainer
 from kerosene.utils.devices import on_single_device
 
 
 class MNISTTrainer(Trainer):
 
-    def __init__(self, training_config, model_trainers: List[ModelTrainer],
+    def __init__(self, training_config, models: List[Model],
                  train_data_loader: DataLoader, valid_data_loader: DataLoader, run_config: RunConfiguration):
-        super(MNISTTrainer, self).__init__("MNISTTrainer", train_data_loader, valid_data_loader, model_trainers,
+        super(MNISTTrainer, self).__init__("MNISTTrainer", train_data_loader, valid_data_loader, models,
                                            run_config)
 
         self._training_config = training_config
 
     def train_step(self, inputs, target):
-        model = self._model_trainers[0]
+        model = self._models[0]
 
         pred = model.forward(inputs)
         model.compute_train_metric(pred, target)
@@ -50,14 +50,14 @@ class MNISTTrainer(Trainer):
         model.step()
 
     def validate_step(self, inputs, target):
-        model = self._model_trainers[0]
+        model = self._models[0]
 
         pred = model.forward(inputs)
         model.compute_valid_metric(pred, target)
         model.compute_and_update_valid_loss(pred, target)
 
     def scheduler_step(self):
-        self._model_trainers[0].scheduler_step()
+        self._models[0].scheduler_step()
 
     @staticmethod
     def average_gradients(model):

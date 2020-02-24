@@ -245,7 +245,7 @@ class TrainingPhaseEventPublisherMixin(object):
         self.fire(Event.ON_TEST_END(Moment(0, Frequency.PHASE, Phase.TEST)))
 
     def _finalize(self):
-        for model_trainer in self.model_trainers:
-            model_trainer.finalize()
+        for model in self.models:
+            model.finalize()
         self.finalize()
         self.status = Status.FINALIZED

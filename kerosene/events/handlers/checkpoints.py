@@ -22,13 +22,13 @@ class Checkpoint(MonitorWatcher):
 
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
         if self.should_handle(event):
-            for model_trainer in trainer.model_trainers:
+            for model in trainer.models:
                 try:
-                    value = self._monitor_fn(model_trainer)
-                    self.watch(model_trainer.name, value)
+                    value = self._monitor_fn(model)
+                    self.watch(model.name, value)
                 except MonitorPatienceExceeded as e:
-                    self._save_model(model_trainer.name, model_trainer.model_state, event.iteration)
-                    self._save_optimizer(model_trainer.name, model_trainer.optimizer_state)
+                    self._save_model(model.name, model.model_state, event.iteration)
+                    self._save_optimizer(model.name, model.optimizer_state)
 
     def _save_model(self, model_name, model_state, epoch_num):
         if should_create_dir(self._path, model_name):

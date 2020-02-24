@@ -12,7 +12,7 @@ from torch.optim import lr_scheduler
 from kerosene.configs.configs import ModelConfiguration, RunConfiguration
 from kerosene.configs.parsers import YamlConfigurationParser
 from kerosene.nn.utils.gradients import GradientClippingStrategy
-from kerosene.training.trainers import ModelTrainer, ModelTrainerFactory
+from kerosene.training.trainers import Model, ModelTrainerFactory
 from tests.constants import *
 from tests.functionals.models import SimpleNet
 
@@ -31,9 +31,9 @@ class ModelTrainerTest(unittest.TestCase):
         self._recall_computer_mock = spy(Recall())
         self._gradient_clipping_strategy = None
 
-        self._model_trainer = ModelTrainer(self.MODEL_NAME, self._model, {self.LOSS_NAME: self._criterion_mock},
-                                           self._optimizer_mock, self._scheduler_mock,
-                                           {"Accuracy": self._accuracy_computer_mock,
+        self._model_trainer = Model(self.MODEL_NAME, self._model, {self.LOSS_NAME: self._criterion_mock},
+                                    self._optimizer_mock, self._scheduler_mock,
+                                    {"Accuracy": self._accuracy_computer_mock,
                                             "Recall": self._recall_computer_mock}, self._gradient_clipping_strategy)
 
         self._gradient_clipping_strategy = mock(GradientClippingStrategy)
@@ -215,7 +215,7 @@ class ModelTrainerFactoryTest(unittest.TestCase):
 
     def test_should_create_model_trainer_with_config(self):
         model_trainer = ModelTrainerFactory(model=self._model).create(self._model_trainer_config)
-        assert_that(model_trainer, instance_of(ModelTrainer))
+        assert_that(model_trainer, instance_of(Model))
         assert_that(model_trainer.name, is_(self.SIMPLE_NET_NAME))
         assert_that(len(model_trainer.criterions), is_(2))
         [assert_that(model_trainer.criterions[criterion], instance_of(_Loss)) for criterion in

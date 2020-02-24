@@ -21,7 +21,7 @@ from kerosene.events.handlers.base_handler import EventHandler
 from kerosene.loggers.visdom import PlotType
 from kerosene.loggers.visdom.visdom import VisdomLogger, VisdomData
 from kerosene.training.events import Event
-from kerosene.training.trainers import Trainer, ModelTrainer
+from kerosene.training.trainers import Trainer, Model
 
 
 class BaseVisdomHandler(EventHandler, ABC):
@@ -150,21 +150,20 @@ class PlotLR(BaseVisdomHandler):
         data = None
 
         if self.should_handle(event):
-            data = list(map(
-                lambda model_trainer: self.create_visdom_data(event, model_trainer), trainer.model_trainers))
+            data = list(map(lambda model: self.create_visdom_data(event, model), trainer.models))
 
         if data is not None:
             self.visdom_logger(data)
 
-    def create_visdom_data(self, event, model_trainer: ModelTrainer):
-        return VisdomData(model_trainer.name, "Learning Rate", PlotType.LINE_PLOT, event.frequency, [event.iteration],
-                          model_trainer.optimizer_lr,
+    def create_visdom_data(self, event, model: Model):
+        return VisdomData(model.name, "Learning Rate", PlotType.LINE_PLOT, event.frequency, [event.iteration],
+                          model.optimizer_lr,
                           params={'opts': {'xlabel': str(event.frequency),
                                            'ylabel': "Learning Rate",
-                                           'title': "{} {} per {}".format(model_trainer.name, "Learning Rate",
+                                           'title': "{} {} per {}".format(model.name, "Learning Rate",
                                                                           str(event.frequency)),
-                                           'name': model_trainer.name,
-                                           'legend': [model_trainer.name]}})
+                                           'name': model.name,
+                                           'legend': [model.name]}})
 
 
 class PlotAvgGradientPerLayer(BaseVisdomHandler):
@@ -178,16 +177,15 @@ class PlotAvgGradientPerLayer(BaseVisdomHandler):
         data = None
 
         if self.should_handle(event):
-            data = list(
-                map(lambda model_trainer: self.create_visdom_data(event, model_trainer), trainer.model_trainers))
+            data = list(map(lambda model: self.create_visdom_data(event, model), trainer.models))
 
         if data is not None:
             self.visdom_logger(data)
 
-    def create_visdom_data(self, event: TemporalEvent, model_trainer: ModelTrainer):
+    def create_visdom_data(self, event: TemporalEvent, model: Model):
         avg_grads, layers = [], []
 
-        for n, p in model_trainer.named_parameters():
+        for n, p in model.named_parameters():
             if p.requires_grad and ("bias" not in n):
                 layers.append(n)
                 if p.grad is not None:
@@ -195,8 +193,8 @@ class PlotAvgGradientPerLayer(BaseVisdomHandler):
                 else:
                     avg_grads.append(0)
 
-        return VisdomData(model_trainer.name, "Gradient Flow", PlotType.BAR_PLOT, event.frequency, y=layers,
+        return VisdomData(model.name, "Gradient Flow", PlotType.BAR_PLOT, event.frequency, y=layers,
                           x=avg_grads, params={'opts': {'xlabel': "Layers", 'ylabel': "Avg. Gradients",
-                                                        'title': "{} {} per {}".format(model_trainer.name,
+                                                        'title': "{} {} per {}".format(model.name,
                                                                                        "Avg. Gradient", "Layer"),
                                                         'marginbottom': 200}})

@@ -39,13 +39,13 @@ from kerosene.training.events import BatchEventPublisherMixin, EpochEventPublish
 from kerosene.utils.devices import on_gpu
 
 
-class ModelTrainer(ApexModule):
+class Model(ApexModule):
     LOGGER = logging.getLogger("ModelTrainer")
 
-    def __init__(self, model_name, model, criterions, optimizer, scheduler, metric_computers: Dict[str, Metric],
+    def __init__(self, name, module, criterions, optimizer, scheduler, metric_computers: Dict[str, Metric],
                  gradient_clipping_strategy: GradientClippingStrategy = None):
-        super(ModelTrainer, self).__init__(model, optimizer)
-        self._model_name = model_name
+        super(Model, self).__init__(module, optimizer)
+        self._name = name
 
         self._criterions = criterions
         self._scheduler = scheduler
@@ -70,7 +70,7 @@ class ModelTrainer(ApexModule):
 
     @property
     def name(self):
-        return self._model_name
+        return self._name
 
     @property
     def step_train_loss(self):
@@ -148,7 +148,7 @@ class ModelTrainer(ApexModule):
 
     @property
     def model_state(self):
-        return self._model.state_dict()
+        return self._module.state_dict()
 
     @property
     def criterions(self):
@@ -184,27 +184,27 @@ class ModelTrainer(ApexModule):
         return self._status is not Status.FINALIZED
 
     def named_parameters(self, prefix: str = ..., recurse: bool = ...) -> tuple:
-        return self.model.named_parameters()
+        return self.module.named_parameters()
 
     def forward(self, *input):
-        return self._model.forward(*input)
+        return self._module.forward(*input)
 
     def train(self, mode=True) -> None:
         self._status = Status.TRAINING
-        self._model.train()
+        self._module.train()
 
     def eval(self) -> None:
         self._status = Status.VALIDATING
-        self._model.eval()
+        self._module.eval()
 
     def test(self) -> None:
         self._status = Status.TESTING
-        self._model.eval()
+        self._module.eval()
 
     def step(self):
         if self._status is Status.TRAINING:
             if self._should_clip_gradients():
-                self._gradient_clipping_strategy.clip(self._model.parameters())
+                self._gradient_clipping_strategy.clip(self._module.parameters())
             self._optimizer.step()
 
     def scheduler_step(self) -> None:
@@ -215,7 +215,7 @@ class ModelTrainer(ApexModule):
                 self._scheduler.step()
 
     def to(self, device: Optional[Union[int, torch.device]] = ..., dtype=..., non_blocking: bool = ...):
-        self.model.to(device)
+        self.module.to(device)
 
         for criterion in self.criterions.values():
             criterion.to(device)
@@ -385,7 +385,7 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
     LOGGER = logging.getLogger("Trainer")
 
     def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
-                 test_data_loader: Union[DataLoader, None], model_trainers: Union[List[ModelTrainer], ModelTrainer],
+                 test_data_loader: Union[DataLoader, None], models: Union[List[Model], Model],
                  run_config: RunConfiguration):
         super().__init__()
         self._name = name
@@ -394,7 +394,7 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
         self._valid_data_loader = valid_data_loader
         self._test_data_loader = test_data_loader
 
-        self._model_trainers = model_trainers if isinstance(model_trainers, list) else [model_trainers]
+        self._models = models if isinstance(models, list) else [models]
         self._device = run_config.device
 
         self._current_train_batch = 0
@@ -404,11 +404,10 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
 
         self._custom_variables = {}
 
-        for amp_id, model_trainer in enumerate(self._model_trainers):
+        for amp_id, model in enumerate(self._models):
             if on_gpu(self._device):
-                model_trainer.to(self._device)
-            model_trainer.initialize(amp_id, len(self._model_trainers), run_config.use_amp, run_config.amp_opt_level,
-                                     self._device)
+                model.to(self._device)
+            model.initialize(amp_id, len(self._models), run_config.use_amp, run_config.amp_opt_level, self._device)
 
     @property
     def name(self):
@@ -427,8 +426,8 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
         return self._test_data_loader
 
     @property
-    def model_trainers(self):
-        return self._model_trainers
+    def models(self):
+        return self._models
 
     @property
     def current_train_step(self):
@@ -478,20 +477,20 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
     def step_monitors(self, phase: Phase):
         if phase != Phase.ALL:
             monitors = dict(
-                map(lambda model: (model.name, {phase: model.step_monitors()[phase]}), self._model_trainers))
+                map(lambda model: (model.name, {phase: model.step_monitors()[phase]}), self._models))
         else:
             monitors = dict(
-                map(lambda model: (model.name, model.step_monitors()), self._model_trainers))
+                map(lambda model: (model.name, model.step_monitors()), self._models))
 
         return monitors
 
     def epoch_monitors(self, phase: Phase):
         if phase != Phase.ALL:
             monitors = dict(
-                map(lambda model: (model.name, {phase: model.epoch_monitors()[phase]}), self._model_trainers))
+                map(lambda model: (model.name, {phase: model.epoch_monitors()[phase]}), self._models))
         else:
             monitors = dict(
-                map(lambda model: (model.name, model.epoch_monitors()), self._model_trainers))
+                map(lambda model: (model.name, model.epoch_monitors()), self._models))
 
         return monitors
 
@@ -552,8 +551,8 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
         return self
 
     def _train_epoch(self):
-        for model_trainer in self._model_trainers:
-            model_trainer.train()
+        for model in self._models:
+            model.train()
 
         for self._current_train_batch, (inputs, target) in enumerate(self._train_data_loader):
             self._on_batch_begin()
@@ -570,8 +569,8 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
             self._on_batch_end()
 
     def _validate_epoch(self):
-        for model_trainer in self._model_trainers:
-            model_trainer.eval()
+        for model in self._models:
+            model.eval()
 
         with torch.no_grad():
             for self._current_valid_batch, (inputs, target) in enumerate(self._valid_data_loader):
@@ -589,8 +588,8 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
 
     def _test_epoch(self):
         if self._test_data_loader is not None:
-            for model_trainer in self._model_trainers:
-                model_trainer.eval()
+            for model in self._models:
+                model.eval()
 
             with torch.no_grad():
                 for self._current_test_batch, (inputs, target) in enumerate(self._test_data_loader):
@@ -606,18 +605,18 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
                     self._on_test_batch_end()
                     self._on_batch_end()
 
-    def _reset_model_trainers(self):
-        for model_trainer in self._model_trainers:
-            model_trainer.reset()
+    def _reset_models(self):
+        for model in self._models:
+            model.reset()
 
     def _at_least_one_model_is_active(self):
-        return any(model_trainer.is_active for model_trainer in self._model_trainers)
+        return any(model.is_active for model in self._models)
 
 
 class SimpleTrainer(Trainer):
 
     def train_step(self, inputs, target):
-        model = self._model_trainers[0]
+        model = self._models[0]
 
         pred = model.forward(inputs)
         metric = model.compute_metrics(pred, target)
@@ -630,7 +629,7 @@ class SimpleTrainer(Trainer):
         model.step()
 
     def validate_step(self, inputs, target):
-        model = self._model_trainers[0]
+        model = self._models[0]
 
         pred = model.forward(inputs)
         metric = model.compute_metrics(pred, target)
@@ -638,7 +637,7 @@ class SimpleTrainer(Trainer):
         model.compute_and_update_valid_losses(pred, target)
 
     def test_step(self, inputs, target):
-        model = self._model_trainers[0]
+        model = self._models[0]
 
         pred = model.forward(inputs)
         metric = model.compute_metrics(pred, target)
@@ -646,7 +645,7 @@ class SimpleTrainer(Trainer):
         model.compute_and_update_test_losses(pred, target)
 
     def scheduler_step(self):
-        self._model_trainers[0].scheduler_step()
+        self._models[0].scheduler_step()
 
 
 class ModelTrainerFactory(object):
@@ -664,13 +663,11 @@ class ModelTrainerFactory(object):
         assert (self._model is not None) or (
                 self._model_factory is not None), "A model or a model factory must be provided !"
 
-    def create(self, model_trainer_configs: Union[List[ModelConfiguration], ModelConfiguration]):
-        model_trainer_configs = [model_trainer_configs] if isinstance(model_trainer_configs,
-                                                                      ModelConfiguration) else model_trainer_configs
-        model_trainers = list(
-            map(lambda model_trainer_config: self._create(model_trainer_config), model_trainer_configs))
+    def create(self, model_configs: Union[List[ModelConfiguration], ModelConfiguration]):
+        model_configs = [model_configs] if isinstance(model_configs, ModelConfiguration) else model_configs
+        models = list(map(lambda model_config: self._create(model_config), model_configs))
 
-        return model_trainers if len(model_trainers) > 1 else model_trainers[0]
+        return models if len(models) > 1 else models[0]
 
     def _create(self, model_config: ModelConfiguration):
         model = self._model if self._model is not None else self._model_factory.create(model_config.type,
@@ -692,5 +689,5 @@ class ModelTrainerFactory(object):
         gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(
             model_config.gradient_clipping_strategy, model_config.gradient_clipping_params)
 
-        return ModelTrainer(model_config.name, model, criterions, optimizer, scheduler, metrics,
-                            gradient_clipping_strategy)
+        return Model(model_config.name, model, criterions, optimizer, scheduler, metrics,
+                     gradient_clipping_strategy)

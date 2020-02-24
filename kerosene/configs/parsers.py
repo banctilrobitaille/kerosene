@@ -53,15 +53,13 @@ class YamlConfigurationParser(object):
             try:
                 config = CustomYamlParser().safe_load(config_file)
 
-                model_trainer_configs = list(
-                    map(lambda model_name: ModelConfiguration.from_dict(model_name,
-                                                                        config["models"][model_name]),
+                model_configs = list(
+                    map(lambda model_name: ModelConfiguration.from_dict(model_name, config["models"][model_name]),
                         config["models"]))
 
-                model_trainer_configs = model_trainer_configs if len(model_trainer_configs) > 1 else \
-                    model_trainer_configs[0]
+                model_configs = model_configs if len(model_configs) > 1 else model_configs[0]
                 training_config = TrainerConfiguration(config['training'])
-                return model_trainer_configs, training_config
+                return model_configs, training_config
             except yaml.YAMLError as e:
                 YamlConfigurationParser.LOGGER.warning(
                     "Unable to read the training config file: {} with error {}".format(config_file_path, e))
