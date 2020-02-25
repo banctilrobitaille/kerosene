@@ -1,6 +1,7 @@
 import logging
 
 import torchvision
+from hyperopt import fmin, tpe, hp
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToTensor, Normalize
 
@@ -41,3 +42,9 @@ def objective(hyper_params):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     CONFIG_FILE_PATH = "config.yml"
+
+    search_space = {
+        'SimpleNet': {'scheduler': {'params': {'lr': hp.normal('lr', 0, 2)}}}
+    }
+
+    best = fmin(objective, space=search_space, algo=tpe.suggest, max_evals=10)

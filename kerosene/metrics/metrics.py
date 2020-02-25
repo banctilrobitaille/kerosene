@@ -13,13 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+from enum import Enum
 from typing import Union, Tuple
 
 import torch
-from enum import Enum
-from ignite.metrics import Accuracy, Average, Precision, MeanAbsoluteError, MeanPairwiseDistance, MeanSquaredError, \
-    Recall, RootMeanSquaredError, TopKCategoricalAccuracy, IoU, mIoU, Metric, ConfusionMatrix, MetricsLambda, \
-    Fbeta, GeometricAverage
+from ignite.metrics import Accuracy, Precision, MeanAbsoluteError, MeanPairwiseDistance, MeanSquaredError, \
+    Recall, RootMeanSquaredError, TopKCategoricalAccuracy, IoU, mIoU, Metric, ConfusionMatrix, MetricsLambda
 
 from kerosene.utils.constants import EPSILON
 from kerosene.utils.tensors import flatten, to_onehot
@@ -27,12 +26,9 @@ from kerosene.utils.tensors import flatten, to_onehot
 
 class MetricType(Enum):
     Accuracy = "Accuracy"
-    Average = "Average"
     ConfusionMatrix = "ConfusionMatrix"
     DiceCoefficient = "Dice"
-    Fbeta = "Fbeta"
     GeneralizedDice = "GeneralizedDice"
-    GeometricAverage = "GeometricAverage"
     IoU = "IoU"
     mIoU = "mIoU"
     MeanAbsoluteError = "MeanAbsoluteError"
@@ -52,12 +48,9 @@ class MetricFactory(object):
     def __init__(self):
         self._metrics = {
             "Accuracy": Accuracy,
-            "Average": Average,
             "ConfusionMatrix": ConfusionMatrix,
             "Dice": Dice,
-            "Fbeta": Fbeta,
             "GeneralizedDice": GeneralizedDice,
-            "GeometricAverage": GeometricAverage,
             "IoU": IoU,
             "mIoU": mIoU,
             "MeanAbsoluteError": MeanAbsoluteError,
