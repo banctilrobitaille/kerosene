@@ -17,7 +17,7 @@ from kerosene.training.trainers import ModelTrainerFactory, SimpleTrainer
 
 
 def objective(hyper_params):
-    model_trainer_config, training_config = YamlConfigurationParser.parse(CONFIG_FILE_PATH)
+    model_config, training_config = YamlConfigurationParser.parse(CONFIG_FILE_PATH)
 
     train_loader = DataLoader(torchvision.datasets.MNIST('./files/', train=True, download=True, transform=Compose(
         [ToTensor(), Normalize((0.1307,), (0.3081,))])), batch_size=training_config.batch_size_train, shuffle=True)
@@ -28,7 +28,7 @@ def objective(hyper_params):
     visdom_logger = VisdomLogger(VisdomConfiguration.from_yml(CONFIG_FILE_PATH))
 
     # Initialize the model trainers
-    model_trainer = ModelTrainerFactory(model=SimpleConvNet()).create(model_trainer_config)
+    model_trainer = ModelTrainerFactory(model=SimpleConvNet()).create(model_config)
 
     # Train with the training strategy
     SimpleTrainer("MNIST Trainer", train_loader, test_loader, None, model_trainer, RunConfiguration(use_amp=False)) \
