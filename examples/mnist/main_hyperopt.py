@@ -18,6 +18,7 @@ from kerosene.training.trainers import ModelTrainerFactory, SimpleTrainer
 
 def objective(hyper_params):
     model_config, training_config = YamlConfigurationParser.parse(CONFIG_FILE_PATH)
+    model_config.update(hyper_params)
 
     train_loader = DataLoader(torchvision.datasets.MNIST('./files/', train=True, download=True, transform=Compose(
         [ToTensor(), Normalize((0.1307,), (0.3081,))])), batch_size=training_config.batch_size_train, shuffle=True)
@@ -31,12 +32,15 @@ def objective(hyper_params):
     model_trainer = ModelTrainerFactory(model=SimpleConvNet()).create(model_config)
 
     # Train with the training strategy
-    SimpleTrainer("MNIST Trainer", train_loader, test_loader, None, model_trainer, RunConfiguration(use_amp=False)) \
+    monitor = SimpleTrainer("MNIST Trainer", train_loader, test_loader, None, model_trainer,
+                            RunConfiguration(use_amp=False)) \
         .with_event_handler(PlotMonitors(every=500, visdom_logger=visdom_logger), Event.ON_BATCH_END) \
         .with_event_handler(PlotMonitors(visdom_logger=visdom_logger), Event.ON_EPOCH_END) \
         .with_event_handler(PlotAvgGradientPerLayer(every=500, visdom_logger=visdom_logger), Event.ON_TRAIN_BATCH_END) \
         .with_event_handler(PrintTrainingStatus(every=100), Event.ON_BATCH_END) \
         .train(training_config.nb_epochs)
+
+    return {}
 
 
 if __name__ == "__main__":
@@ -44,7 +48,7 @@ if __name__ == "__main__":
     CONFIG_FILE_PATH = "config.yml"
 
     search_space = {
-        'SimpleNet': {'scheduler': {'params': {'lr': hp.normal('lr', 0, 2)}}}
+        'SimpleNet': {'optimizer': {'params': {'lr': hp.normal('lr', 0, 2)}}}
     }
 
     best = fmin(objective, space=search_space, algo=tpe.suggest, max_evals=10)
