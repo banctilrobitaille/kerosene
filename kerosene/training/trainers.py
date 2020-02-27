@@ -533,13 +533,14 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
                 self._on_valid_epoch_end()
                 self._on_epoch_end()
                 self._on_valid_end()
-                self._on_test_begin()
-                self._on_epoch_begin()
-                self._on_test_epoch_begin()
-                self._test_epoch()
-                self._on_test_epoch_end()
-                self._on_epoch_end()
-                self._on_test_end()
+                if self._test_data_loader is not None:
+                    self._on_test_begin()
+                    self._on_epoch_begin()
+                    self._on_test_epoch_begin()
+                    self._test_epoch()
+                    self._on_test_epoch_end()
+                    self._on_epoch_end()
+                    self._on_test_end()
             else:
                 self._finalize()
 
@@ -678,22 +679,27 @@ class ModelTrainerFactory(object):
     def _create(self, model_config: ModelConfiguration):
         model = self._model if self._model is not None else self._model_factory.create(model_config.type,
                                                                                        model_config.params)
-        optimizer = self._optimizer_factory.create(model_config.optimizer_type,
+        optimizer = self._optimizer_factory.create(model_config.optimizer_config.type,
                                                    model.parameters(),
-                                                   model_config.optimizer_params)
-        scheduler = self._scheduler_factory.create(model_config.scheduler_type, optimizer,
-                                                   model_config.scheduler_params)
+                                                   model_config.optimizer_config.params)
+        scheduler = self._scheduler_factory.create(model_config.scheduler_config.type, optimizer,
+                                                   model_config.scheduler_config.params)
 
         criterions = {
             criterion_config.name: self._criterion_factory.create(criterion_config.type, criterion_config.params) for
             criterion_config in model_config.criterions_configs}
 
-        metrics = {
-            metric_config.name: self._metric_factory.create(metric_config.type, metric_config.params) for
-            metric_config in model_config.metrics_configs}
+        if model_config.metrics_configs:
+            metrics = {metric_config.name: self._metric_factory.create(metric_config.type, metric_config.params) for
+                       metric_config in model_config.metrics_configs}
+        else:
+            metrics = {}
 
-        gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(
-            model_config.gradient_clipping_strategy, model_config.gradient_clipping_params)
+        if model_config.gradient_clipping_config:
+            gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(
+                model_config.gradient_clipping_config.type, model_config.gradient_clipping_config.params)
+        else:
+            gradient_clipping_strategy = None
 
         return ModelTrainer(model_config.name, model, criterions, optimizer, scheduler, metrics,
                             gradient_clipping_strategy)

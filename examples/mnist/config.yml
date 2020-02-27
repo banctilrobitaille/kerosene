@@ -1,5 +1,5 @@
 training:
-  nb_epochs: 10
+  nb_epochs: 1
   batch_size_train: 10
   batch_size_valid: 10
 
@@ -21,26 +21,7 @@ models:
     criterion:
       CrossEntropy:
         type: CrossEntropyLoss
-    metrics:
-      Accuracy:
-        type: Accuracy
-  SimpleNet2:
-    type: SimpleNet
-    optimizer:
-      type: SGD
-      params:
-        lr: 0.001
-        momentum: 0.9
-        weight_decay: 0.001
-    scheduler:
-      type: ReduceLROnPlateau
-      params:
-        mode: 'min'
-        factor: 0.1
-        patience: 3
-    criterion:
-      CrossEntropy:
-        type: CrossEntropyLoss
+
 
 
 visdom:
