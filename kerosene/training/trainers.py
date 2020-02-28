@@ -544,8 +544,7 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
             else:
                 self._finalize()
 
-        return self.epoch_monitors(Phase.TEST) if self._test_data_loader is not None else self.epoch_monitors(
-            Phase.VALIDATION)
+        return self.epoch_monitors(Phase.ALL)
 
     def with_event_handler(self, handler, event: BaseEvent):
         if event in self._event_handlers.keys():
