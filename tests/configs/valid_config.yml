@@ -35,6 +35,6 @@ models:
       Accuracy:
         type: Accuracy
     gradients:
-      clipping_strategy: 'norm'
+      type: 'norm'
       params:
         max_norm: 1.0
