@@ -31,7 +31,7 @@ class TestModelTrainerConfiguration(unittest.TestCase):
 
     SIMPLE_NET_METRIC_TYPE_2 = "Accuracy"
 
-    SIMPLE_NET_GRADIENT_CLIPPING = {"clipping_strategy": "norm", "params": {"max_norm": 1.0}}
+    SIMPLE_NET_GRADIENT_CLIPPING = {"type": "norm", "params": {"max_norm": 1.0}}
 
     def test_should_parse_valid_model_trainer_config(self):
         expected_config_dict = {self.SIMPLE_NET_NAME: {'type': self.SIMPLE_NET_TYPE,
@@ -51,10 +51,10 @@ class TestModelTrainerConfiguration(unittest.TestCase):
 
         assert_that(config_dict, equal_to(expected_config_dict))
 
-        assert_that(model_trainer_config.optimizer_type, equal_to(self.SIMPLE_NET_OPTIMIZER_TYPE))
-        assert_that(model_trainer_config.optimizer_params, equal_to(self.SIMPLE_NET_OPTIMIZER_PARAMS))
-        assert_that(model_trainer_config.scheduler_type, equal_to(self.SIMPLE_NET_SCHEDULER_TYPE))
-        assert_that(model_trainer_config.scheduler_params, equal_to(self.SIMPLE_NET_SCHEDULER_PARAMS))
+        assert_that(model_trainer_config.optimizer_config.type, equal_to(self.SIMPLE_NET_OPTIMIZER_TYPE))
+        assert_that(model_trainer_config.optimizer_config.params, equal_to(self.SIMPLE_NET_OPTIMIZER_PARAMS))
+        assert_that(model_trainer_config.scheduler_config.type, equal_to(self.SIMPLE_NET_SCHEDULER_TYPE))
+        assert_that(model_trainer_config.scheduler_config.params, equal_to(self.SIMPLE_NET_SCHEDULER_PARAMS))
         assert_that(model_trainer_config.criterions_configs[0].type, equal_to(self.SIMPLE_NET_CRITERION_TYPE))
         assert_that(model_trainer_config.criterions_configs[1].type, equal_to(self.SIMPLE_NET_CRITERION_TYPE_2))
         assert_that(model_trainer_config.metrics_configs[0].type, equal_to(self.SIMPLE_NET_METRIC_TYPE_1))
