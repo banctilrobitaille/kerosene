@@ -220,6 +220,11 @@ class ModelTrainer(ApexModule):
         for criterion in self.criterions.values():
             criterion.to(device)
 
+        for state in self._optimizer.state.values():
+            for k, v in state.items():
+                if isinstance(v, torch.Tensor):
+                    state[k] = v.to(device)
+
     def zero_grad(self) -> None:
         self._optimizer.zero_grad()
 
