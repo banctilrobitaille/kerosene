@@ -379,6 +379,11 @@ class ModelTrainer(ApexModule):
         [loss.reset() for loss_name, loss in self._valid_loss.items()]
         [loss.reset() for loss_name, loss in self._test_loss.items()]
 
+    def load(self, path):
+        checkpoint = torch.load(path)
+        self._model.load_state_dict(checkpoint["model_state_dict"])
+        self._optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
     def finalize(self) -> None:
         self._status = Status.FINALIZED
 
@@ -680,6 +685,10 @@ class ModelTrainerFactory(object):
 
         return model_trainers if len(model_trainers) > 1 else model_trainers[0]
 
+    @staticmethod
+    def _should_reload(model_config):
+        return model_config.path is not None
+
     def _create(self, model_config: ModelConfiguration):
         model = self._model if self._model is not None else self._model_factory.create(model_config.type,
                                                                                        model_config.params)
@@ -705,5 +714,10 @@ class ModelTrainerFactory(object):
         else:
             gradient_clipping_strategy = None
 
-        return ModelTrainer(model_config.name, model, criterions, optimizer, scheduler, metrics,
-                            gradient_clipping_strategy)
+        model_trainer = ModelTrainer(model_config.name, model, criterions, optimizer, scheduler, metrics,
+                                     gradient_clipping_strategy)
+
+        if self._should_reload(model_config):
+            model_trainer.load(model_config.path)
+
+        return model_trainer

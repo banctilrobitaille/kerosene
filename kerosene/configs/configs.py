@@ -113,15 +113,20 @@ class ConfigurationList(Configuration):
 
 
 class ModelConfiguration(Configuration, HtmlConfiguration):
-    def __init__(self, model_name, model_type, model_params, optimizer_config: Configuration,
+    def __init__(self, model_name, model_type, model_params, path, optimizer_config: Configuration,
                  scheduler_config: Configuration, criterions_configs: ConfigurationList,
                  metrics_configs: ConfigurationList, gradient_clipping_config: Configuration):
         super().__init__(model_name, model_type, model_params)
+        self._path = path
         self._optimizer_config = optimizer_config
         self._scheduler_config = scheduler_config
         self._criterions_configs = criterions_configs
         self._metrics_configs = metrics_configs
         self._gradient_clipping_config = gradient_clipping_config
+
+    @property
+    def path(self):
+        return self._path
 
     @property
     def optimizer_config(self):
@@ -183,8 +188,8 @@ class ModelConfiguration(Configuration, HtmlConfiguration):
             else:
                 gradient_clipping_config = None
 
-            return cls(model_name, config_dict["type"], config_dict.get("params"), optimizer_config,
-                       scheduler_config, criterion_configs, metric_configs, gradient_clipping_config)
+            return cls(model_name, config_dict["type"], config_dict.get("params"), config_dict.get("path"),
+                       optimizer_config, scheduler_config, criterion_configs, metric_configs, gradient_clipping_config)
         except KeyError as e:
             raise InvalidConfigurationError(
                 "The provided model configuration is invalid. The section {} is missing.".format(e))
