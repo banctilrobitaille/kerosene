@@ -1,5 +1,5 @@
 training:
-  nb_epochs: 1
+  nb_epochs: 10
   batch_size_train: 10
   batch_size_valid: 10
 
