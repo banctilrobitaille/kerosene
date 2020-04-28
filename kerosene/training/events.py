@@ -124,6 +124,17 @@ class EpochEventPublisherMixin(object):
 
         return self.epoch, phase
 
+    @property
+    def phase(self):
+        if self.status is Status.TRAINING:
+            phase = Phase.TRAINING
+        elif self.status is Status.VALIDATING:
+            phase = Phase.VALIDATION
+        else:
+            phase = Phase.TEST
+
+        return phase
+
     def on_epoch_begin(self):
         pass
 
