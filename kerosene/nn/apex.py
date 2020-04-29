@@ -71,9 +71,9 @@ class ApexLoss(object):
 
     def mean(self):
         return ApexLoss(self._loss_id, torch.mean(self._loss), self._optimizer)
-        
+
     def item(self):
-    	return self._loss.item()
+        return self._loss.item()
 
     def __add__(self, other):
         if isinstance(other, (Tensor, int, float)):
