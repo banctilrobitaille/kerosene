@@ -15,7 +15,7 @@ from kerosene.events import MonitorMode, Moment, Frequency, Phase, TemporalEvent
 from kerosene.events.handlers.checkpoints import Checkpoint
 from kerosene.nn.utils.gradients import GradientClippingStrategy
 from kerosene.training.events import Event
-from kerosene.training.trainers import SimpleTrainer, ModelTrainer
+from kerosene.training.trainers import SimpleTrainer, ModelTrainer, ModelTrainerList
 
 
 class ModelCheckpointIfBetterTest(unittest.TestCase):
@@ -36,6 +36,8 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
                                            self._gradient_clipping_strategy)
 
         self._trainer_mock = mockito.mock(SimpleTrainer)
+        self._trainer_mock.epoch = 0
+        self._trainer_mock.model_trainers = ModelTrainerList([self._model_trainer])
 
     def tearDown(self) -> None:
         if os.path.exists(self.SAVE_PATH):
@@ -43,99 +45,128 @@ class ModelCheckpointIfBetterTest(unittest.TestCase):
 
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
-    @mock.patch("kerosene.training.trainers.ModelTrainer.valid_loss", new_callable=PropertyMock)
-    def test_should_not_save_model_with_higher_valid_loss(self, valid_loss_mock, model_state_mock,
-                                                          optimizer_states_mock):
-        self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_loss, 0.01, MonitorMode.MIN))
-        valid_loss_mock.return_value = {"MSELoss": torch.tensor([0.5])}
+    def test_should_not_save_model_with_higher_valid_loss(self, model_state_mock, optimizer_states_mock):
         model_state_mock.return_value = dict()
         optimizer_states_mock.return_value = list(dict())
         moment = Moment(200, Frequency.EPOCH, Phase.VALIDATION)
-        self._trainer_mock.epoch = 5
-        self._trainer_mock.model_trainers = [self._model_trainer]
-        self._handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), Monitor.VALID_LOSS, self._trainer_mock)
-        valid_loss_mock.return_value = {"MSELoss": torch.tensor([0.6])}
-        self._handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), Monitor.VALID_LOSS, self._trainer_mock)
-        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save(...).thenReturn(False)), is_(True))
-        assert_that(
-            not os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
+
+        handler_mock = mockito.spy(Checkpoint(self.SAVE_PATH, self.MODEL_NAME, "MSELoss", 0.01, MonitorMode.MIN))
+
+        monitors = {self.MODEL_NAME: {Phase.TRAINING: {Monitor.METRICS: {}, Monitor.LOSS: {}},
+                                      Phase.VALIDATION: {Monitor.METRICS: {},
+                                                         Monitor.LOSS: {"MSELoss": torch.tensor([0.5])}},
+                                      Phase.TEST: {Monitor.METRICS: {}, Monitor.LOSS: {}}}}
+
+        handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), monitors, self._trainer_mock)
+
+        monitors = {self.MODEL_NAME: {Phase.TRAINING: {Monitor.METRICS: {}, Monitor.LOSS: {}},
+                                      Phase.VALIDATION: {Monitor.METRICS: {},
+                                                         Monitor.LOSS: {"MSELoss": torch.tensor([0.6])}},
+                                      Phase.TEST: {Monitor.METRICS: {}, Monitor.LOSS: {}}}}
+
+        handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), monitors, self._trainer_mock)
+
+        assert_that(not os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
 
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
-    @mock.patch("kerosene.training.trainers.ModelTrainer.valid_loss", new_callable=PropertyMock)
-    def test_should_save_model_with_lower_valid_loss(self, valid_loss_mock, model_state_mock, optimizer_states_mock):
-        self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_loss, 0.01, MonitorMode.MIN))
-        valid_loss_mock.return_value = {"NLLLoss": torch.tensor([0.5])}
+    def test_should_not_save_model_with_higher_valid_losses(self, model_state_mock, optimizer_states_mock):
         model_state_mock.return_value = dict()
         optimizer_states_mock.return_value = list(dict())
         moment = Moment(200, Frequency.EPOCH, Phase.VALIDATION)
-        self._trainer_mock.epoch = 5
-        self._trainer_mock.model_trainers = [self._model_trainer]
-        self._handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), Monitor.VALID_LOSS, self._trainer_mock)
-        valid_loss_mock.return_value = {"NLLLoss": torch.tensor([0.4])}
-        self._handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), Monitor.VALID_LOSS, self._trainer_mock)
-        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save(...).thenReturn(True)), is_(True))
+
+        handler_mock = mockito.spy(
+            Checkpoint(self.SAVE_PATH, self.MODEL_NAME, ["MSELoss", "L1Loss"], 0.01, MonitorMode.MIN))
+
+        monitors = {self.MODEL_NAME: {Phase.TRAINING: {Monitor.METRICS: {}, Monitor.LOSS: {}},
+                                      Phase.VALIDATION: {Monitor.METRICS: {},
+                                                         Monitor.LOSS: {"MSELoss": torch.tensor([0.5]),
+                                                                        "L1Loss": torch.tensor([0.5])}},
+                                      Phase.TEST: {Monitor.METRICS: {}, Monitor.LOSS: {}}}}
+
+        handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), monitors, self._trainer_mock)
+
+        monitors = {self.MODEL_NAME: {Phase.TRAINING: {Monitor.METRICS: {}, Monitor.LOSS: {}},
+                                      Phase.VALIDATION: {Monitor.METRICS: {},
+                                                         Monitor.LOSS: {"MSELoss": torch.tensor([0.5]),
+                                                                        "L1Loss": torch.tensor([0.6])}},
+                                      Phase.TEST: {Monitor.METRICS: {}, Monitor.LOSS: {}}}}
+
+        handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), monitors, self._trainer_mock)
+
+        assert_that(not os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
+
+    @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
+    @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
+    def test_should_save_model_with_lower_valid_loss(self, model_state_mock, optimizer_states_mock):
+        model_state_mock.return_value = dict()
+        optimizer_states_mock.return_value = list(dict())
+        moment = Moment(200, Frequency.EPOCH, Phase.VALIDATION)
+
+        handler_mock = mockito.spy(Checkpoint(self.SAVE_PATH, self.MODEL_NAME, "MSELoss", 0.01, MonitorMode.MIN))
+
+        monitors = {self.MODEL_NAME: {Phase.TRAINING: {Monitor.METRICS: {}, Monitor.LOSS: {}},
+                                      Phase.VALIDATION: {Monitor.METRICS: {},
+                                                         Monitor.LOSS: {"MSELoss": torch.tensor([0.5])}},
+                                      Phase.TEST: {Monitor.METRICS: {}, Monitor.LOSS: {}}}}
+
+        handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), monitors, self._trainer_mock)
+
+        monitors = {self.MODEL_NAME: {Phase.TRAINING: {Monitor.METRICS: {}, Monitor.LOSS: {}},
+                                      Phase.VALIDATION: {Monitor.METRICS: {},
+                                                         Monitor.LOSS: {"MSELoss": torch.tensor([0.3])}},
+                                      Phase.TEST: {Monitor.METRICS: {}, Monitor.LOSS: {}}}}
+
+        handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), monitors, self._trainer_mock)
+
         assert_that(os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
 
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
-    @mock.patch("kerosene.training.trainers.ModelTrainer.valid_loss", new_callable=PropertyMock)
-    def test_should_save_optimizer_with_lower_valid_loss(self, valid_loss_mock, model_state_mock,
-                                                         optimizer_states_mock):
-        self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_loss, 0.01, MonitorMode.MIN))
-        valid_loss_mock.return_value = {"NLLLoss": torch.tensor([0.5])}
+    def test_should_save_model_with_higher_valid_metric(self, model_state_mock, optimizer_states_mock):
         model_state_mock.return_value = dict()
         optimizer_states_mock.return_value = list(dict())
         moment = Moment(200, Frequency.EPOCH, Phase.VALIDATION)
-        self._trainer_mock.epoch = 5
-        self._trainer_mock.model_trainers = [self._model_trainer]
-        self._handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), Monitor.VALID_LOSS, self._trainer_mock)
-        valid_loss_mock.return_value = {"NLLLoss": torch.tensor([0.4])}
-        self._handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), Monitor.VALID_LOSS, self._trainer_mock)
-        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save(...).thenReturn(True)), is_(True))
-        assert_that(
-            os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
+
+        handler_mock = mockito.spy(Checkpoint(self.SAVE_PATH, self.MODEL_NAME, "Accuracy", 0.01, MonitorMode.MAX))
+
+        monitors = {self.MODEL_NAME: {Phase.TRAINING: {Monitor.METRICS: {}, Monitor.LOSS: {}},
+                                      Phase.VALIDATION: {Monitor.METRICS: {"Accuracy": torch.tensor([0.5])},
+                                                         Monitor.LOSS: {}},
+                                      Phase.TEST: {Monitor.METRICS: {}, Monitor.LOSS: {}}}}
+
+        handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), monitors, self._trainer_mock)
+
+        monitors = {self.MODEL_NAME: {Phase.TRAINING: {Monitor.METRICS: {}, Monitor.LOSS: {}},
+                                      Phase.VALIDATION: {Monitor.METRICS: {"Accuracy": torch.tensor([0.6])},
+                                                         Monitor.LOSS: {}},
+                                      Phase.TEST: {Monitor.METRICS: {}, Monitor.LOSS: {}}}}
+
+        handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), monitors, self._trainer_mock)
+
+        assert_that(os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
 
     @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
     @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
-    @mock.patch("kerosene.training.trainers.ModelTrainer.valid_metrics", new_callable=PropertyMock)
-    def test_should_save_optimizer_with_higher_valid_metric(self, valid_metrics_mock, model_state_mock,
-                                                            optimizer_states_mock):
-        self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_metrics, 0.01, MonitorMode.MAX))
-        valid_metrics_mock.return_value = {"Accuracy": torch.tensor([0.5])}
+    def test_should_not_save_model_with_lower_valid_metric(self, model_state_mock, optimizer_states_mock):
         model_state_mock.return_value = dict()
         optimizer_states_mock.return_value = list(dict())
         moment = Moment(200, Frequency.EPOCH, Phase.VALIDATION)
-        self._trainer_mock.epoch = 5
-        self._trainer_mock.model_trainers = [self._model_trainer]
-        self._handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), Monitor.VALID_LOSS, self._trainer_mock)
-        valid_metrics_mock.return_value = {"Accuracy": torch.tensor([0.8])}
-        self._handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), Monitor.VALID_LOSS, self._trainer_mock)
-        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save(...).thenReturn(True)), is_(True))
-        assert_that(
-            os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
 
-    @mock.patch("kerosene.training.trainers.ModelTrainer.optimizer_state", new_callable=PropertyMock)
-    @mock.patch("kerosene.training.trainers.ModelTrainer.model_state", new_callable=PropertyMock)
-    @mock.patch("kerosene.training.trainers.ModelTrainer.valid_metrics", new_callable=PropertyMock)
-    def test_should_not_save_optimizer_with_lower_valid_metric(self, valid_metrics_mock, model_state_mock,
-                                                               optimizer_state_mocks):
-        self._handler_mock = mockito.spy(
-            Checkpoint(self.SAVE_PATH, lambda model_trainer: model_trainer.valid_metrics, 0.01, MonitorMode.MAX))
+        handler_mock = mockito.spy(Checkpoint(self.SAVE_PATH, self.MODEL_NAME, "Accuracy", 0.01, MonitorMode.MAX))
 
-        valid_metrics_mock.return_value = {"Accuracy": torch.tensor([0.8])}
-        model_state_mock.return_value = dict()
-        optimizer_state_mocks.return_value = list(dict())
-        moment = Moment(200, Frequency.EPOCH, Phase.VALIDATION)
-        self._trainer_mock.epoch = 5
-        self._trainer_mock.model_trainers = [self._model_trainer]
-        self._handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), Monitor.VALID_LOSS, self._trainer_mock)
-        valid_metrics_mock.return_value = {"Accuracy": torch.tensor([0.5])}
-        self._handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), Monitor.VALID_LOSS, self._trainer_mock)
-        assert_that(bool(mockito.expect(self._handler_mock, times=1)._save(...).thenReturn(False)), is_(True))
-        assert_that(
-            not os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))
+        monitors = {self.MODEL_NAME: {Phase.TRAINING: {Monitor.METRICS: {}, Monitor.LOSS: {}},
+                                      Phase.VALIDATION: {Monitor.METRICS: {"Accuracy": torch.tensor([0.5])},
+                                                         Monitor.LOSS: {}},
+                                      Phase.TEST: {Monitor.METRICS: {}, Monitor.LOSS: {}}}}
+
+        handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), monitors, self._trainer_mock)
+
+        monitors = {self.MODEL_NAME: {Phase.TRAINING: {Monitor.METRICS: {}, Monitor.LOSS: {}},
+                                      Phase.VALIDATION: {Monitor.METRICS: {"Accuracy": torch.tensor([0.4])},
+                                                         Monitor.LOSS: {}},
+                                      Phase.TEST: {Monitor.METRICS: {}, Monitor.LOSS: {}}}}
+
+        handler_mock(TemporalEvent(Event.ON_EPOCH_END, moment), monitors, self._trainer_mock)
+
+        assert_that(not os.path.exists(os.path.join(self.SAVE_PATH, self.MODEL_NAME, self.MODEL_NAME + ".tar")))

@@ -12,14 +12,15 @@ from torch.optim import lr_scheduler
 from kerosene.configs.configs import ModelConfiguration, RunConfiguration
 from kerosene.configs.parsers import YamlConfigurationParser
 from kerosene.nn.utils.gradients import GradientClippingStrategy
-from kerosene.training.trainers import ModelTrainer, ModelTrainerFactory
+from kerosene.training.trainers import ModelTrainer, ModelTrainerFactory, ModelTrainerList
 from tests.constants import *
 from tests.functionals.models import SimpleNet
 
 
 # noinspection PyUnresolvedReferences
 class ModelTrainerTest(unittest.TestCase):
-    MODEL_NAME = "Harry Potter"
+    MODEL_NAME_1 = "Harry Potter"
+    MODEL_NAME_2 = "Hagrid"
     LOSS_NAME = "CrossEntropy"
 
     def setUp(self) -> None:
@@ -31,7 +32,7 @@ class ModelTrainerTest(unittest.TestCase):
         self._recall_computer_mock = spy(Recall())
         self._gradient_clipping_strategy = None
 
-        self._model_trainer = ModelTrainer(self.MODEL_NAME, self._model, {self.LOSS_NAME: self._criterion_mock},
+        self._model_trainer = ModelTrainer(self.MODEL_NAME_1, self._model, {self.LOSS_NAME: self._criterion_mock},
                                            self._optimizer_mock, self._scheduler_mock,
                                            {"Accuracy": self._accuracy_computer_mock,
                                             "Recall": self._recall_computer_mock}, self._gradient_clipping_strategy)
@@ -225,3 +226,48 @@ class ModelTrainerFactoryTest(unittest.TestCase):
         assert_that(len(model_trainer._metric_computers.keys()), is_(2))
         [assert_that(model_trainer._metric_computers[metric], instance_of(Metric)) for metric in
          model_trainer._metric_computers.keys()]
+
+
+class ModelTrainerListTest(unittest.TestCase):
+    MODEL_NAME_1 = "Harry Potter"
+    MODEL_NAME_2 = "Hagrid"
+    LOSS_NAME = "CrossEntropy"
+
+    def setUp(self) -> None:
+        self._model = SimpleNet()
+        self._criterion_mock = spy(nn.CrossEntropyLoss())
+        self._optimizer_mock = spy(SGD(self._model.parameters(), lr=0.001))
+        self._scheduler_mock = mock(lr_scheduler)
+        self._accuracy_computer_mock = spy(Accuracy())
+        self._recall_computer_mock = spy(Recall())
+        self._gradient_clipping_strategy = None
+
+        self._model_trainer = ModelTrainer(self.MODEL_NAME_1, self._model, {self.LOSS_NAME: self._criterion_mock},
+                                           self._optimizer_mock, self._scheduler_mock,
+                                           {"Accuracy": self._accuracy_computer_mock,
+                                            "Recall": self._recall_computer_mock}, self._gradient_clipping_strategy)
+        self._model_trainer_2 = ModelTrainer(self.MODEL_NAME_2, self._model, {self.LOSS_NAME: self._criterion_mock},
+                                             self._optimizer_mock, self._scheduler_mock,
+                                             {"Accuracy": self._accuracy_computer_mock,
+                                              "Recall": self._recall_computer_mock}, self._gradient_clipping_strategy)
+
+        self._model_trainer_list = ModelTrainerList([self._model_trainer, self._model_trainer_2])
+
+    def tearDown(self) -> None:
+        super().tearDown()
+
+    def test_should_return_model_trainer_from_int_index(self):
+        model_trainer_1 = self._model_trainer_list[0]
+        model_trainer_2 = self._model_trainer_list[1]
+
+        assert_that(model_trainer_1, equal_to(self._model_trainer))
+        assert_that(model_trainer_2, equal_to(self._model_trainer_2))
+        assert_that(len(self._model_trainer_list), equal_to(2))
+
+    def test_should_return_model_trainer_from_model_name(self):
+        model_trainer_1 = self._model_trainer_list[self.MODEL_NAME_1]
+        model_trainer_2 = self._model_trainer_list[self.MODEL_NAME_2]
+
+        assert_that(model_trainer_1, equal_to(self._model_trainer))
+        assert_that(model_trainer_2, equal_to(self._model_trainer_2))
+        assert_that(len(self._model_trainer_list), equal_to(2))

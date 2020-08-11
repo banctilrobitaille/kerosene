@@ -391,11 +391,29 @@ class ModelTrainer(ApexModule):
         return self._gradient_clipping_strategy is not None
 
 
+class ModelTrainerList(object):
+    def __init__(self, model_trainers: List[ModelTrainer]):
+        self._model_trainers = model_trainers
+        self._model_trainers_dict = {model_trainer.name: model_trainer for model_trainer in model_trainers}
+
+    def __len__(self):
+        return len(self._model_trainers)
+
+    def __getitem__(self, index):
+        if isinstance(index, int):
+            return self._model_trainers[index]
+        elif isinstance(index, str):
+            return self._model_trainers_dict[index]
+
+    def __iter__(self):
+        return iter(self._model_trainers)
+
+
 class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseEventPublisherMixin, EventPublisher):
     LOGGER = logging.getLogger("Trainer")
 
     def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
-                 test_data_loader: Union[DataLoader, None], model_trainers: Union[List[ModelTrainer], ModelTrainer],
+                 test_data_loader: Union[DataLoader, None], model_trainers: Union[ModelTrainerList, ModelTrainer],
                  run_config: RunConfiguration):
         super().__init__()
         self._name = name
@@ -404,7 +422,8 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
         self._valid_data_loader = valid_data_loader
         self._test_data_loader = test_data_loader
 
-        self._model_trainers = model_trainers if isinstance(model_trainers, list) else [model_trainers]
+        self._model_trainers = model_trainers if isinstance(model_trainers, ModelTrainerList) else ModelTrainerList(
+            [model_trainers])
         self._device = run_config.device
 
         self._current_train_batch = 0
