@@ -26,18 +26,17 @@ class Checkpoint(MonitorWatcher):
 
     def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
         if self.should_handle(event):
-            for model_trainer in list(filter(lambda model: model.name == self._model_name, trainer.model_trainers)):
-                try:
-                    model_monitors = {**monitors[self._model_name][Phase.VALIDATION][Monitor.METRICS],
-                                      **monitors[self._model_name][Phase.VALIDATION][Monitor.LOSS]}
-                    values = torch.cat([model_monitors[monitor_name] for monitor_name in self._monitors_names])
+            try:
+                model_monitors = {**monitors[self._model_name][Phase.VALIDATION][Monitor.METRICS],
+                                  **monitors[self._model_name][Phase.VALIDATION][Monitor.LOSS]}
+                values = torch.cat([model_monitors[monitor_name] for monitor_name in self._monitors_names])
 
-                    self.watch(self._model_name, self._reduction(values))
-                except MonitorPatienceExceeded as e:
-                    self._save(trainer.epoch, self._model_name, model_trainer.model_state,
-                               model_trainer.optimizer_state)
-                except KeyError as e:
-                    pass
+                self.watch(self._model_name, self._reduction(values))
+            except MonitorPatienceExceeded as e:
+                self._save(trainer.epoch, self._model_name, trainer.model_trainers[self._model_name].model_state,
+                           trainer.model_trainers[self._model_name].optimizer_state)
+            except KeyError as e:
+                self.LOGGER.warning("Invalid model or monitor name: {}".format(e))
 
     def _save(self, epoch_num, model_name, model_state, optimizer_states):
         if should_create_dir(self._path, model_name):
