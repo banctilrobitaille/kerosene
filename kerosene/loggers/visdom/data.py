@@ -1,10 +1,12 @@
 from typing import Union, List
 
+from kerosene.loggers.visdom import PlotType, PlotFrequency
+
 
 class VisdomData(object):
 
-    def __init__(self, source_name, variable_name: Union[List[str], str], plot_type, plot_frequency, x, y,
-                 params: dict = None):
+    def __init__(self, source_name: str, variable_name: Union[List[str], str], plot_type: PlotType,
+                 plot_frequency: PlotFrequency, x, y, params: dict = None):
         self._source_name = source_name
         self._variable_name = variable_name
         self._plot_type = plot_type
