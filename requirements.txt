@@ -10,3 +10,5 @@ visdom>=0.1.8.8
 pytorch-ignite>= 0.2.0
 mockito >= 1.1.1
 mock >= 3.0.5
+beautifultable
+crayons

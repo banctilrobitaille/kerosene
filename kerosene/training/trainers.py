@@ -370,6 +370,30 @@ class ModelTrainer(ApexModule):
                                                  list(self._step_test_metrics.values())):
             test_metric.update(step_test_metric)
 
+    def compute_and_update_train_metrics(self, pred, target):
+        metrics = self.compute_metrics(pred, target)
+        self.update_train_metrics(metrics)
+
+    def compute_and_update_train_metric(self, name, pred, target):
+        metric = self.compute_metric(name, pred, target)
+        self.update_train_metric(name, metric)
+
+    def compute_and_update_valid_metrics(self, pred, target):
+        metrics = self.compute_metrics(pred, target)
+        self.update_valid_metrics(metrics)
+
+    def compute_and_update_valid_metric(self, name, pred, target):
+        metric = self.compute_metric(name, pred, target)
+        self.update_valid_metric(name, metric)
+
+    def compute_and_update_test_metrics(self, pred, target):
+        metrics = self.compute_metrics(pred, target)
+        self.update_test_metrics(metrics)
+
+    def compute_and_update_test_metric(self, name, pred, target):
+        metric = self.compute_metric(name, pred, target)
+        self.update_test_metric(name, metric)
+
     def reset(self):
         [metric_computer.reset() for metric_computer in self._metric_computers.values()]
         [metric.reset() for metric_name, metric in self._train_metrics.items()]
