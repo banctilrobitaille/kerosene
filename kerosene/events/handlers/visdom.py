@@ -200,3 +200,19 @@ class PlotAvgGradientPerLayer(BaseVisdomHandler):
                                                         'title': "{} {} per {}".format(model_trainer.name,
                                                                                        "Avg. Gradient", "Layer"),
                                                         'marginbottom': 200}})
+
+
+class SaveVisdomEnvToFile(BaseVisdomHandler):
+    SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_EPOCH_END, Event.ON_VALID_EPOCH_END, Event.ON_TEST_EPOCH_END,
+                        Event.ON_FINALIZE]
+
+    def __init__(self, visdom_logger: VisdomLogger, params, every=1):
+        super().__init__(self.SUPPORTED_EVENTS, visdom_logger, every)
+        self._params = params
+
+    def create_visdom_data(self, *args, **kwargs):
+        pass
+
+    def __call__(self, event: TemporalEvent, monitors: dict, trainer: Trainer):
+        if self.should_handle(event):
+            self._visdom_logger.save()

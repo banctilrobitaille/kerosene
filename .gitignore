@@ -107,3 +107,4 @@ idea
 .idea
 /data/*
 /tests/functionals/distributed/files/
+files

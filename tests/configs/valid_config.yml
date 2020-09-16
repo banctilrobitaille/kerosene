@@ -35,6 +35,40 @@ models:
       Accuracy:
         type: Accuracy
     gradients:
-      clipping_strategy: 'norm'
+      type: 'norm'
+      params:
+        max_norm: 1.0
+  SimpleNet2:
+    type: SimpleNet
+    optimizer:
+      type: SGD
+      params:
+        lr: 0.01
+        momentum: 0.5
+        weight_decay: 0
+    scheduler:
+      type: ReduceLROnPlateau
+      params:
+        mode: 'min'
+        factor: 0.1
+        patience: 3
+    criterion:
+      cycle:
+        type: "L1Loss"
+      gan:
+        type: "MSELoss"
+    metrics:
+      Dice:
+        type: Dice
+        params:
+          num_classes: 4
+          reduction: !!null
+          ignore_index: 0
+          average: !!null
+          weight: !!null
+      Accuracy:
+        type: Accuracy
+    gradients:
+      type: 'norm'
       params:
         max_norm: 1.0
