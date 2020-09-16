@@ -39,18 +39,14 @@ class MonitorInspection(object):
 
 
 class MonitorWatcher(EventHandler, ABC):
-    def __init__(self, monitor_fn, mode: MonitorMode, min_delta, patience, every=1,
+    def __init__(self, mode: MonitorMode, min_delta, patience, every=1,
                  supported_events: List[Union[BaseEvent, TemporalEvent]] = None):
         super().__init__(supported_events, every)
-        self._monitor_fn = monitor_fn
+
         self._mode = mode
         self._min_delta = min_delta
         self._patience = patience
         self._monitor_values: Dict[str, MonitorInspection] = {}
-
-    @property
-    def monitor_fn(self):
-        return self._monitor_fn
 
     @property
     def mode(self):

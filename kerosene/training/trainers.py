@@ -220,6 +220,11 @@ class ModelTrainer(ApexModule):
         for criterion in self.criterions.values():
             criterion.to(device)
 
+        for state in self._optimizer.state.values():
+            for k, v in state.items():
+                if isinstance(v, torch.Tensor):
+                    state[k] = v.to(device)
+
     def zero_grad(self) -> None:
         self._optimizer.zero_grad()
 
@@ -318,6 +323,13 @@ class ModelTrainer(ApexModule):
             self._step_test_loss[name] = value if not isinstance(value, ApexLoss) else value.loss
             self._test_loss[name].update(self._step_test_loss[name].item())
 
+    def compute_metric(self, name, pred, target):
+        self._metric_computers[name].update((pred, target))
+        metric = self._metric_computers[name].compute()
+        self._metric_computers[name].reset()
+
+        return metric
+
     def compute_metrics(self, pred, target):
         metrics = dict()
         for metric_name, metric_computer in self._metric_computers.items():
@@ -328,11 +340,19 @@ class ModelTrainer(ApexModule):
 
         return metrics
 
+    def update_train_metric(self, name, metric):
+        self._step_train_metrics[name] = metric
+        self._train_metrics[name].update(metric)
+
     def update_train_metrics(self, metrics: dict):
         self._step_train_metrics = metrics
         for train_metric, step_train_metric in zip(list(self._train_metrics.values()),
                                                    list(self._step_train_metrics.values())):
             train_metric.update(step_train_metric)
+
+    def update_valid_metric(self, name, metric):
+        self._step_valid_metrics[name] = metric
+        self._valid_metrics[name].update(metric)
 
     def update_valid_metrics(self, metric: dict):
         self._step_valid_metrics = metric
@@ -340,11 +360,39 @@ class ModelTrainer(ApexModule):
                                                    list(self._step_valid_metrics.values())):
             valid_metric.update(step_valid_metric)
 
+    def update_test_metric(self, name, metric):
+        self._step_test_metrics[name] = metric
+        self._test_metrics[name].update(metric)
+
     def update_test_metrics(self, metric: dict):
         self._step_test_metrics = metric
         for test_metric, step_test_metric in zip(list(self._test_metrics.values()),
                                                  list(self._step_test_metrics.values())):
             test_metric.update(step_test_metric)
+
+    def compute_and_update_train_metrics(self, pred, target):
+        metrics = self.compute_metrics(pred, target)
+        self.update_train_metrics(metrics)
+
+    def compute_and_update_train_metric(self, name, pred, target):
+        metric = self.compute_metric(name, pred, target)
+        self.update_train_metric(name, metric)
+
+    def compute_and_update_valid_metrics(self, pred, target):
+        metrics = self.compute_metrics(pred, target)
+        self.update_valid_metrics(metrics)
+
+    def compute_and_update_valid_metric(self, name, pred, target):
+        metric = self.compute_metric(name, pred, target)
+        self.update_valid_metric(name, metric)
+
+    def compute_and_update_test_metrics(self, pred, target):
+        metrics = self.compute_metrics(pred, target)
+        self.update_test_metrics(metrics)
+
+    def compute_and_update_test_metric(self, name, pred, target):
+        metric = self.compute_metric(name, pred, target)
+        self.update_test_metric(name, metric)
 
     def reset(self):
         [metric_computer.reset() for metric_computer in self._metric_computers.values()]
@@ -355,6 +403,11 @@ class ModelTrainer(ApexModule):
         [loss.reset() for loss_name, loss in self._valid_loss.items()]
         [loss.reset() for loss_name, loss in self._test_loss.items()]
 
+    def load(self, path):
+        checkpoint = torch.load(path)
+        self._model.load_state_dict(checkpoint["model_state_dict"])
+        self._optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
     def finalize(self) -> None:
         self._status = Status.FINALIZED
 
@@ -362,11 +415,29 @@ class ModelTrainer(ApexModule):
         return self._gradient_clipping_strategy is not None
 
 
+class ModelTrainerList(object):
+    def __init__(self, model_trainers: List[ModelTrainer]):
+        self._model_trainers = model_trainers
+        self._model_trainers_dict = {model_trainer.name: model_trainer for model_trainer in model_trainers}
+
+    def __len__(self):
+        return len(self._model_trainers)
+
+    def __getitem__(self, index):
+        if isinstance(index, int):
+            return self._model_trainers[index]
+        elif isinstance(index, str):
+            return self._model_trainers_dict[index]
+
+    def __iter__(self):
+        return iter(self._model_trainers)
+
+
 class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseEventPublisherMixin, EventPublisher):
     LOGGER = logging.getLogger("Trainer")
 
     def __init__(self, name, train_data_loader: DataLoader, valid_data_loader: DataLoader,
-                 test_data_loader: Union[DataLoader, None], model_trainers: Union[List[ModelTrainer], ModelTrainer],
+                 test_data_loader: Union[DataLoader, None], model_trainers: Union[ModelTrainerList, ModelTrainer],
                  run_config: RunConfiguration):
         super().__init__()
         self._name = name
@@ -375,7 +446,8 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
         self._valid_data_loader = valid_data_loader
         self._test_data_loader = test_data_loader
 
-        self._model_trainers = model_trainers if isinstance(model_trainers, list) else [model_trainers]
+        self._model_trainers = model_trainers if isinstance(model_trainers, ModelTrainerList) else ModelTrainerList(
+            [model_trainers])
         self._device = run_config.device
 
         self._current_train_batch = 0
@@ -514,15 +586,18 @@ class Trainer(BatchEventPublisherMixin, EpochEventPublisherMixin, TrainingPhaseE
                 self._on_valid_epoch_end()
                 self._on_epoch_end()
                 self._on_valid_end()
-                self._on_test_begin()
-                self._on_epoch_begin()
-                self._on_test_epoch_begin()
-                self._test_epoch()
-                self._on_test_epoch_end()
-                self._on_epoch_end()
-                self._on_test_end()
+                if self._test_data_loader is not None:
+                    self._on_test_begin()
+                    self._on_epoch_begin()
+                    self._on_test_epoch_begin()
+                    self._test_epoch()
+                    self._on_test_epoch_end()
+                    self._on_epoch_end()
+                    self._on_test_end()
             else:
                 self._finalize()
+
+        return self.epoch_monitors(Phase.ALL)
 
     def with_event_handler(self, handler, event: BaseEvent):
         if event in self._event_handlers.keys():
@@ -645,33 +720,48 @@ class ModelTrainerFactory(object):
         assert (self._model is not None) or (
                 self._model_factory is not None), "A model or a model factory must be provided !"
 
-    def create(self, model_trainer_configs: Union[List[ModelConfiguration], ModelConfiguration]):
+    def create(self, model_trainer_configs: Union[List[ModelConfiguration], ModelConfiguration]) -> Union[
+        ModelTrainerList, ModelTrainer]:
         model_trainer_configs = [model_trainer_configs] if isinstance(model_trainer_configs,
                                                                       ModelConfiguration) else model_trainer_configs
         model_trainers = list(
             map(lambda model_trainer_config: self._create(model_trainer_config), model_trainer_configs))
 
-        return model_trainers if len(model_trainers) > 1 else model_trainers[0]
+        return ModelTrainerList(model_trainers) if len(model_trainers) > 1 else model_trainers[0]
+
+    @staticmethod
+    def _should_reload(model_config):
+        return model_config.path is not None
 
     def _create(self, model_config: ModelConfiguration):
         model = self._model if self._model is not None else self._model_factory.create(model_config.type,
                                                                                        model_config.params)
-        optimizer = self._optimizer_factory.create(model_config.optimizer_type,
+        optimizer = self._optimizer_factory.create(model_config.optimizer_config.type,
                                                    model.parameters(),
-                                                   model_config.optimizer_params)
-        scheduler = self._scheduler_factory.create(model_config.scheduler_type, optimizer,
-                                                   model_config.scheduler_params)
+                                                   model_config.optimizer_config.params)
+        scheduler = self._scheduler_factory.create(model_config.scheduler_config.type, optimizer,
+                                                   model_config.scheduler_config.params)
 
         criterions = {
             criterion_config.name: self._criterion_factory.create(criterion_config.type, criterion_config.params) for
             criterion_config in model_config.criterions_configs}
 
-        metrics = {
-            metric_config.name: self._metric_factory.create(metric_config.type, metric_config.params) for
-            metric_config in model_config.metrics_configs}
+        if model_config.metrics_configs:
+            metrics = {metric_config.name: self._metric_factory.create(metric_config.type, metric_config.params) for
+                       metric_config in model_config.metrics_configs}
+        else:
+            metrics = {}
 
-        gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(
-            model_config.gradient_clipping_strategy, model_config.gradient_clipping_params)
+        if model_config.gradient_clipping_config:
+            gradient_clipping_strategy = self._gradient_clipping_strategy_factory.create(
+                model_config.gradient_clipping_config.type, model_config.gradient_clipping_config.params)
+        else:
+            gradient_clipping_strategy = None
 
-        return ModelTrainer(model_config.name, model, criterions, optimizer, scheduler, metrics,
-                            gradient_clipping_strategy)
+        model_trainer = ModelTrainer(model_config.name, model, criterions, optimizer, scheduler, metrics,
+                                     gradient_clipping_strategy)
+
+        if self._should_reload(model_config):
+            model_trainer.load(model_config.path)
+
+        return model_trainer

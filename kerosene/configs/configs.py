@@ -78,39 +78,63 @@ class Configuration(object):
     def params(self, value):
         self._params = value
 
+    def update(self, config_dict):
+        if "type" in config_dict:
+            self._type = config_dict["type"]
+
+        if "params" in config_dict:
+            self._params.update(config_dict["params"])
+
+    @classmethod
+    def from_dict(cls, name, config_dict):
+        return cls(name, config_dict["type"], config_dict.get("params", {}))
+
+
+class ConfigurationList(Configuration):
+    def __init__(self, configurations: List[Configuration]):
+        super().__init__(list(map(lambda config: config.name, configurations)),
+                         list(map(lambda config: config.type, configurations)),
+                         list(map(lambda config: config.params, configurations)))
+        self._configurations = configurations
+
+    def update(self, config_dict):
+        for configuration in self._configurations:
+            if configuration.name in config_dict:
+                configuration.update(config_dict[configuration.name])
+
+    def __len__(self):
+        return len(self._configurations)
+
+    def __getitem__(self, index):
+        return self._configurations[index]
+
+    def __iter__(self):
+        return iter(self._configurations)
+
 
 class ModelConfiguration(Configuration, HtmlConfiguration):
-    def __init__(self, model_name, model_type, model_params, optimizer_type, optimizer_params, scheduler_type,
-                 scheduler_params, criterions_configs: List[Configuration], metrics_configs: List[Configuration],
-                 gradient_clipping_strategy, gradient_clipping_params):
+    def __init__(self, model_name, model_type, model_params, path, optimizer_config: Configuration,
+                 scheduler_config: Configuration, criterions_configs: ConfigurationList,
+                 metrics_configs: ConfigurationList, gradient_clipping_config: Configuration):
         super().__init__(model_name, model_type, model_params)
-        self._optimizer_type = optimizer_type
-        self._optimizer_params = optimizer_params
-
-        self._scheduler_type = scheduler_type
-        self._scheduler_params = scheduler_params
-
+        self._path = path
+        self._optimizer_config = optimizer_config
+        self._scheduler_config = scheduler_config
         self._criterions_configs = criterions_configs
         self._metrics_configs = metrics_configs
-
-        self._gradient_clipping_strategy = gradient_clipping_strategy
-        self._gradient_clipping_params = gradient_clipping_params
+        self._gradient_clipping_config = gradient_clipping_config
 
     @property
-    def optimizer_type(self):
-        return self._optimizer_type
+    def path(self):
+        return self._path
 
     @property
-    def optimizer_params(self):
-        return self._optimizer_params
+    def optimizer_config(self):
+        return self._optimizer_config
 
     @property
-    def scheduler_type(self):
-        return self._scheduler_type
-
-    @property
-    def scheduler_params(self):
-        return self._scheduler_params
+    def scheduler_config(self):
+        return self._scheduler_config
 
     @property
     def criterions_configs(self):
@@ -121,27 +145,51 @@ class ModelConfiguration(Configuration, HtmlConfiguration):
         return self._metrics_configs
 
     @property
-    def gradient_clipping_strategy(self):
-        return self._gradient_clipping_strategy
+    def gradient_clipping_config(self):
+        return self._gradient_clipping_config
 
-    @property
-    def gradient_clipping_params(self):
-        return self._gradient_clipping_params
+    def update(self, config_dict):
+        if "type" in config_dict:
+            self._type = config_dict["type"]
+
+        if "params" in config_dict:
+            self._params.update(config_dict["params"])
+
+        if "optimizer" in config_dict:
+            self._optimizer_config.update(config_dict["optimizer"])
+
+        if "scheduler" in config_dict:
+            self._scheduler_config.update(config_dict["scheduler"])
+
+        if "criterions" in config_dict:
+            self._criterions_configs.update(config_dict["criterions"])
+
+        if "metrics" in config_dict:
+            self._metrics_configs.update(config_dict["metrics"])
 
     @classmethod
     def from_dict(cls, model_name, config_dict):
         try:
-            return cls(model_name, config_dict["type"], config_dict.get("params"),
-                       config_dict["optimizer"]["type"], config_dict["optimizer"].get("params"),
-                       config_dict["scheduler"]["type"], config_dict["scheduler"].get("params"),
-                       list(map(lambda criterion: Configuration(criterion, config_dict["criterion"][criterion]["type"],
-                                                                config_dict["criterion"][criterion].get("params")),
-                                config_dict["criterion"].keys())),
-                       list(map(lambda metric: Configuration(metric, config_dict["metrics"][metric]["type"],
-                                                             config_dict["metrics"][metric].get("params")),
-                                config_dict["metrics"].keys())),
-                       config_dict.get("gradients", {}).get("clipping_strategy"),
-                       config_dict.get("gradients", {}).get("params"))
+            optimizer_config = Configuration.from_dict("", config_dict["optimizer"])
+            scheduler_config = Configuration.from_dict("", config_dict["scheduler"])
+            criterion_configs = ConfigurationList(
+                [Configuration.from_dict(criterion, config_dict["criterion"][criterion]) for criterion
+                 in config_dict["criterion"].keys()])
+
+            if "metrics" in config_dict.keys():
+                metric_configs = ConfigurationList(
+                    [Configuration.from_dict(metric, config_dict["metrics"][metric]) for metric in
+                     config_dict["metrics"].keys()])
+            else:
+                metric_configs = None
+
+            if "gradients" in config_dict.keys():
+                gradient_clipping_config = Configuration.from_dict("", config_dict["gradients"])
+            else:
+                gradient_clipping_config = None
+
+            return cls(model_name, config_dict["type"], config_dict.get("params"), config_dict.get("path"),
+                       optimizer_config, scheduler_config, criterion_configs, metric_configs, gradient_clipping_config)
         except KeyError as e:
             raise InvalidConfigurationError(
                 "The provided model configuration is invalid. The section {} is missing.".format(e))
