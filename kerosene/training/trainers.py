@@ -720,13 +720,14 @@ class ModelTrainerFactory(object):
         assert (self._model is not None) or (
                 self._model_factory is not None), "A model or a model factory must be provided !"
 
-    def create(self, model_trainer_configs: Union[List[ModelConfiguration], ModelConfiguration]):
+    def create(self, model_trainer_configs: Union[List[ModelConfiguration], ModelConfiguration]) -> Union[
+        ModelTrainerList, ModelTrainer]:
         model_trainer_configs = [model_trainer_configs] if isinstance(model_trainer_configs,
                                                                       ModelConfiguration) else model_trainer_configs
         model_trainers = list(
             map(lambda model_trainer_config: self._create(model_trainer_config), model_trainer_configs))
 
-        return model_trainers if len(model_trainers) > 1 else model_trainers[0]
+        return ModelTrainerList(model_trainers) if len(model_trainers) > 1 else model_trainers[0]
 
     @staticmethod
     def _should_reload(model_config):

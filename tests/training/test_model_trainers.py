@@ -202,6 +202,7 @@ class ModelTrainerFactoryTest(unittest.TestCase):
     VALID_CONFIG_FILE_PATH = "tests/configs/valid_config.yml"
     MODELS_CONFIG_YML_TAG = "models"
     SIMPLE_NET_NAME = "SimpleNet"
+    SIMPLE_NET_NAME_2 = "SimpleNet2"
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -209,23 +210,29 @@ class ModelTrainerFactoryTest(unittest.TestCase):
 
     def setUp(self) -> None:
         config_dict = YamlConfigurationParser.parse_section(self.VALID_CONFIG_FILE_PATH, self.MODELS_CONFIG_YML_TAG)
-        self._model_trainer_config = ModelConfiguration.from_dict(self.SIMPLE_NET_NAME,
-                                                                  config_dict[self.SIMPLE_NET_NAME])
+
+        self._model_trainer_configs = [ModelConfiguration.from_dict(self.SIMPLE_NET_NAME,
+                                                                    config_dict[self.SIMPLE_NET_NAME]),
+                                       ModelConfiguration.from_dict(self.SIMPLE_NET_NAME_2,
+                                                                    config_dict[self.SIMPLE_NET_NAME_2])]
         self._run_config = RunConfiguration()
         self._model = nn.Conv2d(1, 32, (3, 3))
 
     def test_should_create_model_trainer_with_config(self):
-        model_trainer = ModelTrainerFactory(model=self._model).create(self._model_trainer_config)
-        assert_that(model_trainer, instance_of(ModelTrainer))
-        assert_that(model_trainer.name, is_(self.SIMPLE_NET_NAME))
-        assert_that(len(model_trainer.criterions), is_(2))
-        [assert_that(model_trainer.criterions[criterion], instance_of(_Loss)) for criterion in
-         model_trainer.criterions.keys()]
-        assert_that(model_trainer.optimizer, instance_of(torch.optim.SGD))
-        assert_that(model_trainer.scheduler, instance_of(torch.optim.lr_scheduler.ReduceLROnPlateau))
-        assert_that(len(model_trainer._metric_computers.keys()), is_(2))
-        [assert_that(model_trainer._metric_computers[metric], instance_of(Metric)) for metric in
-         model_trainer._metric_computers.keys()]
+        model_trainers = ModelTrainerFactory(model=self._model).create(
+            model_trainer_configs=self._model_trainer_configs)
+        simple_net = model_trainers[0]
+
+        assert_that(simple_net, instance_of(ModelTrainer))
+        assert_that(simple_net.name, is_(self.SIMPLE_NET_NAME))
+        assert_that(len(simple_net.criterions), is_(2))
+        [assert_that(simple_net.criterions[criterion], instance_of(_Loss)) for criterion in
+         simple_net.criterions.keys()]
+        assert_that(simple_net.optimizer, instance_of(torch.optim.SGD))
+        assert_that(simple_net.scheduler, instance_of(torch.optim.lr_scheduler.ReduceLROnPlateau))
+        assert_that(len(simple_net._metric_computers.keys()), is_(2))
+        [assert_that(simple_net._metric_computers[metric], instance_of(Metric)) for metric in
+         simple_net._metric_computers.keys()]
 
 
 class ModelTrainerListTest(unittest.TestCase):
