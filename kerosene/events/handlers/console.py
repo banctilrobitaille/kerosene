@@ -158,9 +158,9 @@ class MonitorsTable(object):
 
         self.table.columns.header = training_monitors.keys()
 
-        self._training_monitors = training_monitors
-        self._validation_monitors = validation_monitors
-        self._test_monitors = test_monitors
+        self._training_monitors = dict(training_monitors)
+        self._validation_monitors = dict(validation_monitors)
+        self._test_monitors = dict(test_monitors)
 
     def show(self):
         self.table._compute_width()
