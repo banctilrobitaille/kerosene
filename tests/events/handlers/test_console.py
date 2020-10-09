@@ -42,7 +42,7 @@ class ConsoleHandlerTest(unittest.TestCase):
         validation_values = {**monitors["Model 1"][Phase.VALIDATION][Monitor.METRICS],
                              **monitors["Model 1"][Phase.VALIDATION][Monitor.LOSS]}
 
-        table = MonitorsTable("Model 1")
+        table = MonitorsTable("Model 1", 20)
         table.update(training_values, validation_values)
         table.show()
 
