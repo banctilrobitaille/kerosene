@@ -108,7 +108,7 @@ class PrintMonitorsTable(BaseConsoleLogger):
     SUPPORTED_EVENTS = [Event.ON_BATCH_END, Event.ON_EPOCH_END, Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END,
                         Event.ON_TEST_BATCH_END]
 
-    def __init__(self, every=1, max_table_width=200):
+    def __init__(self, every=1, max_table_width=100):
         super().__init__(self.SUPPORTED_EVENTS, every)
         self._monitors = {}
         self._monitors_tables = {}
