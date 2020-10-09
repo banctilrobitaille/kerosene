@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import logging
 from abc import ABC
 from typing import Union, List
 
@@ -113,6 +114,7 @@ class PlotMetrics(BaseVisdomHandler):
 
 
 class PlotCustomVariables(BaseVisdomHandler):
+    LOGGER = logging.getLogger("PlotCustomVariables")
     SUPPORTED_EVENTS = [Event.ON_EPOCH_END, Event.ON_TRAIN_EPOCH_END, Event.ON_VALID_EPOCH_END, Event.ON_TEST_EPOCH_END,
                         Event.ON_TRAIN_BATCH_END, Event.ON_VALID_BATCH_END, Event.ON_TEST_BATCH_END, Event.ON_BATCH_END]
 
@@ -126,7 +128,12 @@ class PlotCustomVariables(BaseVisdomHandler):
         data = None
 
         if self.should_handle(event):
-            data = self.create_visdom_data(event, trainer)
+            try:
+                data = self.create_visdom_data(event, trainer)
+            except KeyError:
+                self.LOGGER.warning(
+                    "Unable to plot custom variable: {}. The variable is not in the trainer's custom variable dict.".format(
+                        self._variable_name))
 
         if data is not None:
             self.visdom_logger(data)

@@ -24,5 +24,7 @@ setup(
                       'pytorch-ignite>= 0.2.0',
                       'torch>=1.1',
                       'torchvision>=0.2.1',
-                      'PyYAML']
+                      'PyYAML',
+                      'crayons',
+                      'beautifultable']
 )

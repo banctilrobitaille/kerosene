@@ -53,6 +53,13 @@ class OptimizerFactory(object):
         self._optimizers = {
             "Adam": optim.Adam,
             "SGD": optim.SGD,
+            "RMSprop": optim.RMSprop,
+            "Adagrad": optim.Adagrad,
+            "Adadelta": optim.Adadelta,
+            "SparseAdam": optim.SparseAdam,
+            "Adamax": optim.Adamax,
+            "Rprop": optim.Rprop,
+            "ASGD": optim.ASGD
         }
 
         if APEX_AVAILABLE:
